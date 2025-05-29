@@ -23,27 +23,6 @@ namespace Lineage.Ancestral.Legacies.Entities
             agent.updateUpAxis = false;
         }
 
-        private void OnMouseDown()
-        {
-            // Handle selection logic
-            UnityEngine.Debug.Log($"Selected pop: {pop.name}");
-            Select();
-        }
-
-        private void Update()
-        {
-            // If selected and right-click anywhere, command movement via FSM
-            if (selectionCircleInstance != null && Input.GetMouseButtonDown(1))
-            {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    var sm = pop.GetComponent<PopStateMachine>();
-                    sm.ChangeState(new CommandedState(hit.point));
-                }
-            }
-        }
-
         public void Select()
         {
             if (selectionCircleInstance == null && selectionCirclePrefab != null)
@@ -66,12 +45,9 @@ namespace Lineage.Ancestral.Legacies.Entities
             }
         }
 
-        /// <summary>
-        /// Command the pop to move to a destination using NavMeshAgent.
-        /// </summary>
-        public void MoveTo(Vector3 destination)
+        public bool IsSelected()
         {
-            agent.SetDestination(destination);
+            return selectionCircleInstance != null;
         }
     }
 }

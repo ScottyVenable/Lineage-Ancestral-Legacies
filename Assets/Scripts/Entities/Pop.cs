@@ -9,11 +9,13 @@ namespace Lineage.Ancestral.Legacies.Entities
     {
         [Header("Core Attributes")]
         public float health = 100f;
-        public float hunger = 100f;
-        public float thirst = 100f;
         public float stamina = 100f;
         public int age;
         public bool isAdult;
+
+        // Properties that get values from NeedsComponent
+        public float hunger => needsComponent != null ? needsComponent.hunger : 0f;
+        public float thirst => needsComponent != null ? needsComponent.thirst : 0f;
 
         // References to system components
         private Systems.Needs.NeedsComponent needsComponent;
@@ -34,7 +36,9 @@ namespace Lineage.Ancestral.Legacies.Entities
 
         private void Update()
         {
-            needsComponent.UpdateNeeds(Time.deltaTime);
+            if (needsComponent != null)
+                needsComponent.UpdateNeeds(Time.deltaTime);
+            
             stateMachine.Tick();
         }
     }

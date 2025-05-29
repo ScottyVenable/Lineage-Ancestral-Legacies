@@ -3,6 +3,7 @@ using UnityEngine.AI;
 using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 using Lineage.Ancestral.Legacies.Systems.Resource;
+using Lineage.Ancestral.Legacies.Systems.Needs;
 
 namespace Lineage.Ancestral.Legacies.AI.States
 {
@@ -44,9 +45,13 @@ namespace Lineage.Ancestral.Legacies.AI.States
                 // Harvest
                 if (targetNode.Harvest((int)harvestAmount))
                 {
-                    var inv = pop.GetComponent<InventoryComponent>();
-                    inv.AddItem("berries", (int)harvestAmount);
-                    // TODO: Display floating text
+                    // Directly satisfy hunger instead of using inventory
+                    var needs = pop.GetComponent<NeedsComponent>();
+                    if (needs != null)
+                    {
+                        needs.SatisfyHunger(20f); // Restore 20 hunger per berry
+                        UnityEngine.Debug.Log($"{pop.name} foraged and ate berries!");
+                    }
                 }
                 else
                 {

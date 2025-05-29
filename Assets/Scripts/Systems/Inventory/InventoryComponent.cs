@@ -52,6 +52,25 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
             return 0;
         }
 
+        /// <summary>
+        /// Gets all items in the inventory.
+        /// </summary>
+        public Dictionary<string, int> GetAllItems()
+        {
+            return new Dictionary<string, int>(items);
+        }
+
+        /// <summary>
+        /// Gets the total number of items in the inventory.
+        /// </summary>
+        public int GetTotalItemCount()
+        {
+            int total = 0;
+            foreach (var pair in items)
+                total += pair.Value;
+            return total;
+        }
+
         private int GetTotalItems()
         {
             int total = 0;
