@@ -42,6 +42,19 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
             UserInterface
         }
         
+        // Test component for inspector testing
+        public class TestComponent : MonoBehaviour
+        {
+            public int testInt = 42;
+            public string testString = "Hello World";
+            public bool testBool = true;
+            
+            public void TestMethod()
+            {
+                // Test method for reflection
+            }
+        }
+        
         private void Start()
         {
             if (runTestsOnStart)
@@ -393,6 +406,7 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
             float startTime = Time.realtimeSinceStartup;
             bool testPassed = true;
             string errorMessage = "";
+            GameObject testObj = null;
             
             try
             {
@@ -402,13 +416,10 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
                 if (visualizer != null && inspector != null)
                 {
                     // Create test object and inspect it
-                    var testObj = new GameObject("RuntimeInspectorTest");
+                    testObj = new GameObject("RuntimeInspectorTest");
                     testObj.AddComponent<TestComponent>();
                     
-                    yield return new WaitForSeconds(0.1f); // Allow UI to update
-                    
                     testPassed = true;
-                    DestroyImmediate(testObj);
                 }
                 else
                 {
@@ -420,6 +431,13 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
             {
                 testPassed = false;
                 errorMessage = e.Message;
+            }
+            
+            // Yield outside of try-catch block
+            if (testPassed && testObj != null)
+            {
+                yield return new WaitForSeconds(0.1f); // Allow UI to update
+                DestroyImmediate(testObj);
             }
             
             float executionTime = Time.realtimeSinceStartup - startTime;
@@ -436,61 +454,65 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
             float startTime = Time.realtimeSinceStartup;
             bool testPassed = true;
             string errorMessage = "";
+            float totalTime = 0f;
             
-            try
+            // Use a separate loop structure to handle yielding
+            for (int i = 0; i < performanceTestIterations && testPassed; i += 100)
             {
-                float totalTime = 0f;
-                for (int i = 0; i < performanceTestIterations; i++)
+                try
                 {
-                    float logStart = Time.realtimeSinceStartup;
-                    AdvancedLogger.LogInfo(LogCategory.Performance, $"Performance test message {i}");
-                    totalTime += Time.realtimeSinceStartup - logStart;
-                    
-                    if (i % 100 == 0) yield return null; // Yield periodically
+                    int endIndex = Mathf.Min(i + 100, performanceTestIterations);
+                    for (int j = i; j < endIndex; j++)
+                    {
+                        float logStart = Time.realtimeSinceStartup;
+                        AdvancedLogger.LogInfo(LogCategory.Performance, $"Performance test message {j}");
+                        totalTime += Time.realtimeSinceStartup - logStart;
+                    }
+                }
+                catch (Exception e)
+                {
+                    testPassed = false;
+                    errorMessage = e.Message;
+                    break;
                 }
                 
-                float averageTime = (totalTime / performanceTestIterations) * 1000; // Convert to ms
-                performanceMetrics["Logging_AverageTime_ms"] = averageTime;
-                
-                testPassed = averageTime < 1.0f; // Should be under 1ms per log
-                if (!testPassed)
-                    errorMessage = $"Logging too slow: {averageTime:F4}ms average";
+                yield return null; // Yield outside try-catch
             }
-            catch (Exception e)
+            
+            if (testPassed)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                try
+                {
+                    float averageTime = (totalTime / performanceTestIterations) * 1000; // Convert to ms
+                    performanceMetrics["Logging_AverageTime_ms"] = averageTime;
+                    
+                    testPassed = averageTime < 1.0f; // Should be under 1ms per log
+                    if (!testPassed)
+                        errorMessage = $"Logging too slow: {averageTime:F4}ms average";
+                }
+                catch (Exception e)
+                {
+                    testPassed = false;
+                    errorMessage = e.Message;
+                }
             }
             
             float executionTime = Time.realtimeSinceStartup - startTime;
             RecordTestResult("Logging Performance", testPassed, 
                 testPassed ? $"Logging performance acceptable" : $"Logging performance failed: {errorMessage}", executionTime);
         }
-        
-        private IEnumerator TestConsoleUIPerformance()
+          private IEnumerator TestConsoleUIPerformance()
         {
             float startTime = Time.realtimeSinceStartup;
             bool testPassed = true;
             string errorMessage = "";
             
+            DebugConsoleManager console = null;
+            
             try
             {
-                var console = FindFirstObjectByType<DebugConsoleManager>();
-                if (console != null)
-                {
-                    float totalTime = 0f;
-                    for (int i = 0; i < 50; i++) // Smaller iteration for UI tests
-                    {
-                        float uiStart = Time.realtimeSinceStartup;
-                        // Simulate UI operations
-                        yield return null;
-                        totalTime += Time.realtimeSinceStartup - uiStart;
-                    }
-                    
-                    performanceMetrics["ConsoleUI_UpdateTime_ms"] = totalTime * 1000;
-                    testPassed = true;
-                }
-                else
+                console = FindFirstObjectByType<DebugConsoleManager>();
+                if (console == null)
                 {
                     testPassed = false;
                     errorMessage = "Console not found for UI performance test";
@@ -502,35 +524,36 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
                 errorMessage = e.Message;
             }
             
+            if (testPassed && console != null)
+            {
+                float totalTime = 0f;
+                for (int i = 0; i < 50; i++) // Smaller iteration for UI tests
+                {
+                    float uiStart = Time.realtimeSinceStartup;
+                    // Simulate UI operations
+                    yield return null;
+                    totalTime += Time.realtimeSinceStartup - uiStart;
+                }
+                
+                performanceMetrics["ConsoleUI_UpdateTime_ms"] = totalTime * 1000;
+            }
+            
             float executionTime = Time.realtimeSinceStartup - startTime;
             RecordTestResult("Console UI Performance", testPassed, 
                 testPassed ? "Console UI performance acceptable" : $"Console UI performance failed: {errorMessage}", executionTime);
         }
-        
-        private IEnumerator TestVisualDebuggerPerformance()
+          private IEnumerator TestVisualDebuggerPerformance()
         {
             float startTime = Time.realtimeSinceStartup;
             bool testPassed = true;
             string errorMessage = "";
             
+            DebugVisualizer visualizer = null;
+            
             try
             {
-                var visualizer = FindFirstObjectByType<DebugVisualizer>();
-                if (visualizer != null)
-                {
-                    float totalTime = 0f;
-                    for (int i = 0; i < 30; i++) // Smaller iteration for render tests
-                    {
-                        float renderStart = Time.realtimeSinceStartup;
-                        // Simulate visual debug operations
-                        yield return null;
-                        totalTime += Time.realtimeSinceStartup - renderStart;
-                    }
-                    
-                    performanceMetrics["VisualDebugger_DrawTime_ms"] = totalTime * 1000;
-                    testPassed = true;
-                }
-                else
+                visualizer = FindFirstObjectByType<DebugVisualizer>();
+                if (visualizer == null)
                 {
                     testPassed = false;
                     errorMessage = "Visual debugger not found";
@@ -542,41 +565,68 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
                 errorMessage = e.Message;
             }
             
+            if (testPassed && visualizer != null)
+            {
+                float totalTime = 0f;
+                for (int i = 0; i < 30; i++) // Smaller iteration for render tests
+                {
+                    float renderStart = Time.realtimeSinceStartup;
+                    // Simulate visual debug operations
+                    yield return null;
+                    totalTime += Time.realtimeSinceStartup - renderStart;
+                }
+                
+                performanceMetrics["VisualDebugger_DrawTime_ms"] = totalTime * 1000;
+            }
+            
             float executionTime = Time.realtimeSinceStartup - startTime;
             RecordTestResult("Visual Debugger Performance", testPassed, 
                 testPassed ? "Visual debugger performance acceptable" : $"Visual debugger performance failed: {errorMessage}", executionTime);
         }
-        
-        private IEnumerator TestMemoryUsage()
+          private IEnumerator TestMemoryUsage()
         {
             float startTime = Time.realtimeSinceStartup;
             bool testPassed = true;
             string errorMessage = "";
             
+            long startMemory = 0;
+            long endMemory = 0;
+            
             try
             {
-                long startMemory = GC.GetTotalMemory(true);
-                
-                // Generate memory usage
+                startMemory = GC.GetTotalMemory(true);
+            }
+            catch (Exception e)
+            {
+                testPassed = false;
+                errorMessage = e.Message;
+            }
+            
+            if (testPassed)
+            {
+                // Generate memory usage with yield statements outside try-catch
                 for (int i = 0; i < 1000; i++)
                 {
                     AdvancedLogger.LogInfo(LogCategory.Performance, $"Memory test {i}");
                     if (i % 100 == 0) yield return null;
                 }
                 
-                long endMemory = GC.GetTotalMemory(false);
-                long memoryDelta = endMemory - startMemory;
-                
-                performanceMetrics["Memory_Delta_KB"] = memoryDelta / 1024f;
-                
-                testPassed = memoryDelta < 1024 * 1024; // Should be under 1MB
-                if (!testPassed)
-                    errorMessage = $"Excessive memory usage: {memoryDelta / 1024f:F2}KB";
-            }
-            catch (Exception e)
-            {
-                testPassed = false;
-                errorMessage = e.Message;
+                try
+                {
+                    endMemory = GC.GetTotalMemory(false);
+                    long memoryDelta = endMemory - startMemory;
+                    
+                    performanceMetrics["Memory_Delta_KB"] = memoryDelta / 1024f;
+                    
+                    testPassed = memoryDelta < 1024 * 1024; // Should be under 1MB
+                    if (!testPassed)
+                        errorMessage = $"Excessive memory usage: {memoryDelta / 1024f:F2}KB";
+                }
+                catch (Exception e)
+                {
+                    testPassed = false;
+                    errorMessage = e.Message;
+                }
             }
             
             float executionTime = Time.realtimeSinceStartup - startTime;
@@ -657,19 +707,6 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
         }
         
         #endregion
-        
-        // Test component for inspector testing
-        private class TestComponent : MonoBehaviour
-        {
-            public int testInt = 42;
-            public string testString = "Hello World";
-            public bool testBool = true;
-            
-            public void TestMethod()
-            {
-                // Test method for reflection
-            }
-        }
     }
 }
 #endif

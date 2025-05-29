@@ -1,173 +1,277 @@
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.AI.States;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-namespace Lineage.Ancestral.Legacies.Managers
+public class SelectionManager : MonoBehaviour
 {
-    /// <summary>
-    /// Handles selection of pops and issuing commands to selected units.
-    /// </summary>
-    public class SelectionManager : MonoBehaviour
+    [Header("Selection Settings")]
+    public LayerMask popLayerMask;
+    public LayerMask groundLayerMask;
+    public float dragThreshold = 10f;
+
+    [Header("References")]
+    public RectTransform selectionBox;
+    public InputActionAsset inputActions;
+
+    // Private variables
+    private InputAction clickAction;
+    private InputAction pointAction;
+    private InputAction rightClickAction;
+    
+    private Vector2 startDragPos;
+    private bool isDragging = false;
+    private List<GameObject> selectedPops = new List<GameObject>();
+    private Camera mainCamera;
+
+    private void Awake()
     {
-        public static SelectionManager Instance { get; private set; }
-
-        [Header("Selection")]
-        public LayerMask popLayerMask = -1;
-        public LayerMask groundLayerMask = -1;        private List<PopController> selectedPops = new List<PopController>();
-        private Camera playerCamera;
-
-        // Events
-        public System.Action OnSelectionChanged;
-
-        private void Awake()
+        mainCamera = Camera.main;
+        
+        // Load the input actions if not set
+        if (inputActions == null)
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                playerCamera = Camera.main;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            inputActions = Resources.Load<InputActionAsset>("InputSystem_Actions");
+            Debug.LogWarning("InputActions reference not set - attempting to load from Resources");
         }
-
-        private void Update()
+        
+        // Hide the selection box initially
+        if (selectionBox != null)
         {
-            HandleInput();
+            selectionBox.gameObject.SetActive(false);
         }
-
-        private void HandleInput()
+        else
         {
-            // Left click to select
-            if (Input.GetMouseButtonDown(0))
-            {
-                HandleSelection();
-            }
-
-            // Right click to issue move commands to selected pops
-            if (Input.GetMouseButtonDown(1) && selectedPops.Count > 0)
-            {
-                HandleMoveCommand();
-            }
+            Debug.LogError("Selection box reference is missing!");
         }
+    }
 
-        private void HandleSelection()
+    private void OnEnable()
+    {
+        if (inputActions != null)
         {
-            Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
+            // Enable input actions
+            clickAction = inputActions.FindAction("UI/Click");
+            pointAction = inputActions.FindAction("UI/Point");
+            rightClickAction = inputActions.FindAction("UI/RightClick");
+
+            if (clickAction != null) 
+            {
+                clickAction.started += OnClickStarted;
+                clickAction.canceled += OnClickCanceled;
+                clickAction.Enable();
+            }
             
-            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, popLayerMask))
+            if (pointAction != null) pointAction.Enable();
+            if (rightClickAction != null) 
             {
-                PopController popController = hit.collider.GetComponent<PopController>();
+                rightClickAction.performed += OnRightClick;
+                rightClickAction.Enable();
+            }
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (clickAction != null)
+        {
+            clickAction.started -= OnClickStarted;
+            clickAction.canceled -= OnClickCanceled;
+            clickAction.Disable();
+        }
+        
+        if (pointAction != null) pointAction.Disable();
+        
+        if (rightClickAction != null)
+        {
+            rightClickAction.performed -= OnRightClick;
+            rightClickAction.Disable();
+        }
+    }
+
+    private void OnClickStarted(InputAction.CallbackContext context)
+    {
+        // Store the drag start position
+        if (pointAction != null)
+        {
+            startDragPos = pointAction.ReadValue<Vector2>();
+            isDragging = false;
+        }
+    }
+
+    private void OnClickCanceled(InputAction.CallbackContext context)
+    {
+        if (isDragging)
+        {
+            // Finalize the selection
+            CalculateDragSelection();
+            isDragging = false;
+            
+            // Hide selection box
+            if (selectionBox != null)
+            {
+                selectionBox.gameObject.SetActive(false);
+            }
+        }
+        else
+        {
+            // This was a click, not a drag
+            HandleSingleClick();
+        }
+    }
+
+    private void OnRightClick(InputAction.CallbackContext context)
+    {
+        if (selectedPops.Count > 0)
+        {
+            // Get the destination from mouse position
+            Vector3 mousePos = pointAction != null ? 
+                pointAction.ReadValue<Vector2>() : 
+                Input.mousePosition;
+            
+            Ray ray = mainCamera.ScreenPointToRay(mousePos);
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f, groundLayerMask))
+            {
+                // Tell selected pops to move to this position
+                foreach (GameObject pop in selectedPops)
+                {
+                    PopController controller = pop.GetComponent<PopController>();
+                    if (controller != null)
+                    {
+                        controller.MoveTo(hit.point);
+                    }
+                }
+            }
+        }
+    }
+
+    private void Update()
+    {
+        // Update the selection box if dragging
+        if (isDragging)
+        {
+            UpdateSelectionBox();
+        }
+        else if (pointAction != null)
+        {
+            // Check for drag start
+            Vector2 currentMousePos = pointAction.ReadValue<Vector2>();
+            float dragDistance = Vector2.Distance(startDragPos, currentMousePos);
+            
+            if (dragDistance > dragThreshold && clickAction.phase == InputActionPhase.Started)
+            {
+                isDragging = true;
+                ClearSelection();
                 
-                if (popController != null)
+                if (selectionBox != null)
                 {
-                    // If not holding control, clear previous selection
-                    if (!Input.GetKey(KeyCode.LeftControl))
-                    {
-                        ClearSelection();
-                    }
-
-                    // Toggle selection of this pop
-                    if (selectedPops.Contains(popController))
-                    {
-                        DeselectPop(popController);
-                    }
-                    else
-                    {
-                        SelectPop(popController);
-                    }
-                }
-            }
-            else
-            {
-                // Clicked on empty space, clear selection if not holding control
-                if (!Input.GetKey(KeyCode.LeftControl))
-                {
-                    ClearSelection();
+                    selectionBox.gameObject.SetActive(true);
                 }
             }
         }
+    }
 
-        private void HandleMoveCommand()
+    private void UpdateSelectionBox()
+    {
+        if (selectionBox == null || pointAction == null) return;
+        
+        Vector2 currentMousePos = pointAction.ReadValue<Vector2>();
+        Vector2 lowerLeft = new Vector2(
+            Mathf.Min(startDragPos.x, currentMousePos.x),
+            Mathf.Min(startDragPos.y, currentMousePos.y)
+        );
+        Vector2 upperRight = new Vector2(
+            Mathf.Max(startDragPos.x, currentMousePos.x),
+            Mathf.Max(startDragPos.y, currentMousePos.y)
+        );
+        
+        // Update selection box position and size
+        selectionBox.position = lowerLeft;
+        selectionBox.sizeDelta = upperRight - lowerLeft;
+    }
+
+    private void CalculateDragSelection()
+    {
+        if (pointAction == null) return;
+        
+        Vector2 currentMousePos = pointAction.ReadValue<Vector2>();
+        
+        Rect selectionRect = new Rect(
+            Mathf.Min(startDragPos.x, currentMousePos.x),
+            Mathf.Min(startDragPos.y, currentMousePos.y),
+            Mathf.Abs(currentMousePos.x - startDragPos.x),
+            Mathf.Abs(currentMousePos.y - startDragPos.y)
+        );
+        
+        // Find all pops within the selection rectangle
+        GameObject[] allPops = GameObject.FindGameObjectsWithTag("Pop");
+        foreach (GameObject pop in allPops)
         {
-            Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
+            Vector2 screenPos = mainCamera.WorldToScreenPoint(pop.transform.position);
+            if (selectionRect.Contains(screenPos))
+            {
+                AddToSelection(pop);
+            }
+        }
+    }
+
+    private void HandleSingleClick()
+    {
+        if (pointAction == null) return;
+        
+        Vector2 clickPos = pointAction.ReadValue<Vector2>();
+        Ray ray = mainCamera.ScreenPointToRay(clickPos);
+        
+        if (Physics.Raycast(ray, out RaycastHit hit, 100f, popLayerMask))
+        {
+            // If not holding shift, clear previous selection
+            if (!Keyboard.current.shiftKey.isPressed)
+            {
+                ClearSelection();
+            }
             
-            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayerMask))
-            {
-                Vector3 targetPosition = hit.point;
-
-                // Issue move commands to all selected pops
-                for (int i = 0; i < selectedPops.Count; i++)
-                {
-                    var popController = selectedPops[i];
-                    if (popController != null)
-                    {
-                        // Spread out the destination positions for multiple pops
-                        Vector3 offset = Vector3.zero;
-                        if (selectedPops.Count > 1)
-                        {
-                            float angle = (360f / selectedPops.Count) * i;
-                            float radius = 1f;
-                            offset = new Vector3(
-                                Mathf.Cos(angle * Mathf.Deg2Rad) * radius,
-                                0,
-                                Mathf.Sin(angle * Mathf.Deg2Rad) * radius
-                            );
-                        }
-
-                        var stateMachine = popController.GetComponent<Pop>()?.GetComponent<AI.PopStateMachine>();
-                        if (stateMachine != null)
-                        {
-                            stateMachine.ChangeState(new CommandedState(targetPosition + offset));
-                        }
-                    }
-                }
-
-                UnityEngine.Debug.Log($"Commanded {selectedPops.Count} pops to move to {targetPosition}");
-            }
-        }        private void SelectPop(PopController popController)
+            AddToSelection(hit.collider.gameObject);
+        }
+        else if (!Keyboard.current.shiftKey.isPressed)
         {
-            if (!selectedPops.Contains(popController))
+            // Clicked on nothing while not holding shift - clear selection
+            ClearSelection();
+        }
+    }
+
+    private void AddToSelection(GameObject obj)
+    {
+        if (!selectedPops.Contains(obj))
+        {
+            selectedPops.Add(obj);
+            
+            // Notify the pop it's selected
+            PopController controller = obj.GetComponent<PopController>();
+            if (controller != null)
             {
-                selectedPops.Add(popController);
-                popController.Select();
-                UnityEngine.Debug.Log($"Selected pop: {popController.name}");
-                OnSelectionChanged?.Invoke();
+                controller.OnSelected(true);
             }
         }
+    }
 
-        private void DeselectPop(PopController popController)
+    public void ClearSelection()
+    {
+        // Notify each pop it's deselected
+        foreach (GameObject pop in selectedPops)
         {
-            if (selectedPops.Contains(popController))
+            PopController controller = pop.GetComponent<PopController>();
+            if (controller != null)
             {
-                selectedPops.Remove(popController);
-                popController.Deselect();
-                UnityEngine.Debug.Log($"Deselected pop: {popController.name}");
-                OnSelectionChanged?.Invoke();
+                controller.OnSelected(false);
             }
         }
+        
+        selectedPops.Clear();
+    }
 
-        private void ClearSelection()
-        {
-            foreach (var popController in selectedPops)
-            {
-                if (popController != null)
-                    popController.Deselect();
-            }
-            selectedPops.Clear();
-            OnSelectionChanged?.Invoke();
-        }
-
-        public List<PopController> GetSelectedPops()
-        {
-            return new List<PopController>(selectedPops);
-        }
-
-        public bool HasSelection()
-        {
-            return selectedPops.Count > 0;
-        }
+    public List<GameObject> GetSelectedPops()
+    {
+        return selectedPops;
     }
 }

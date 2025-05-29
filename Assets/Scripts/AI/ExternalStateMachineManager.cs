@@ -1,3 +1,4 @@
+// Unity component for managing external state machines - Updated
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -27,7 +28,9 @@ namespace Lineage.Ancestral.Legacies.AI
             if (popStateMachine == null)
             {
                 popStateMachine = GetComponentInChildren<PopStateMachine>();
-            }            if (popStateMachine == null)
+            }
+            
+            if (popStateMachine == null)
             {
                 UnityEngine.Debug.LogError($"[ExternalStateMachineManager] No PopStateMachine found on {gameObject.name} or its children!");
                 return;
@@ -53,11 +56,10 @@ namespace Lineage.Ancestral.Legacies.AI
         public void AttachAllStateMachines()
         {
             if (popStateMachine == null)
-                return;
-
-            foreach (var component in externalStateMachineComponents)
+                return;            foreach (var component in externalStateMachineComponents)
             {
-                if (component is IExternalStateMachine externalStateMachine)                {
+                if (component is IExternalStateMachine externalStateMachine)
+                {
                     popStateMachine.AttachExternalStateMachine(externalStateMachine);
                     attachedStateMachines.Add(externalStateMachine);
                     UnityEngine.Debug.Log($"[ExternalStateMachineManager] Attached {component.GetType().Name} to {gameObject.name}");

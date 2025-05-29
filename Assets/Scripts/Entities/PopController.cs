@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Lineage.Ancestral.Legacies.AI;
@@ -8,46 +10,159 @@ namespace Lineage.Ancestral.Legacies.Entities
     [RequireComponent(typeof(NavMeshAgent))]
     public class PopController : MonoBehaviour
     {
+        // Component references
         private NavMeshAgent agent;
-        private Pop pop;
+        private Animator animator;
 
-        [Header("Selection")]
-        public GameObject selectionCirclePrefab; // Assign in Inspector
-        private GameObject selectionCircleInstance;
+        // State
+        private bool isSelected = false;
+        private Transform selectionIndicator;
 
         private void Awake()
         {
-            pop = GetComponent<Pop>();
+            // Get required components
             agent = GetComponent<NavMeshAgent>();
-            agent.updateRotation = false;
-            agent.updateUpAxis = false;
+            animator = GetComponent<Animator>();
+
+            // Setup NavMeshAgent for 2D
+            if (agent != null)
+            {
+                agent.updateRotation = false;
+                agent.updateUpAxis = false;
+            }
+
+            // Create or find selection indicator
+            SetupSelectionIndicator();
         }
 
-        public void Select()
+        private void SetupSelectionIndicator()
         {
-            if (selectionCircleInstance == null && selectionCirclePrefab != null)
+            // Look for existing indicator
+            selectionIndicator = transform.Find("SelectionIndicator");
+
+            // Create one if it doesn't exist
+            if (selectionIndicator == null)
             {
-                selectionCircleInstance = Instantiate(
-                    selectionCirclePrefab,
-                    transform.position + Vector3.down * 0.01f, // Slightly below the pop
-                    Quaternion.identity,
-                    transform // Parent to pop
-                );
+                GameObject indicator = new GameObject("SelectionIndicator");
+                selectionIndicator = indicator.transform;
+                selectionIndicator.SetParent(transform);
+                selectionIndicator.localPosition = Vector3.zero;
+
+                // Add a visible element (circle sprite renderer)
+                SpriteRenderer renderer = indicator.AddComponent<SpriteRenderer>();
+                // You would assign a selection circle sprite here
+                // renderer.sprite = selectionCircleSprite;
+
+                // Just use color for now
+                renderer.color = new Color(0f, 1f, 0f, 0.5f); // Semi-transparent green
+                renderer.sortingOrder = 1;
+            }
+
+            // Initially hide it
+            selectionIndicator.gameObject.SetActive(false);
+        }
+
+        public void OnSelected(bool selected)
+        {
+            isSelected = selected;
+
+            // Show/hide selection indicator
+            if (selectionIndicator != null)
+            {
+                selectionIndicator.gameObject.SetActive(selected);
             }
         }
 
-        public void Deselect()
+        /// <summary>
+        /// Move this Pop to a specific position using the command system.
+        /// </summary>
+        public void MoveTo(Vector3 targetPosition)
         {
-            if (selectionCircleInstance != null)
+            if (agent != null && agent.isActiveAndEnabled)
             {
-                Destroy(selectionCircleInstance);
-                selectionCircleInstance = null;
+                agent.SetDestination(targetPosition);
+
+                // Play animation if available
+                if (animator != null)
+                {
+                    animator.SetBool("IsMoving", true);
+                }
+            }
+
+            var popStateMachine = pop.GetComponent<AI.PopStateMachine>();
+            if (popStateMachine != null)
+            {
+                popStateMachine.ChangeState(new CommandedState(targetPosition));
+                UnityEngine.Debug.Log($"Commanding {name} to move to {targetPosition}");
             }
         }
 
-        public bool IsSelected()
+        private void Update()
         {
-            return selectionCircleInstance != null;
+            // Update animation state based on movement
+            if (animator != null && agent != null)
+            {
+                bool isMoving = agent.velocity.magnitude > 0.1f;
+                animator.SetBool("IsMoving", isMoving);
+
+                // Face the direction of movement
+                if (isMoving)
+                {
+                    Vector3 direction = agent.velocity.normalized;
+
+                    // Flip sprite based on movement direction
+                    if (direction.x != 0)
+                    {
+                        transform.localScale = new Vector3(
+                            Mathf.Abs(transform.localScale.x) * Mathf.Sign(direction.x),
+                            transform.localScale.y,
+                            transform.localScale.z
+                        );
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the Pop component for debug and UI purposes.
+        /// </summary>
+        public Pop GetPop()
+        {
+            return pop;
+        }
+
+        /// <summary>
+        /// Get the PopStateMachine for debug purposes.
+        /// </summary>
+        public AI.PopStateMachine GetStateMachine()
+        {
+            return pop?.GetComponent<AI.PopStateMachine>();
+        }
+
+        /// <summary>
+        /// Returns current state name for debug display.
+        /// </summary>
+        public string GetCurrentStateName()
+        {
+            var stateMachine = GetStateMachine();
+            return stateMachine?.currentState?.GetType().Name ?? "No State";
+        }
+
+        /// <summary>
+        /// Force select this Pop (useful for debug/testing).
+        /// </summary>
+        public void ForceSelect()
+        {
+            if (Managers.SelectionManager.Instance != null)
+            {
+                var selectedPops = Managers.SelectionManager.Instance.GetSelectedPops();
+                if (!selectedPops.Contains(this))
+                {
+                    Managers.SelectionManager.Instance.GetType()
+                        .GetMethod("SelectPop", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                        ?.Invoke(Managers.SelectionManager.Instance, new object[] { this });
+                }
+            }
         }
     }
 }
