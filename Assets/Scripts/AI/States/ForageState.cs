@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 using Lineage.Ancestral.Legacies.Systems.Resource;
@@ -8,12 +9,16 @@ namespace Lineage.Ancestral.Legacies.AI.States
     public class ForageState : IState
     {
         private Pop pop;
+        private NavMeshAgent agent;
         private ResourceNode targetNode;
         private float harvestAmount = 1f;
 
         public void Enter(Pop pop)
         {
             this.pop = pop;
+            agent = pop.GetComponent<NavMeshAgent>();
+            agent.updateRotation = false;
+            agent.updateUpAxis = false;
             // Find nearest berry bush
             ResourceNode[] nodes = GameObject.FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
             float minDist = float.MaxValue;
@@ -27,14 +32,14 @@ namespace Lineage.Ancestral.Legacies.AI.States
                 }
             }
             // TODO: Play foraging animation
+            if (targetNode != null)
+                agent.SetDestination(targetNode.transform.position);
         }
 
         public void Tick()
         {
             if (targetNode == null) return;
-            // Move towards target
-            pop.transform.position = Vector3.MoveTowards(pop.transform.position, targetNode.transform.position, Time.deltaTime);
-            if (Vector3.Distance(pop.transform.position, targetNode.transform.position) < 0.5f)
+            if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
             {
                 // Harvest
                 if (targetNode.Harvest((int)harvestAmount))
@@ -45,7 +50,7 @@ namespace Lineage.Ancestral.Legacies.AI.States
                 }
                 else
                 {
-                    // Node depleted, exit state
+                    // Node depleted, return to idle
                     pop.GetComponent<AI.PopStateMachine>().ChangeState(new IdleState());
                 }
             }

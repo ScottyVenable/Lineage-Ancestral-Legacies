@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using Lineage.Ancestral.Legacies.Entities;
 
 namespace Lineage.Ancestral.Legacies.AI.States
@@ -6,27 +7,28 @@ namespace Lineage.Ancestral.Legacies.AI.States
     public class WanderState : IState
     {
         private Pop pop;
+        private NavMeshAgent agent;
         private Vector3 targetPosition;
         private float wanderRadius = 2f;
 
         public void Enter(Pop pop)
         {
             this.pop = pop;
+            agent = pop.GetComponent<NavMeshAgent>();
+            agent.updateRotation = false;
+            agent.updateUpAxis = false;
             ChooseNewTarget();
-            // TODO: Play walk animation
+            agent.SetDestination(targetPosition);
+            // TODO: Trigger walk animation via pop Animator
         }
 
         public void Tick()
         {
-            if (pop.transform.position != targetPosition)
-            {
-                pop.transform.position = Vector3.MoveTowards(pop.transform.position, targetPosition, Time.deltaTime);
-            }
-            else
+            if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
             {
                 ChooseNewTarget();
+                agent.SetDestination(targetPosition);
             }
-            // TODO: Check for state transitions (e.g., needs)
         }
 
         public void Exit()
