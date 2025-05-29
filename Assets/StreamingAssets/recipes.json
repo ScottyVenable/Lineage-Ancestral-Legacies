@@ -1,0 +1,12 @@
+{
+  "wooden_pickaxe": {
+    "ingredients": { "wood": 3, "stone": 2 },
+    "result": { "id": "wooden_pickaxe", "count": 1 },
+    "description": "A basic pickaxe for light mining."
+  },
+  "berry_pie": {
+    "ingredients": { "berries": 5, "water": 1 },
+    "result": { "id": "berry_pie", "count": 1 },
+    "description": "A simple, nourishing pie."
+  }
+}

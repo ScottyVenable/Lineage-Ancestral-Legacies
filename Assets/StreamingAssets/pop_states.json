@@ -1,0 +1,5 @@
+{
+  "Idle": { "id": 0, "name": "Idle" },
+  "Foraging": { "id": 1, "name": "Foraging" },
+  "Resting": { "id": 2, "name": "Resting" }
+}
