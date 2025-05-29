@@ -1,0 +1,678 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31a6b9796d1c0440eba061ace5e9dff6, type: 3}
+  m_Name: "A set of tileable pixel-art window borders for a evolution simulation
+    game about human evolution UI_ 32\xD732-pixel corner and edge pieces on a transparent
+    background"
+  m_EditorClassIdentifier: 
+  assetsData:
+  - rid: 7144279773194486128
+  - rid: 7144279773194486135
+  - rid: 7144279773194486142
+  - rid: 7144279773194486149
+  currentMode: TextToSprite
+  m_Data:
+  - rid: 7144279773194486086
+  - rid: 7144279773194486087
+  - rid: 7144279773194486088
+  - rid: 7144279773194486089
+  - rid: 7144279773194486090
+  - rid: 7144279773194486091
+  - rid: 7144279773194486092
+  - rid: 7144279773194486100
+  preRefinedArtifact:
+    rid: -2
+  refinedArtifact:
+    rid: -2
+  selectedArtifact:
+    rid: -2
+  m_Operators:
+  - rid: 7144279773194486093
+  - rid: 7144279773194486094
+  - rid: 7144279773194486095
+  - rid: 7144279773194486096
+  - rid: 7144279773194486097
+  - rid: 7144279773194486098
+  m_PreRefineOperators: []
+  m_ExportedArtifacts: []
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 7144279773194486086
+      type: {class: BookmarkManager, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_BookmarkedArtifacts:
+          m_Values: []
+        m_IsFilterEnabled: 0
+    - rid: 7144279773194486087
+      type: {class: FeedbackManager, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_Liked:
+          m_Values: []
+        m_Disliked:
+          m_Values: []
+    - rid: 7144279773194486088
+      type: {class: DefaultStyleData, ns: Unity.Muse.Sprite.Data, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486089
+      type: {class: GenerateButtonData, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data: 
+    - rid: 7144279773194486090
+      type: {class: MainUI/UISize, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_NodeListWidth: 300
+        m_NodeListRefineWidth: 300
+        m_AssetListRefineWidth: 200
+    - rid: 7144279773194486091
+      type: {class: OperatorOverridePublishers, ns: Unity.Muse.Sprite.Data, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486092
+      type: {class: SessionData, ns: Unity.Muse.Sprite.Data, asm: Unity.Muse.Sprite}
+      data:
+        m_SessionId: 41cc10e6-64b1-4283-b757-702c3e7a8eb9
+        sessionLoaded: 
+    - rid: 7144279773194486093
+      type: {class: GenerateOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: GenerateOperator
+          key: GenerateOperator
+          version: 1.0.0
+          settings:
+          - TextToSprite
+          - 4
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486094
+      type: {class: PromptOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: PromptOperator
+          key: PromptOperator
+          version: 0.0.2
+          settings:
+          - 
+          - "lowres, bad\u2010artifacts, blurry, out of focus, deformed, misaligned,
+            wrong anatomy, jpeg artifacts, text, logo, signature, watermark, over-saturated,
+            grainy, muddy colors, overexposed, underexposed, incorrect perspective,
+            aliasing, unwanted borders"
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486095
+      type: {class: SpriteGeneratorSettingsOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          key: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - 0.85
+          - 512
+          - 512
+          - 1
+          - 1
+          - 24039
+          - 0
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - 0
+          - 0
+          - 
+          - 
+          - 
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486096
+      type: {class: KeyImageOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.KeyImageOperator
+          key: Unity.Muse.Sprite.Operators.KeyImageOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - True
+          - 512
+          - 512
+          - 0.5
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486097
+      type: {class: SpriteRefiningMaskOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486098
+      type: {class: SessionOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SessionOperator
+          key: Unity.Muse.Sprite.Operators.SessionOperator
+          version: 0.0.1
+          settings:
+          - 41cc10e6-64b1-4283-b757-702c3e7a8eb9
+          enabled: 0
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486100
+      type: {class: GenerateCountData, ns: Unity.Muse.Sprite.Data, asm: Unity.Muse.Sprite}
+      data:
+        m_Counter: 0
+    - rid: 7144279773194486128
+      type: {class: SpriteMuseArtifact, ns: Unity.Muse.Sprite.Artifacts, asm: Unity.Muse.Sprite}
+      data:
+        mode: TextToSprite
+        Guid: 0052fd09-823e-40d1-847d-a0570065adc3
+        BatchRequestIdentifier: 
+        Seed: 19084
+        m_Operators:
+        - rid: 7144279773194486129
+        - rid: 7144279773194486130
+        - rid: 7144279773194486131
+        - rid: 7144279773194486132
+        - rid: 7144279773194486133
+        - rid: 7144279773194486134
+        history:
+        - rid: 7144279773194486128
+        children: []
+        m_UnsafeContent: 0
+    - rid: 7144279773194486129
+      type: {class: GenerateOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: GenerateOperator
+          key: GenerateOperator
+          version: 1.0.0
+          settings:
+          - TextToSprite
+          - 4
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486130
+      type: {class: PromptOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: PromptOperator
+          key: PromptOperator
+          version: 0.0.2
+          settings:
+          - "A pixel-art  border UI for a evolution simulation game about human evolution
+            UI: 32\xD732-pixel corner and edge pieces on a transparent background,
+            fashioned from weathered oak beams bound with tarnished iron clasps and
+            inset with softly glowing blue runes. The inner panel should look like
+            aged parchment with tattered edges. Use a 16-color palette of earthy
+            browns, stone grays, muted gold highlights, deep emerald accents and
+            subtle teal glow. Crisp 16-bit\u2013era style, high detail, top-down
+            UI elements."
+          - "lowres, bad\u2010artifacts, blurry, out of focus, deformed, misaligned,
+            wrong anatomy, jpeg artifacts, text, logo, signature, watermark, over-saturated,
+            grainy, muddy colors, overexposed, underexposed, incorrect perspective,
+            aliasing, unwanted borders"
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486131
+      type: {class: SpriteGeneratorSettingsOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          key: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - 0.85
+          - 512
+          - 512
+          - 1
+          - 1
+          - 19084
+          - 0052fd09-823e-40d1-847d-a0570065adc3
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - Default
+          - Default style.
+          - 
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486132
+      type: {class: KeyImageOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.KeyImageOperator
+          key: Unity.Muse.Sprite.Operators.KeyImageOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - True
+          - 512
+          - 512
+          - 0.5
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486133
+      type: {class: SpriteRefiningMaskOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486134
+      type: {class: SessionOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SessionOperator
+          key: Unity.Muse.Sprite.Operators.SessionOperator
+          version: 0.0.1
+          settings:
+          - 41cc10e6-64b1-4283-b757-702c3e7a8eb9
+          enabled: 0
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486135
+      type: {class: SpriteMuseArtifact, ns: Unity.Muse.Sprite.Artifacts, asm: Unity.Muse.Sprite}
+      data:
+        mode: TextToSprite
+        Guid: a735ad62-0f8e-4437-bac1-b7b00252cc9e
+        BatchRequestIdentifier: 
+        Seed: 13341
+        m_Operators:
+        - rid: 7144279773194486136
+        - rid: 7144279773194486137
+        - rid: 7144279773194486138
+        - rid: 7144279773194486139
+        - rid: 7144279773194486140
+        - rid: 7144279773194486141
+        history:
+        - rid: 7144279773194486135
+        children: []
+        m_UnsafeContent: 0
+    - rid: 7144279773194486136
+      type: {class: GenerateOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: GenerateOperator
+          key: GenerateOperator
+          version: 1.0.0
+          settings:
+          - TextToSprite
+          - 4
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486137
+      type: {class: PromptOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: PromptOperator
+          key: PromptOperator
+          version: 0.0.2
+          settings:
+          - "A pixel-art  border UI for a evolution simulation game about human evolution
+            UI: 32\xD732-pixel corner and edge pieces on a transparent background,
+            fashioned from weathered oak beams bound with tarnished iron clasps and
+            inset with softly glowing blue runes. The inner panel should look like
+            aged parchment with tattered edges. Use a 16-color palette of earthy
+            browns, stone grays, muted gold highlights, deep emerald accents and
+            subtle teal glow. Crisp 16-bit\u2013era style, high detail, top-down
+            UI elements."
+          - "lowres, bad\u2010artifacts, blurry, out of focus, deformed, misaligned,
+            wrong anatomy, jpeg artifacts, text, logo, signature, watermark, over-saturated,
+            grainy, muddy colors, overexposed, underexposed, incorrect perspective,
+            aliasing, unwanted borders"
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486138
+      type: {class: SpriteGeneratorSettingsOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          key: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - 0.85
+          - 512
+          - 512
+          - 1
+          - 1
+          - 13341
+          - a735ad62-0f8e-4437-bac1-b7b00252cc9e
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - Default
+          - Default style.
+          - 
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486139
+      type: {class: KeyImageOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.KeyImageOperator
+          key: Unity.Muse.Sprite.Operators.KeyImageOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - True
+          - 512
+          - 512
+          - 0.5
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486140
+      type: {class: SpriteRefiningMaskOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486141
+      type: {class: SessionOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SessionOperator
+          key: Unity.Muse.Sprite.Operators.SessionOperator
+          version: 0.0.1
+          settings:
+          - 41cc10e6-64b1-4283-b757-702c3e7a8eb9
+          enabled: 0
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486142
+      type: {class: SpriteMuseArtifact, ns: Unity.Muse.Sprite.Artifacts, asm: Unity.Muse.Sprite}
+      data:
+        mode: TextToSprite
+        Guid: fff4b54a-fd1b-4530-b2bc-692492f8e82e
+        BatchRequestIdentifier: 
+        Seed: 31226
+        m_Operators:
+        - rid: 7144279773194486143
+        - rid: 7144279773194486144
+        - rid: 7144279773194486145
+        - rid: 7144279773194486146
+        - rid: 7144279773194486147
+        - rid: 7144279773194486148
+        history:
+        - rid: 7144279773194486142
+        children: []
+        m_UnsafeContent: 1
+    - rid: 7144279773194486143
+      type: {class: GenerateOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: GenerateOperator
+          key: GenerateOperator
+          version: 1.0.0
+          settings:
+          - TextToSprite
+          - 4
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486144
+      type: {class: PromptOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: PromptOperator
+          key: PromptOperator
+          version: 0.0.2
+          settings:
+          - "A pixel-art  border UI for a evolution simulation game about human evolution
+            UI: 32\xD732-pixel corner and edge pieces on a transparent background,
+            fashioned from weathered oak beams bound with tarnished iron clasps and
+            inset with softly glowing blue runes. The inner panel should look like
+            aged parchment with tattered edges. Use a 16-color palette of earthy
+            browns, stone grays, muted gold highlights, deep emerald accents and
+            subtle teal glow. Crisp 16-bit\u2013era style, high detail, top-down
+            UI elements."
+          - "lowres, bad\u2010artifacts, blurry, out of focus, deformed, misaligned,
+            wrong anatomy, jpeg artifacts, text, logo, signature, watermark, over-saturated,
+            grainy, muddy colors, overexposed, underexposed, incorrect perspective,
+            aliasing, unwanted borders"
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486145
+      type: {class: SpriteGeneratorSettingsOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          key: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - 0.85
+          - 512
+          - 512
+          - 1
+          - 1
+          - 31226
+          - fff4b54a-fd1b-4530-b2bc-692492f8e82e
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - Default
+          - Default style.
+          - 
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486146
+      type: {class: KeyImageOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.KeyImageOperator
+          key: Unity.Muse.Sprite.Operators.KeyImageOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - True
+          - 512
+          - 512
+          - 0.5
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486147
+      type: {class: SpriteRefiningMaskOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486148
+      type: {class: SessionOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SessionOperator
+          key: Unity.Muse.Sprite.Operators.SessionOperator
+          version: 0.0.1
+          settings:
+          - 41cc10e6-64b1-4283-b757-702c3e7a8eb9
+          enabled: 0
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486149
+      type: {class: SpriteMuseArtifact, ns: Unity.Muse.Sprite.Artifacts, asm: Unity.Muse.Sprite}
+      data:
+        mode: TextToSprite
+        Guid: 99e5f5cc-2d00-4e8d-acfa-d304c7c6f26f
+        BatchRequestIdentifier: 
+        Seed: 24580
+        m_Operators:
+        - rid: 7144279773194486150
+        - rid: 7144279773194486151
+        - rid: 7144279773194486152
+        - rid: 7144279773194486153
+        - rid: 7144279773194486154
+        - rid: 7144279773194486155
+        history:
+        - rid: 7144279773194486149
+        children: []
+        m_UnsafeContent: 0
+    - rid: 7144279773194486150
+      type: {class: GenerateOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: GenerateOperator
+          key: GenerateOperator
+          version: 1.0.0
+          settings:
+          - TextToSprite
+          - 4
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486151
+      type: {class: PromptOperator, ns: Unity.Muse.Common, asm: Unity.Muse.Common}
+      data:
+        m_OperatorData:
+          type: PromptOperator
+          key: PromptOperator
+          version: 0.0.2
+          settings:
+          - "A pixel-art  border UI for a evolution simulation game about human evolution
+            UI: 32\xD732-pixel corner and edge pieces on a transparent background,
+            fashioned from weathered oak beams bound with tarnished iron clasps and
+            inset with softly glowing blue runes. The inner panel should look like
+            aged parchment with tattered edges. Use a 16-color palette of earthy
+            browns, stone grays, muted gold highlights, deep emerald accents and
+            subtle teal glow. Crisp 16-bit\u2013era style, high detail, top-down
+            UI elements."
+          - "lowres, bad\u2010artifacts, blurry, out of focus, deformed, misaligned,
+            wrong anatomy, jpeg artifacts, text, logo, signature, watermark, over-saturated,
+            grainy, muddy colors, overexposed, underexposed, incorrect perspective,
+            aliasing, unwanted borders"
+          enabled: 1
+          assembly: 
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486152
+      type: {class: SpriteGeneratorSettingsOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          key: Unity.Muse.Sprite.Operators.SpriteGeneratorSettingsOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - 0.85
+          - 512
+          - 512
+          - 1
+          - 1
+          - 24580
+          - 99e5f5cc-2d00-4e8d-acfa-d304c7c6f26f
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - 0
+          - 00000000-0000-0000-0000-000000000000
+          - Default
+          - Default style.
+          - 
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486153
+      type: {class: KeyImageOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.KeyImageOperator
+          key: Unity.Muse.Sprite.Operators.KeyImageOperator
+          version: 0.0.1
+          settings:
+          - 
+          - 
+          - True
+          - 512
+          - 512
+          - 0.5
+          enabled: 1
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
+    - rid: 7144279773194486154
+      type: {class: SpriteRefiningMaskOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data: 
+    - rid: 7144279773194486155
+      type: {class: SessionOperator, ns: Unity.Muse.Sprite.Operators, asm: Unity.Muse.Sprite}
+      data:
+        m_OperatorData:
+          type: Unity.Muse.Sprite.Operators.SessionOperator
+          key: Unity.Muse.Sprite.Operators.SessionOperator
+          version: 0.0.1
+          settings:
+          - 41cc10e6-64b1-4283-b757-702c3e7a8eb9
+          enabled: 0
+          assembly: Unity.Muse.Sprite
+          hideable: 0
+          hidden: 0
+          isRefinement: 0
