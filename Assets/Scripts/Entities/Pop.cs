@@ -25,18 +25,13 @@ namespace Lineage.Ancestral.Legacies.Entities
         public float health = 100f;
         public float maxHealth = 100f;
 
-        [Header("Needs (Legacy - use NeedsComponent instead)")]
-        public float hunger = 100f;
-        public float thirst = 100f;
-        public float stamina = 100f;
-
         [Header("Pop Data Reference")]
-        [SerializeField] private PopData popData;
+        [SerializeField] public PopData popData;
 
         // Component references
-        private NeedsComponent needsComponent;
-        private InventoryComponent inventoryComponent;
-        private PopStateMachine stateMachine;
+        public NeedsComponent needsComponent;
+        public InventoryComponent inventoryComponent;
+        public PopStateMachine stateMachine;
 
         // Properties for backward compatibility
         public new string name
