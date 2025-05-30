@@ -13,20 +13,26 @@ using Lineage.Ancestral.Legacies.Debug;
 using TMPro;
 
 namespace Lineage.Ancestral.Legacies.Debug
-{
-    [System.Serializable]
+{    [System.Serializable]
     public class ParsedCommand
     {
         public string CommandName;
-        public List<string> Arguments;
-        public Dictionary<string, string> Options;
+        public List<string> PositionalArgs;
+        public Dictionary<string, object> DataBlock;
 
         public ParsedCommand()
         {
             CommandName = "";
-            Arguments = new List<string>();
-            Options = new Dictionary<string, string>();
+            PositionalArgs = new List<string>();
+            DataBlock = new Dictionary<string, object>();
         }
+
+        // Legacy support for existing code
+        public List<string> Arguments => PositionalArgs;
+        public Dictionary<string, string> Options => DataBlock.ToDictionary(
+            kvp => kvp.Key, 
+            kvp => kvp.Value?.ToString() ?? ""
+        );
     }
 
     public class DebugConsoleManager : MonoBehaviour
@@ -616,50 +622,228 @@ namespace Lineage.Ancestral.Legacies.Debug
             
             // Auto-scroll to bottom
             logScrollPosition.y = float.MaxValue;
-        }
-
-        private ParsedCommand ParseCommandLine(string commandLine)
+        }        private ParsedCommand ParseCommandLine(string commandLine)
         {
             ParsedCommand parsed = new ParsedCommand();
             
             if (string.IsNullOrEmpty(commandLine)) return parsed;
             
-            // Simple parsing - split by spaces, handle quoted arguments
-            var matches = Regex.Matches(commandLine, @"[\""].+?[\""]|[^ ]+");
-            var parts = matches.Cast<Match>().Select(m => m.Value.Trim('"')).ToList();
+            string trimmedLine = commandLine.Trim();
             
-            if (parts.Count > 0)
+            // Find the command name (everything before first [ or { or end of string)
+            int bracketIndex = trimmedLine.IndexOfAny(new char[] { '[', '{' });
+            if (bracketIndex == -1)
             {
-                parsed.CommandName = parts[0].ToLower();
-                
-                
-                for (int i = 1; i < parts.Count; i++)
+                // Simple command with no arguments
+                parsed.CommandName = trimmedLine.ToLower();
+                return parsed;
+            }
+            
+            parsed.CommandName = trimmedLine.Substring(0, bracketIndex).Trim().ToLower();
+            
+            // Parse positional arguments [...]
+            int startBracket = trimmedLine.IndexOf('[');
+            if (startBracket != -1)
+            {
+                int endBracket = FindMatchingBracket(trimmedLine, startBracket, '[', ']');
+                if (endBracket != -1)
                 {
-                    string part = parts[i];
-                    
-                    // Check if it's an option (starts with -)
-                    if (part.StartsWith("-"))
-                    {
-                        string optionName = part.TrimStart('-');
-                        string optionValue = "";
-                        
-                        // Check if next part is the value
-                        if (i + 1 < parts.Count && !parts[i + 1].StartsWith("-"))
-                        {
-                            optionValue = parts[i + 1];
-                            i++; // Skip the value in next iteration
-                        }
-                        
-                        parsed.Options[optionName] = optionValue;
-                    }
-                    else
-                    {
-                        parsed.Arguments.Add(part);
-                    }
+                    string argsString = trimmedLine.Substring(startBracket + 1, endBracket - startBracket - 1);
+                    parsed.PositionalArgs = ParsePositionalArguments(argsString);
+                }
+            }
+            
+            // Parse data block {...}
+            int startBrace = trimmedLine.IndexOf('{');
+            if (startBrace != -1)
+            {
+                int endBrace = FindMatchingBracket(trimmedLine, startBrace, '{', '}');
+                if (endBrace != -1)
+                {
+                    string dataString = trimmedLine.Substring(startBrace + 1, endBrace - startBrace - 1);
+                    parsed.DataBlock = ParseDataBlock(dataString);
                 }
             }
             
             return parsed;
+        }
+
+        private int FindMatchingBracket(string text, int startIndex, char openChar, char closeChar)
+        {
+            int depth = 0;
+            bool inQuotes = false;
+            char quoteChar = '\0';
+            
+            for (int i = startIndex; i < text.Length; i++)
+            {
+                char c = text[i];
+                
+                // Handle quotes
+                if ((c == '"' || c == '\'') && !inQuotes)
+                {
+                    inQuotes = true;
+                    quoteChar = c;
+                }
+                else if (c == quoteChar && inQuotes)
+                {
+                    inQuotes = false;
+                }
+                else if (!inQuotes)
+                {
+                    if (c == openChar)
+                        depth++;
+                    else if (c == closeChar)
+                    {
+                        depth--;
+                        if (depth == 0)
+                            return i;
+                    }
+                }
+            }
+            
+            return -1; // No matching bracket found
+        }
+
+        private List<string> ParsePositionalArguments(string argsString)
+        {
+            List<string> args = new List<string>();
+            if (string.IsNullOrEmpty(argsString.Trim())) return args;
+            
+            // Split by commas, but respect quotes and nested brackets
+            List<string> tokens = SplitRespectingDelimiters(argsString, ',');
+            
+            foreach (string token in tokens)
+            {
+                string trimmed = token.Trim();
+                
+                // Remove outer quotes if present
+                if ((trimmed.StartsWith("\"") && trimmed.EndsWith("\"")) ||
+                    (trimmed.StartsWith("'") && trimmed.EndsWith("'")))
+                {
+                    trimmed = trimmed.Substring(1, trimmed.Length - 2);
+                }
+                
+                args.Add(trimmed);
+            }
+            
+            return args;
+        }
+
+        private Dictionary<string, object> ParseDataBlock(string dataString)
+        {
+            Dictionary<string, object> data = new Dictionary<string, object>();
+            if (string.IsNullOrEmpty(dataString.Trim())) return data;
+            
+            // Split by commas, but respect quotes and nested structures
+            List<string> pairs = SplitRespectingDelimiters(dataString, ',');
+            
+            foreach (string pair in pairs)
+            {
+                int colonIndex = pair.IndexOf(':');
+                if (colonIndex == -1) continue;
+                
+                string key = pair.Substring(0, colonIndex).Trim();
+                string valueStr = pair.Substring(colonIndex + 1).Trim();
+                
+                // Remove quotes from key
+                if ((key.StartsWith("\"") && key.EndsWith("\"")) ||
+                    (key.StartsWith("'") && key.EndsWith("'")))
+                {
+                    key = key.Substring(1, key.Length - 2);
+                }
+                
+                object value = ParseDataValue(valueStr);
+                data[key] = value;
+            }
+            
+            return data;
+        }
+
+        private object ParseDataValue(string valueStr)
+        {
+            valueStr = valueStr.Trim();
+            
+            // Handle arrays [item1, item2, ...]
+            if (valueStr.StartsWith("[") && valueStr.EndsWith("]"))
+            {
+                string arrayContent = valueStr.Substring(1, valueStr.Length - 2);
+                List<string> arrayItems = SplitRespectingDelimiters(arrayContent, ',');
+                return arrayItems.Select(item => {
+                    string trimmed = item.Trim();
+                    // Remove quotes
+                    if ((trimmed.StartsWith("\"") && trimmed.EndsWith("\"")) ||
+                        (trimmed.StartsWith("'") && trimmed.EndsWith("'")))
+                    {
+                        return trimmed.Substring(1, trimmed.Length - 2);
+                    }
+                    return trimmed;
+                }).ToList();
+            }
+            
+            // Handle quoted strings
+            if ((valueStr.StartsWith("\"") && valueStr.EndsWith("\"")) ||
+                (valueStr.StartsWith("'") && valueStr.EndsWith("'")))
+            {
+                return valueStr.Substring(1, valueStr.Length - 2);
+            }
+            
+            // Handle numbers
+            if (int.TryParse(valueStr, out int intValue))
+                return intValue;
+            if (float.TryParse(valueStr, out float floatValue))
+                return floatValue;
+            if (bool.TryParse(valueStr, out bool boolValue))
+                return boolValue;
+            
+            // Default to string
+            return valueStr;
+        }
+
+        private List<string> SplitRespectingDelimiters(string text, char delimiter)
+        {
+            List<string> result = new List<string>();
+            int start = 0;
+            int depth = 0;
+            bool inQuotes = false;
+            char quoteChar = '\0';
+            
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                
+                // Handle quotes
+                if ((c == '"' || c == '\'') && !inQuotes)
+                {
+                    inQuotes = true;
+                    quoteChar = c;
+                }
+                else if (c == quoteChar && inQuotes)
+                {
+                    inQuotes = false;
+                }
+                else if (!inQuotes)
+                {
+                    // Track nested structures
+                    if (c == '[' || c == '{' || c == '(')
+                        depth++;
+                    else if (c == ']' || c == '}' || c == ')')
+                        depth--;
+                    else if (c == delimiter && depth == 0)
+                    {
+                        // Found a delimiter at the top level
+                        result.Add(text.Substring(start, i - start));
+                        start = i + 1;
+                    }
+                }
+            }
+            
+            // Add the last token
+            if (start < text.Length)
+            {
+                result.Add(text.Substring(start));
+            }
+            
+            return result;
         }        private void ProcessCommand(ParsedCommand command)
         {
             try
@@ -670,7 +854,7 @@ namespace Lineage.Ancestral.Legacies.Debug
                     var registeredCommand = registeredCommands[command.CommandName];
                     
                     // Handle contextual entity targeting
-                    var positionalArgs = new List<string>(command.Arguments);
+                    var positionalArgs = new List<string>(command.PositionalArgs);
                     if (registeredCommand.requiresEntityTarget && positionalArgs.Count == 0)
                     {
                         var selectedEntity = GetSelectedEntityTarget();
@@ -680,14 +864,7 @@ namespace Lineage.Ancestral.Legacies.Debug
                         }
                     }
                     
-                    // Convert options to data block
-                    var dataBlock = new Dictionary<string, object>();
-                    foreach (var option in command.Options)
-                    {
-                        dataBlock[option.Key] = option.Value;
-                    }
-                    
-                    string result = registeredCommand.command(positionalArgs, dataBlock);
+                    string result = registeredCommand.command(positionalArgs, command.DataBlock);
                     if (!string.IsNullOrEmpty(result))
                     {
                         LogToConsole(result, LogType.Info, Color.white);
@@ -695,7 +872,14 @@ namespace Lineage.Ancestral.Legacies.Debug
                     return;
                 }
                 
-                // Fall back to built-in commands
+                // Handle namespaced commands
+                if (command.CommandName.Contains("."))
+                {
+                    HandleNamespacedCommand(command);
+                    return;
+                }
+                
+                // Fall back to built-in commands (legacy support)
                 switch (command.CommandName)
                 {
                     case "help":
@@ -752,7 +936,49 @@ namespace Lineage.Ancestral.Legacies.Debug
             {
                 LogToConsole($"Error executing command: {ex.Message}", LogType.Error, Color.red);
             }
-        }        private void LoadAvailableCommands()
+        }
+
+        private void HandleNamespacedCommand(ParsedCommand command)
+        {
+            string[] parts = command.CommandName.Split('.');
+            
+            if (parts.Length < 2)
+            {
+                LogToConsole($"Invalid namespaced command: {command.CommandName}", LogType.Error, Color.red);
+                return;
+            }
+            
+            string nameSpace = parts[0];
+            string subCommand = string.Join(".", parts.Skip(1));
+            
+            switch (nameSpace)
+            {
+                case "entity":
+                    HandleEntityCommands(subCommand, command);
+                    break;
+                case "lineage":
+                    HandleLineageCommands(subCommand, command);
+                    break;
+                case "spawn":
+                    HandleSpawnCommands(subCommand, command);
+                    break;
+                case "game":
+                    HandleGameCommands(subCommand, command);
+                    break;
+                case "scene":
+                    HandleSceneCommands(subCommand, command);
+                    break;
+                case "system":
+                    HandleSystemCommands(subCommand, command);
+                    break;
+                case "debug":
+                    HandleDebugCommands(subCommand, command);
+                    break;
+                default:
+                    LogToConsole($"Unknown namespace: {nameSpace}", LogType.Error, Color.red);
+                    break;
+            }
+        }private void LoadAvailableCommands()
         {
             availableCommands.Clear();
             
