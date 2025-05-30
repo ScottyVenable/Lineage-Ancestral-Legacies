@@ -1,4 +1,5 @@
 using UnityEngine;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Managers
 {
@@ -8,6 +9,12 @@ namespace Lineage.Ancestral.Legacies.Managers
     public class ResourceManager : MonoBehaviour
     {
         public static ResourceManager Instance { get; private set; }
+
+        // Constants for default values
+        private const float DEFAULT_GIFT_FAITH_COST = 5f;
+        private const float DEFAULT_GIFT_FOOD_GAIN = 20f;
+        private const float DEFAULT_RESEARCH_FAITH_COST = 15f;
+        private const float EFFICIENT_GATHERING_MULTIPLIER = 1.5f;
 
         [Header("Resources")]
         public float currentFood = 50f;
@@ -61,7 +68,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         {
             // Apply efficiency bonus if researched
             if (hasEfficientGathering)
-                amount *= 1.5f;
+                amount *= EFFICIENT_GATHERING_MULTIPLIER;
 
             currentFood += amount;
             OnFoodChanged?.Invoke(currentFood);
@@ -104,24 +111,24 @@ namespace Lineage.Ancestral.Legacies.Managers
         /// <summary>
         /// Miracle: Gift of Sustenance - spend faith to add food
         /// </summary>
-        public bool PerformGiftOfSustenance(float faithCost = 5f, float foodGain = 20f)
+        public bool PerformGiftOfSustenance(float faithCost = DEFAULT_GIFT_FAITH_COST, float foodGain = DEFAULT_GIFT_FOOD_GAIN)
         {
             if (ConsumeFaith(faithCost))
             {
                 AddFood(foodGain);
-                UnityEngine.Debug.Log($"Gift of Sustenance performed! +{foodGain} food for {faithCost} faith");
+                Log.Info($"Gift of Sustenance performed! +{foodGain} food for {faithCost} faith", Log.LogCategory.Systems);
                 return true;
             }
             return false;
         }        /// <summary>
         /// Technology: Research Efficient Gathering
         /// </summary>
-        public bool ResearchEfficientGathering(float faithCost = 15f)
+        public bool ResearchEfficientGathering(float faithCost = DEFAULT_RESEARCH_FAITH_COST)
         {
             if (!hasEfficientGathering && ConsumeFaith(faithCost))
             {
                 hasEfficientGathering = true;
-                UnityEngine.Debug.Log("Efficient Gathering researched! Food generation increased by 50%");
+                Log.Info("Efficient Gathering researched! Food generation increased by 50%", Log.LogCategory.Systems);
                 return true;
             }
             return false;

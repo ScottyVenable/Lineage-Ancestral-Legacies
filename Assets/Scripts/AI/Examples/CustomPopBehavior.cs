@@ -2,6 +2,7 @@ using UnityEngine;
 using Lineage.Ancestral.Legacies.AI;
 using Lineage.Ancestral.Legacies.AI.States;
 using Lineage.Ancestral.Legacies.Entities;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.AI.Examples
 {
@@ -34,7 +35,7 @@ namespace Lineage.Ancestral.Legacies.AI.Examples
                 {
                     // Force Pop to go idle for a moment (you can change this to any state)
                     ChangeState(new IdleState());
-                    UnityEngine.Debug.Log($"[CustomPopBehavior] Triggered custom behavior on {pop.name}");
+                    Log.AI(pop.name, "Triggered custom behavior");
                     return true; // We handled the tick
                 }
             }
@@ -49,22 +50,20 @@ namespace Lineage.Ancestral.Legacies.AI.Examples
             // Example: Prevent certain state changes based on conditions
             if (requestedState is ForageState && !enableCustomBehavior)
             {
-                UnityEngine.Debug.Log($"[CustomPopBehavior] Blocked foraging attempt on {pop.name}");
+                Log.AI(pop.name, "Blocked foraging attempt");
                 return new IdleState(); // Replace with idle instead
             }
 
             // Allow the state change
             return requestedState;
-        }
-
-        protected override void OnAttachedInternal()
+        }        protected override void OnAttachedInternal()
         {
-            UnityEngine.Debug.Log($"[CustomPopBehavior] Custom behavior attached to {pop.name}");
+            Log.AI(pop.name, "Custom behavior attached");
         }
 
         protected override void OnDetachedInternal()
         {
-            UnityEngine.Debug.Log($"[CustomPopBehavior] Custom behavior detached from {pop?.name ?? "unknown"}");
+            Log.AI(pop?.name ?? "unknown", "Custom behavior detached");
         }
     }
 }

@@ -2,12 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 #if CINEMACHINE_PRESENT
-using Cinemachine;
+using Unity.Cinemachine;
 #endif
 using UnityEngine.InputSystem;
+using Lineage.Ancestral.Legacies.Debug;
 
-public class CameraManager : MonoBehaviour
+namespace Lineage.Ancestral.Legacies.Managers
 {
+    public class CameraManager : MonoBehaviour
+{
+    // Singleton instance
+    public static CameraManager Instance { get; private set; }
+
     [Header("Camera Settings")]
     public float panSpeed = 20f;
     public float zoomSpeed = 10f;
@@ -23,7 +29,7 @@ public class CameraManager : MonoBehaviour
 
     [Header("References")]
     #if CINEMACHINE_PRESENT
-    public CinemachineVirtualCamera virtualCamera;
+    public CinemachineCamera virtualCamera;
     #else
     public Camera virtualCamera;
     #endif
@@ -38,18 +44,30 @@ public class CameraManager : MonoBehaviour
 
     private void Awake()
     {
+        // Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         // Initialize if references are missing
         #if CINEMACHINE_PRESENT
         if (virtualCamera == null)
         {
-            virtualCamera = FindObjectOfType<CinemachineVirtualCamera>();
-            Debug.LogWarning("VirtualCamera reference not set - found in scene: " + (virtualCamera != null));
+            virtualCamera = FindFirstObjectByType<CinemachineCamera>();
+            Log.Warning("VirtualCamera reference not set - found in scene: " + (virtualCamera != null), Log.LogCategory.Systems);
         }
         #else
         if (virtualCamera == null)
         {
             virtualCamera = Camera.main;
-            Debug.LogWarning("Cinemachine not found. Using standard Camera.main as fallback.");
+            Log.Warning("Cinemachine not found. Using standard Camera.main as fallback.", Log.LogCategory.Systems);
         }
         #endif
 
@@ -57,7 +75,7 @@ public class CameraManager : MonoBehaviour
         if (inputActions == null)
         {
             inputActions = Resources.Load<InputActionAsset>("InputSystem_Actions");
-            Debug.LogWarning("InputActions reference not set - attempting to load from Resources");
+            Log.Warning("InputActions reference not set - attempting to load from Resources", Log.LogCategory.Systems);
         }
 
         // Initialize positions
@@ -65,7 +83,7 @@ public class CameraManager : MonoBehaviour
         {
             targetPosition = transform.position;
             #if CINEMACHINE_PRESENT
-            targetZoom = virtualCamera.m_Lens.OrthographicSize;
+            targetZoom = virtualCamera.Lens.OrthographicSize;
             #else
             if (virtualCamera.orthographic)
                 targetZoom = virtualCamera.orthographicSize;
@@ -156,8 +174,8 @@ public class CameraManager : MonoBehaviour
         // Apply zoom
         targetZoom = Mathf.Clamp(targetZoom + zoomInput * zoomSpeed * Time.deltaTime, minZoom, maxZoom);
         #if CINEMACHINE_PRESENT
-        virtualCamera.m_Lens.OrthographicSize = Mathf.Lerp(
-            virtualCamera.m_Lens.OrthographicSize, 
+        virtualCamera.Lens.OrthographicSize = Mathf.Lerp(
+            virtualCamera.Lens.OrthographicSize, 
             targetZoom, 
             Time.deltaTime * zoomSpeed
         );
@@ -172,4 +190,27 @@ public class CameraManager : MonoBehaviour
         }
         #endif
     }
+
+    /// <summary>
+    /// Focus camera on a specific transform
+    /// </summary>
+    /// <param name="target">Transform to focus on</param>
+    public void FocusOnTransform(Transform target)
+    {
+        if (target == null) return;
+
+        targetPosition = new Vector3(target.position.x, target.position.y, transform.position.z);
+        
+        // Clamp position to bounds
+        targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
+        targetPosition.y = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
+    }
+
+    private void OnDestroy()
+    {        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+}
 }

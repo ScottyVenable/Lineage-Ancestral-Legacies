@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Managers
 {
@@ -11,10 +12,16 @@ namespace Lineage.Ancestral.Legacies.Managers
     {
         public static SaveManager Instance { get; private set; }
 
+        // Constants
+        private const float DEFAULT_AUTO_SAVE_INTERVAL = 300f; // 5 minutes
+        private const int DEFAULT_MAX_SAVE_SLOTS = 5;
+        private const string DEFAULT_PLAYER_NAME = "Player";
+        private const int DEFAULT_GAME_GENERATION = 1;
+
         [Header("Save Settings")]
         [SerializeField] private bool autoSave = true;
-        [SerializeField] private float autoSaveInterval = 300f; // 5 minutes
-        [SerializeField] private int maxSaveSlots = 5;
+        [SerializeField] private float autoSaveInterval = DEFAULT_AUTO_SAVE_INTERVAL;
+        [SerializeField] private int maxSaveSlots = DEFAULT_MAX_SAVE_SLOTS;
 
         private string saveDirectory;
         private float autoSaveTimer;
@@ -106,7 +113,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 Directory.CreateDirectory(saveDirectory);
             }
 
-            UnityEngine.Debug.Log($"Save directory: {saveDirectory}");
+            Log.Info($"Save directory: {saveDirectory}", Log.LogCategory.Systems);
         }
 
         public void SaveGame(int slot = 0)
@@ -119,12 +126,12 @@ namespace Lineage.Ancestral.Legacies.Managers
                 
                 File.WriteAllText(filePath, json);
                 
-                UnityEngine.Debug.Log($"Game saved to slot {slot}");
+                Log.Info($"Game saved to slot {slot}", Log.LogCategory.Systems);
                 OnGameSaved?.Invoke();
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to save game: {e.Message}");
+                Log.Error($"Failed to save game: {e.Message}", Log.LogCategory.Systems);
             }
         }
 
@@ -136,7 +143,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 
                 if (!File.Exists(filePath))
                 {
-                    UnityEngine.Debug.LogWarning($"Save file not found in slot {slot}");
+                    Log.Warning($"Save file not found in slot {slot}", Log.LogCategory.Systems);
                     return false;
                 }
 
@@ -145,13 +152,13 @@ namespace Lineage.Ancestral.Legacies.Managers
                 
                 ApplySaveData(saveData);
                 
-                UnityEngine.Debug.Log($"Game loaded from slot {slot}");
+                Log.Info($"Game loaded from slot {slot}", Log.LogCategory.Systems);
                 OnGameLoaded?.Invoke();
                 return true;
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to load game: {e.Message}");
+                Log.Error($"Failed to load game: {e.Message}", Log.LogCategory.Systems);
                 return false;
             }
         }
@@ -164,12 +171,12 @@ namespace Lineage.Ancestral.Legacies.Managers
                 if (File.Exists(filePath))
                 {
                     File.Delete(filePath);
-                    UnityEngine.Debug.Log($"Save slot {slot} deleted");
+                    Log.Info($"Save slot {slot} deleted", Log.LogCategory.Systems);
                 }
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to delete save: {e.Message}");
+                Log.Error($"Failed to delete save: {e.Message}", Log.LogCategory.Systems);
             }
         }
 
@@ -196,7 +203,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                     }
                     catch (System.Exception e)
                     {
-                        UnityEngine.Debug.LogError($"Failed to load save preview for slot {i}: {e.Message}");
+                        Log.Error($"Failed to load save preview for slot {i}: {e.Message}", Log.LogCategory.Systems);
                     }
                 }
                 else
@@ -232,11 +239,11 @@ namespace Lineage.Ancestral.Legacies.Managers
                 File.WriteAllText(filePath, json);
                 
                 ApplySettings(settings);
-                UnityEngine.Debug.Log("Settings saved");
+                Log.Info("Settings saved", Log.LogCategory.Systems);
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to save settings: {e.Message}");
+                Log.Error($"Failed to save settings: {e.Message}", Log.LogCategory.Systems);
             }
         }
 
@@ -260,7 +267,7 @@ namespace Lineage.Ancestral.Legacies.Managers
             }
             catch (System.Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to load settings: {e.Message}");
+                Log.Error($"Failed to load settings: {e.Message}", Log.LogCategory.Systems);
                 ApplySettings(new GameSettings());
             }
         }
@@ -271,8 +278,8 @@ namespace Lineage.Ancestral.Legacies.Managers
             {
                 playTime = Time.time,
                 saveDateTime = System.DateTime.Now.ToString(),
-                playerName = "Player", // TODO: Get from player input
-                gameGeneration = 1 // TODO: Implement generation system
+                playerName = DEFAULT_PLAYER_NAME,
+                gameGeneration = DEFAULT_GAME_GENERATION
             };
 
             // Get data from managers
@@ -306,7 +313,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                             thirst = needsComponent.thirst,
                             energy = needsComponent.hunger, // Using hunger as energy placeholder until energy is implemented
                             currentState = allPops[i].GetComponent<AI.PopStateMachine>()?.currentState?.GetType().Name ?? "Idle",
-                            traits = new string[0] // TODO: Implement traits saving
+                            traits = System.Array.Empty<string>() // Placeholder for future traits system
                         };
                     }
                 }

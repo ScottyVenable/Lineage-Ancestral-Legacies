@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace Lineage.Ancestral.Legacies.Debug
@@ -22,11 +23,14 @@ namespace Lineage.Ancestral.Legacies.Debug
         [Header("Debug System Settings")]
         [SerializeField] private bool enableDebugSystems = true;
         [SerializeField] private bool autoInitialize = true;
-        
-        [Header("Component References")]
+          [Header("Component References")]
         [SerializeField] private DebugConsoleManager consoleManager;
         [SerializeField] private DebugStatsOverlay statsOverlay;
         [SerializeField] private DebugVisualizer visualizer;
+        
+        // Input System
+        private InputAction helpAction;
+        private InputAction toggleAllAction;
         
         // Debug system state
         private bool systemsInitialized = false;
@@ -43,8 +47,7 @@ namespace Lineage.Ancestral.Legacies.Debug
         {
             CreateInstance();
         }
-        
-        void Awake()
+          void Awake()
         {
             if (instance == null)
             {
@@ -55,11 +58,38 @@ namespace Lineage.Ancestral.Legacies.Debug
                 {
                     InitializeDebugSystems();
                 }
+                
+                SetupInputActions();
             }
             else if (instance != this)
             {
                 Destroy(gameObject);
             }
+        }
+        
+        void SetupInputActions()
+        {
+            // F1 for help
+            helpAction = new InputAction("ShowDebugHelp", InputActionType.Button);
+            helpAction.AddBinding("<Keyboard>/f1");
+            helpAction.performed += OnHelpPerformed;
+            helpAction.Enable();
+            
+            // F12 for toggle all
+            toggleAllAction = new InputAction("ToggleAllDebugSystems", InputActionType.Button);
+            toggleAllAction.AddBinding("<Keyboard>/f12");
+            toggleAllAction.performed += OnToggleAllPerformed;
+            toggleAllAction.Enable();
+        }
+        
+        void OnHelpPerformed(InputAction.CallbackContext context)
+        {
+            ShowDebugHelp();
+        }
+        
+        void OnToggleAllPerformed(InputAction.CallbackContext context)
+        {
+            ToggleAllDebugSystems();
         }
         
         void Start()
@@ -75,19 +105,9 @@ namespace Lineage.Ancestral.Legacies.Debug
             AdvancedLogger.LogInfo(LogCategory.General, $"Platform: {Application.platform}");
             AdvancedLogger.LogInfo(LogCategory.General, $"Development Build: {UnityEngine.Debug.isDebugBuild}");
         }
-        
-        void Update()
+          void Update()
         {
-            // Global debug hotkeys
-            if (Input.GetKeyDown(KeyCode.F1))
-            {
-                ShowDebugHelp();
-            }
-            
-            if (Input.GetKeyDown(KeyCode.F12))
-            {
-                ToggleAllDebugSystems();
-            }
+            // Input is now handled by InputActions
         }
         
         void InitializeDebugSystems()
@@ -231,6 +251,24 @@ namespace Lineage.Ancestral.Legacies.Debug
         void OnApplicationQuit()
         {
             AdvancedLogger.LogInfo(LogCategory.General, "Application shutting down");
+        }
+        
+        void OnDestroy()
+        {
+            // Clean up input actions
+            if (helpAction != null)
+            {
+                helpAction.performed -= OnHelpPerformed;
+                helpAction.Disable();
+                helpAction.Dispose();
+            }
+            
+            if (toggleAllAction != null)
+            {
+                toggleAllAction.performed -= OnToggleAllPerformed;
+                toggleAllAction.Disable();
+                toggleAllAction.Dispose();
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using Lineage.Ancestral.Legacies.AI;
 using Lineage.Ancestral.Legacies.AI.Examples;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Testing
 {
@@ -23,7 +24,7 @@ namespace Lineage.Ancestral.Legacies.Testing
             popStateMachine = GetComponent<PopStateMachine>();
             if (popStateMachine == null)
             {
-                UnityEngine.Debug.LogError($"[ExternalStateMachineTest] No PopStateMachine found on {gameObject.name}!");
+                Log.Error($"[ExternalStateMachineTest] No PopStateMachine found on {gameObject.name}!", Log.LogCategory.AI);
                 return;
             }
 
@@ -56,7 +57,7 @@ namespace Lineage.Ancestral.Legacies.Testing
             // Add to manager (this will automatically attach it)
             manager.AddExternalStateMachine(exampleSM);
 
-            UnityEngine.Debug.Log($"[ExternalStateMachineTest] Attached ExampleExternalStateMachine to {gameObject.name} via manager");
+            Log.Debug($"[ExternalStateMachineTest] Attached ExampleExternalStateMachine to {gameObject.name} via manager", Log.LogCategory.AI);
         }
 
         private void TestDirectAttachment()
@@ -67,7 +68,7 @@ namespace Lineage.Ancestral.Legacies.Testing
             
             popStateMachine.AttachExternalStateMachine(exampleSM);
 
-            UnityEngine.Debug.Log($"[ExternalStateMachineTest] Attached ExampleExternalStateMachine to {gameObject.name} directly");
+            Log.Debug($"[ExternalStateMachineTest] Attached ExampleExternalStateMachine to {gameObject.name} directly", Log.LogCategory.AI);
         }
 
         [ContextMenu("Test Toggle External State Machine")]
@@ -76,7 +77,7 @@ namespace Lineage.Ancestral.Legacies.Testing
             if (exampleSM != null)
             {
                 exampleSM.SetActive(!exampleSM.IsActive);
-                UnityEngine.Debug.Log($"[ExternalStateMachineTest] ExampleExternalStateMachine active: {exampleSM.IsActive}");
+                Log.Debug($"[ExternalStateMachineTest] ExampleExternalStateMachine active: {exampleSM.IsActive}", Log.LogCategory.AI);
             }
         }
 
@@ -93,7 +94,7 @@ namespace Lineage.Ancestral.Legacies.Testing
                 {
                     popStateMachine.DetachExternalStateMachine(exampleSM);
                 }
-                UnityEngine.Debug.Log($"[ExternalStateMachineTest] Detached ExampleExternalStateMachine from {gameObject.name}");
+                Log.Debug($"[ExternalStateMachineTest] Detached ExampleExternalStateMachine from {gameObject.name}", Log.LogCategory.AI);
             }
         }
 
@@ -103,7 +104,7 @@ namespace Lineage.Ancestral.Legacies.Testing
             if (popStateMachine != null)
             {
                 popStateMachine.AllowExternalStateMachines = false;
-                UnityEngine.Debug.Log($"[ExternalStateMachineTest] Disabled external state machines on {gameObject.name}");
+                Log.Debug($"[ExternalStateMachineTest] Disabled external state machines on {gameObject.name}", Log.LogCategory.AI);
             }
         }
 
@@ -113,7 +114,7 @@ namespace Lineage.Ancestral.Legacies.Testing
             if (popStateMachine != null)
             {
                 popStateMachine.AllowExternalStateMachines = true;
-                UnityEngine.Debug.Log($"[ExternalStateMachineTest] Enabled external state machines on {gameObject.name}");
+                Log.Debug($"[ExternalStateMachineTest] Enabled external state machines on {gameObject.name}", Log.LogCategory.AI);
             }
         }
 

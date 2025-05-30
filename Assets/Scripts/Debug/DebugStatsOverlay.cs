@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using TMPro;
 using UnityEngine.UI;
 
@@ -15,13 +16,15 @@ namespace Lineage.Ancestral.Legacies.Debug
         [SerializeField] private bool showOnStart = true;
         [SerializeField] private KeyCode toggleKey = KeyCode.F3;
         [SerializeField] private float updateInterval = 0.5f;
-        
-        [Header("Stats to Display")]
+          [Header("Stats to Display")]
         [SerializeField] private bool showFPS = true;
         [SerializeField] private bool showMemory = true;
         [SerializeField] private bool showSystemInfo = true;
         [SerializeField] private bool showPlayerPosition = true;
         [SerializeField] private bool showTimeScale = true;
+        
+        // Input System
+        private InputAction toggleAction;
         
         private Canvas overlayCanvas;
         private TextMeshProUGUI statsText;
@@ -40,21 +43,29 @@ namespace Lineage.Ancestral.Legacies.Debug
             DontDestroyOnLoad(go);
             go.AddComponent<DebugStatsOverlay>();
         }
-        
-        void Awake()
+          void Awake()
         {
             CreateUI();
             isVisible = showOnStart;
             overlayCanvas.gameObject.SetActive(isVisible);
+            SetupInputActions();
         }
         
-        void Update()
+        void SetupInputActions()
         {
-            if (Input.GetKeyDown(toggleKey))
-            {
-                ToggleVisibility();
-            }
-            
+            // Create input action for toggle key
+            toggleAction = new InputAction("ToggleDebugStats", InputActionType.Button);
+            toggleAction.AddBinding($"<Keyboard>/{toggleKey.ToString().ToLower()}");
+            toggleAction.performed += OnTogglePerformed;
+            toggleAction.Enable();
+        }
+        
+        void OnTogglePerformed(InputAction.CallbackContext context)
+        {
+            ToggleVisibility();
+        }
+          void Update()
+        {
             if (isVisible)
             {
                 UpdateFPSCounter();
@@ -213,6 +224,17 @@ namespace Lineage.Ancestral.Legacies.Debug
         public void SetShowPlayerPosition(bool show) { showPlayerPosition = show; }
         public void SetShowTimeScale(bool show) { showTimeScale = show; }
         public void SetUpdateInterval(float interval) { updateInterval = Mathf.Max(0.1f, interval); }
+        
+        void OnDestroy()
+        {
+            // Clean up input action
+            if (toggleAction != null)
+            {
+                toggleAction.performed -= OnTogglePerformed;
+                toggleAction.Disable();
+                toggleAction.Dispose();
+            }
+        }
     }
 }
 #endif

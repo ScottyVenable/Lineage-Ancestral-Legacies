@@ -17,7 +17,7 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
         /// </summary>
         public bool AddItem(string itemId, int count = 1)
         {
-            if (GetTotalItems() + count > capacity)
+            if (GetTotalItemCount() + count > capacity)
                 return false;
 
             if (!items.ContainsKey(itemId))
@@ -36,6 +36,7 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
                 return false;
 
             items[itemId] -= count;
+
             if (items[itemId] <= 0)
                 items.Remove(itemId);
 
@@ -49,6 +50,7 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
         {
             if (items.ContainsKey(itemId))
                 return items[itemId];
+
             return 0;
         }
 
@@ -66,17 +68,27 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
         public int GetTotalItemCount()
         {
             int total = 0;
-            foreach (var pair in items)
-                total += pair.Value;
+            foreach (var item in items)
+            {
+                total += item.Value;
+            }
             return total;
         }
 
-        private int GetTotalItems()
+        /// <summary>
+        /// Checks if the inventory is full.
+        /// </summary>
+        public bool IsInventoryFull()
         {
-            int total = 0;
-            foreach (var pair in items)
-                total += pair.Value;
-            return total;
+            return GetTotalItemCount() >= capacity;
+        }
+
+        /// <summary>
+        /// Clears all items from the inventory.
+        /// </summary>
+        public void ClearInventory()
+        {
+            items.Clear();
         }
     }
 }

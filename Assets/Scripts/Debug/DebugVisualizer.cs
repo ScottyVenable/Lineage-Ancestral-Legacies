@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace Lineage.Ancestral.Legacies.Debug
@@ -19,10 +21,12 @@ namespace Lineage.Ancestral.Legacies.Debug
                 return instance;
             }
         }
-        
-        [Header("Visual Debug Settings")]
+          [Header("Visual Debug Settings")]
         [SerializeField] private bool enableDebugDraw = true;
         [SerializeField] private KeyCode toggleKey = KeyCode.F4;
+        
+        // Input System
+        private InputAction toggleAction;
         
         // Debug draw queues
         private List<DebugLine> debugLines = new List<DebugLine>();
@@ -46,15 +50,14 @@ namespace Lineage.Ancestral.Legacies.Debug
         static void InitDebugVisualizer()
         {
             CreateInstance();
-        }
-        
-        void Awake()
+        }        void Awake()
         {
             if (instance == null)
             {
                 instance = this;
                 DontDestroyOnLoad(gameObject);
                 CreateMaterials();
+                SetupInputActions();
             }
             else if (instance != this)
             {
@@ -62,16 +65,34 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
         }
         
-        void Update()
+        void SetupInputActions()
         {
-            if (Input.GetKeyDown(toggleKey))
-            {
-                enableDebugDraw = !enableDebugDraw;
-                AdvancedLogger.LogInfo(LogCategory.UI, $"Debug visualization {(enableDebugDraw ? "enabled" : "disabled")}");
-            }
-            
+            // Create input action for toggle key
+            toggleAction = new InputAction("ToggleDebugVisualization", InputActionType.Button);
+            toggleAction.AddBinding($"<Keyboard>/{toggleKey.ToString().ToLower()}");
+            toggleAction.performed += OnTogglePerformed;
+            toggleAction.Enable();
+        }
+        
+        void OnTogglePerformed(InputAction.CallbackContext context)
+        {
+            enableDebugDraw = !enableDebugDraw;
+            AdvancedLogger.LogInfo(LogCategory.UI, $"Debug visualization {(enableDebugDraw ? "enabled" : "disabled")}");
+        }        void Update()
+        {
             // Clear expired debug items
             ClearExpiredItems();
+        }
+        
+        void OnDestroy()
+        {
+            // Clean up input action
+            if (toggleAction != null)
+            {
+                toggleAction.performed -= OnTogglePerformed;
+                toggleAction.Disable();
+                toggleAction.Dispose();
+            }
         }
         
         void CreateMaterials()

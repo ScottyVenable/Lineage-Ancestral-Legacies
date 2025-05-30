@@ -1,6 +1,7 @@
 // Unity component for managing external state machines - Updated
 using UnityEngine;
 using System.Collections.Generic;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.AI
 {
@@ -32,7 +33,7 @@ namespace Lineage.Ancestral.Legacies.AI
             
             if (popStateMachine == null)
             {
-                UnityEngine.Debug.LogError($"[ExternalStateMachineManager] No PopStateMachine found on {gameObject.name} or its children!");
+                Log.Error($"[ExternalStateMachineManager] No PopStateMachine found on {gameObject.name} or its children!", Log.LogCategory.AI);
                 return;
             }
 
@@ -62,11 +63,11 @@ namespace Lineage.Ancestral.Legacies.AI
                 {
                     popStateMachine.AttachExternalStateMachine(externalStateMachine);
                     attachedStateMachines.Add(externalStateMachine);
-                    UnityEngine.Debug.Log($"[ExternalStateMachineManager] Attached {component.GetType().Name} to {gameObject.name}");
+                    Log.Debug($"[ExternalStateMachineManager] Attached {component.GetType().Name} to {gameObject.name}", Log.LogCategory.AI);
                 }
                 else
                 {
-                    UnityEngine.Debug.LogWarning($"[ExternalStateMachineManager] Component {component.GetType().Name} does not implement IExternalStateMachine!");
+                    Log.Warning($"[ExternalStateMachineManager] Component {component.GetType().Name} does not implement IExternalStateMachine!", Log.LogCategory.AI);
                 }
             }
         }

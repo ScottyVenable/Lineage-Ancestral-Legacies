@@ -35,12 +35,11 @@ namespace Lineage.Ancestral.Legacies.AI.States
         public void Tick()
         {
             waitTimer += Time.deltaTime;
-            
-            // Slowly restore rest while waiting
+              // Slowly restore rest while waiting
             var needs = pop.GetComponent<Systems.Needs.NeedsComponent>();
             if (needs != null)
             {
-                needs.SatisfyRest(10f * Time.deltaTime);
+                needs.Sleep(10f * Time.deltaTime);
             }
 
             // Exit wait state after duration

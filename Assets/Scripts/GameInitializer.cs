@@ -1,5 +1,6 @@
 using UnityEngine;
 using Lineage.Ancestral.Legacies.Managers;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies
 {
@@ -47,7 +48,7 @@ namespace Lineage.Ancestral.Legacies
                 Instantiate(saveManagerPrefab);
             }
 
-            if (cameraManagerPrefab != null && FindFirstObjectByType<Managers.CameraManager>() == null)
+            if (cameraManagerPrefab != null && FindFirstObjectByType<CameraManager>() == null)
             {
                 Instantiate(cameraManagerPrefab);
             }
@@ -62,19 +63,17 @@ namespace Lineage.Ancestral.Legacies
             {
                 Instantiate(gameUIPrefab);
             }
-        }
-
-        private void Start()
+        }        private void Start()
         {
-            UnityEngine.Debug.Log("Game Initialized! Core systems ready.");
-            UnityEngine.Debug.Log("- Click on pops to select them");
-            UnityEngine.Debug.Log("- Hold Ctrl and click to select multiple pops");
-            UnityEngine.Debug.Log("- Right-click to move selected pops");
-            UnityEngine.Debug.Log("- Use miracle buttons to spend faith");
-            UnityEngine.Debug.Log("- Manage your population and resources!");
-            UnityEngine.Debug.Log("- Press SPACE to pause/unpause time");
-            UnityEngine.Debug.Log("- Use 1-4 keys to change game speed");
-            UnityEngine.Debug.Log("- Press F2 to toggle debug console");
+            Log.Info("Game Initialized! Core systems ready.", Log.LogCategory.General);
+            Log.Info("- Click on pops to select them", Log.LogCategory.General);
+            Log.Info("- Hold Ctrl and click to select multiple pops", Log.LogCategory.General);
+            Log.Info("- Right-click to move selected pops", Log.LogCategory.General);
+            Log.Info("- Use miracle buttons to spend faith", Log.LogCategory.General);
+            Log.Info("- Manage your population and resources!", Log.LogCategory.General);
+            Log.Info("- Press SPACE to pause/unpause time", Log.LogCategory.General);
+            Log.Info("- Use 1-4 keys to change game speed", Log.LogCategory.General);
+            Log.Info("- Press F2 to toggle debug console", Log.LogCategory.General);
         }
     }
 }

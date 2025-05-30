@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Managers
 {
@@ -22,12 +24,19 @@ namespace Lineage.Ancestral.Legacies.Managers
         [SerializeField] private Gradient dayNightColors;
         [SerializeField] private AnimationCurve lightIntensityCurve;
         [SerializeField] private float minLightIntensity = 0.1f;
-        [SerializeField] private float maxLightIntensity = 1f;
-
-        [Header("Seasons")]
+        [SerializeField] private float maxLightIntensity = 1f;        [Header("Seasons")]
         [SerializeField] private bool enableSeasons = true;
         [SerializeField] private int daysPerSeason = 30;
         [SerializeField] private Color[] seasonColors = new Color[4];
+
+        // Input Actions for time control
+        private InputAction pauseAction;
+        private InputAction speed1Action;
+        private InputAction speed2Action;
+        private InputAction speed3Action;
+        private InputAction speed4Action;
+        private InputAction increaseSpeedAction;
+        private InputAction decreaseSpeedAction;
 
         // Time tracking
         private float currentGameTime = 0f; // In game hours (0-24)
@@ -52,15 +61,14 @@ namespace Lineage.Ancestral.Legacies.Managers
         public float GameSpeed => gameSpeed;
         public string SeasonName => GetSeasonName(currentSeason);
         public bool IsNight => currentGameTime < 6f || currentGameTime > 18f;
-        public bool IsDay => !IsNight;
-
-        private void Awake()
+        public bool IsDay => !IsNight;        private void Awake()
         {
             if (Instance == null)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
                 InitializeTime();
+                SetupInputActions();
             }
             else
             {
@@ -109,9 +117,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 lightIntensityCurve.AddKey(0.5f, 1f);    // Day
                 lightIntensityCurve.AddKey(0.75f, 0.7f); // Dusk
                 lightIntensityCurve.AddKey(1f, 0.1f);    // Night
-            }
-
-            // Initialize season colors if not set
+            }            // Initialize season colors if not set
             if (seasonColors.Length != 4 || seasonColors[0] == Color.clear)
             {
                 seasonColors = new Color[4];
@@ -120,6 +126,47 @@ namespace Lineage.Ancestral.Legacies.Managers
                 seasonColors[2] = new Color(1f, 0.8f, 0.6f); // Autumn - orange
                 seasonColors[3] = new Color(0.8f, 0.9f, 1f); // Winter - cool blue
             }
+        }
+        
+        private void SetupInputActions()
+        {
+            // Setup time control input actions
+            pauseAction = new InputAction("PauseToggle", InputActionType.Button);
+            pauseAction.AddBinding("<Keyboard>/space");
+            pauseAction.performed += ctx => TogglePause();
+            pauseAction.Enable();
+
+            speed1Action = new InputAction("Speed1", InputActionType.Button);
+            speed1Action.AddBinding("<Keyboard>/1");
+            speed1Action.performed += ctx => SetGameSpeed(1f);
+            speed1Action.Enable();
+
+            speed2Action = new InputAction("Speed2", InputActionType.Button);
+            speed2Action.AddBinding("<Keyboard>/2");
+            speed2Action.performed += ctx => SetGameSpeed(2f);
+            speed2Action.Enable();
+
+            speed3Action = new InputAction("Speed3", InputActionType.Button);
+            speed3Action.AddBinding("<Keyboard>/3");
+            speed3Action.performed += ctx => SetGameSpeed(3f);
+            speed3Action.Enable();
+
+            speed4Action = new InputAction("Speed4", InputActionType.Button);
+            speed4Action.AddBinding("<Keyboard>/4");
+            speed4Action.performed += ctx => SetGameSpeed(4f);
+            speed4Action.Enable();
+
+            increaseSpeedAction = new InputAction("IncreaseSpeed", InputActionType.Button);
+            increaseSpeedAction.AddBinding("<Keyboard>/plus");
+            increaseSpeedAction.AddBinding("<Keyboard>/numpadPlus");
+            increaseSpeedAction.performed += ctx => IncreaseSpeed();
+            increaseSpeedAction.Enable();
+
+            decreaseSpeedAction = new InputAction("DecreaseSpeed", InputActionType.Button);
+            decreaseSpeedAction.AddBinding("<Keyboard>/minus");
+            decreaseSpeedAction.AddBinding("<Keyboard>/numpadMinus");
+            decreaseSpeedAction.performed += ctx => DecreaseSpeed();
+            decreaseSpeedAction.Enable();
         }
 
         private void UpdateGameTime()
@@ -150,23 +197,21 @@ namespace Lineage.Ancestral.Legacies.Managers
                 AdvanceSeason();
             }
 
-            UnityEngine.Debug.Log($"Day {currentDay} begins. Time: {GetFormattedTime()}");
+            Log.System("TimeManager", $"Day {currentDay} begins. Time: {GetFormattedTime()}");
         }
 
         private void AdvanceSeason()
         {
             currentSeason = (currentSeason + 1) % 4;
-            OnSeasonChanged?.Invoke(currentSeason);
-
-            // Check for year change
+            OnSeasonChanged?.Invoke(currentSeason);            // Check for year change
             if (currentSeason == 0) // Spring = new year
             {
                 currentYear++;
                 OnYearChanged?.Invoke(currentYear);
-                UnityEngine.Debug.Log($"Year {currentYear} begins!");
+                Log.System("TimeManager", $"Year {currentYear} begins!");
             }
 
-            UnityEngine.Debug.Log($"Season changed to {GetSeasonName(currentSeason)}");
+            Log.System("TimeManager", $"Season changed to {GetSeasonName(currentSeason)}");
         }
 
         private void UpdateDayNightCycle()
@@ -192,38 +237,17 @@ namespace Lineage.Ancestral.Legacies.Managers
             // Update light rotation (sun position)
             float sunAngle = (timeOfDayNormalized - 0.25f) * 360f; // Start at dawn
             sunLight.transform.rotation = Quaternion.Euler(sunAngle - 90f, 30f, 0f);
-        }
-
-        private void HandleTimeInput()
+        }        private void HandleTimeInput()
         {
-            // Space to pause/unpause
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                TogglePause();
-            }
-
-            // Number keys to change speed
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                SetGameSpeed(1f);
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-                SetGameSpeed(2f);
-            else if (Input.GetKeyDown(KeyCode.Alpha3))
-                SetGameSpeed(3f);
-            else if (Input.GetKeyDown(KeyCode.Alpha4))
-                SetGameSpeed(4f);
-
-            // Plus/Minus to adjust speed
-            if (Input.GetKeyDown(KeyCode.Plus) || Input.GetKeyDown(KeyCode.KeypadPlus))
-                IncreaseSpeed();
-            else if (Input.GetKeyDown(KeyCode.Minus) || Input.GetKeyDown(KeyCode.KeypadMinus))
-                DecreaseSpeed();
+            // Input is now handled via InputActions in SetupInputActions()
+            // This method can remain for any additional input handling if needed
         }
 
         public void TogglePause()
         {
             isPaused = !isPaused;
             OnGamePausedChanged?.Invoke(isPaused);
-            UnityEngine.Debug.Log(isPaused ? "Game Paused" : "Game Resumed");
+            Log.System("TimeManager", isPaused ? "Game Paused" : "Game Resumed");
         }
 
         public void SetPaused(bool paused)
@@ -236,7 +260,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         {
             gameSpeed = Mathf.Clamp(speed, 0.1f, maxGameSpeed);
             OnGameSpeedChanged?.Invoke(gameSpeed);
-            UnityEngine.Debug.Log($"Game speed set to {gameSpeed}x");
+            Log.System("TimeManager", $"Game speed set to {gameSpeed}x");
         }
 
         public void IncreaseSpeed()
@@ -319,11 +343,29 @@ namespace Lineage.Ancestral.Legacies.Managers
                 return 1.0f;
             else
                 return 0.5f; // 50% productivity at night
-        }
-
-        public bool ShouldPopsSleep()
+        }        public bool ShouldPopsSleep()
         {
             return currentGameTime >= 22f || currentGameTime <= 6f;
+        }
+        
+        private void OnDestroy()
+        {
+            // Clean up input actions
+            pauseAction?.Disable();
+            speed1Action?.Disable();
+            speed2Action?.Disable();
+            speed3Action?.Disable();
+            speed4Action?.Disable();
+            increaseSpeedAction?.Disable();
+            decreaseSpeedAction?.Disable();
+            
+            pauseAction?.Dispose();
+            speed1Action?.Dispose();
+            speed2Action?.Dispose();
+            speed3Action?.Dispose();
+            speed4Action?.Dispose();
+            increaseSpeedAction?.Dispose();
+            decreaseSpeedAction?.Dispose();
         }
     }
 }

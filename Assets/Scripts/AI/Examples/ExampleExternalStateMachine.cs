@@ -1,6 +1,7 @@
 using Lineage.Ancestral.Legacies.AI.States;
 using Lineage.Ancestral.Legacies.Entities;
 using UnityEngine;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.AI.Examples
 {
@@ -31,18 +32,16 @@ namespace Lineage.Ancestral.Legacies.AI.Examples
         { 
             get => priority; 
             set => priority = value; 
-        }
-
-        public void OnAttached(PopStateMachine popStateMachine, Pop pop)
+        }        public void OnAttached(PopStateMachine popStateMachine, Pop pop)
         {
             this.popStateMachine = popStateMachine;
             this.pop = pop;
-            UnityEngine.Debug.Log($"[ExampleExternalStateMachine] Attached to {pop.name}");
+            Log.AI(pop.name, "ExampleExternalStateMachine attached");
         }
 
         public void OnDetached()
         {
-            UnityEngine.Debug.Log($"[ExampleExternalStateMachine] Detached from {pop?.name ?? "unknown pop"}");
+            Log.AI(pop?.name ?? "unknown pop", "ExampleExternalStateMachine detached");
             this.popStateMachine = null;
             this.pop = null;
         }
@@ -79,7 +78,7 @@ namespace Lineage.Ancestral.Legacies.AI.Examples
             // Prevent foraging if the setting is enabled
             if (preventForaging && requestedState is ForageState)
             {
-                UnityEngine.Debug.Log($"[ExampleExternalStateMachine] Preventing {pop.name} from foraging, switching to wander instead.");
+                Log.AI(pop.name, "Preventing foraging, switching to wander instead");
                 return new WanderState();
             }
 
@@ -110,7 +109,7 @@ namespace Lineage.Ancestral.Legacies.AI.Examples
         private void ToggleActive()
         {
             SetActive(!IsActive);
-            UnityEngine.Debug.Log($"[ExampleExternalStateMachine] Active: {IsActive}");
+            Log.Debug($"ExampleExternalStateMachine Active: {IsActive}", Log.LogCategory.AI);
         }
 
         #endregion

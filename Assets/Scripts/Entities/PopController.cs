@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Lineage.Ancestral.Legacies.AI;
 using Lineage.Ancestral.Legacies.AI.States;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Entities
 {
@@ -18,11 +19,14 @@ namespace Lineage.Ancestral.Legacies.Entities
         private bool isSelected = false;
         private Transform selectionIndicator;
 
+        public Pop pop;
+
         private void Awake()
         {
             // Get required components
             agent = GetComponent<NavMeshAgent>();
             animator = GetComponent<Animator>();
+            pop = GetComponent<Pop>();
 
             // Setup NavMeshAgent for 2D
             if (agent != null)
@@ -89,11 +93,22 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
 
+            // Get the Pop component to access its state machine
+            if (pop == null)
+            {
+                pop = GetComponent<Pop>();
+                if (pop == null)
+                {
+                    Log.Error($"[PopController] No Pop component found on {gameObject.name}", Log.LogCategory.General);
+                    return;
+                }
+            }
+            
             var popStateMachine = pop.GetComponent<AI.PopStateMachine>();
             if (popStateMachine != null)
             {
                 popStateMachine.ChangeState(new CommandedState(targetPosition));
-                UnityEngine.Debug.Log($"Commanding {name} to move to {targetPosition}");
+                Log.Debug($"Commanding {name} to move to {targetPosition}", Log.LogCategory.AI);
             }
         }
 
@@ -153,14 +168,15 @@ namespace Lineage.Ancestral.Legacies.Entities
         /// </summary>
         public void ForceSelect()
         {
-            if (Managers.SelectionManager.Instance != null)
+            var selectionManager = FindFirstObjectByType<Managers.SelectionManager>();
+            if (selectionManager != null)
             {
-                var selectedPops = Managers.SelectionManager.Instance.GetSelectedPops();
-                if (!selectedPops.Contains(this))
+                var selectedPops = selectionManager.GetSelectedPops();
+                if (!selectedPops.Contains(gameObject))
                 {
-                    Managers.SelectionManager.Instance.GetType()
+                    selectionManager.GetType()
                         .GetMethod("SelectPop", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                        ?.Invoke(Managers.SelectionManager.Instance, new object[] { this });
+                        ?.Invoke(selectionManager, new object[] { gameObject });
                 }
             }
         }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Lineage.Ancestral.Legacies.Entities;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Managers
 {
@@ -73,7 +74,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 // Check if pop should die from starvation
                 if (pop.hunger <= 0f)
                 {
-                    UnityEngine.Debug.Log($"Pop {pop.name} died of starvation!");
+                    Log.Warning($"Pop {pop.name} died of starvation!", Log.LogCategory.Population);
                     KillPop(pop);
                     continue;
                 }
@@ -103,7 +104,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 livingPops.Add(pop);
                 currentPopulation++;
                 OnPopulationChanged?.Invoke(currentPopulation);
-                UnityEngine.Debug.Log($"New pop spawned: {pop.name}");
+                Log.Info($"New pop spawned: {pop.name}", Log.LogCategory.Population);
             }
         }
 
@@ -120,7 +121,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 livingPops.Add(pop);
                 currentPopulation++;
                 OnPopulationChanged?.Invoke(currentPopulation);
-                UnityEngine.Debug.Log($"New pop spawned at {position}: {pop.name}");
+                Log.Info($"New pop spawned at {position}: {pop.name}", Log.LogCategory.Population);
             }
             
             return pop;
@@ -139,13 +140,25 @@ namespace Lineage.Ancestral.Legacies.Managers
             }
         }
 
+        public void OnPopDied(Pop pop)
+        {
+            // Called when a pop dies naturally (not killed by manager)
+            if (livingPops.Contains(pop))
+            {
+                livingPops.Remove(pop);
+                currentPopulation--;
+                OnPopulationChanged?.Invoke(currentPopulation);
+                Log.Info($"Pop {pop.name} died naturally. Population: {currentPopulation}", Log.LogCategory.Population);
+            }
+        }
+
         public bool ImproveShelter(float faithCost = 10f)
         {
             if (ResourceManager.Instance.ConsumeFaith(faithCost))
             {
                 populationCap++;
                 OnPopulationCapChanged?.Invoke(populationCap);
-                UnityEngine.Debug.Log($"Shelter improved! Population cap increased to {populationCap}");
+                Log.Info($"Shelter improved! Population cap increased to {populationCap}", Log.LogCategory.Population);
                 return true;
             }
             return false;

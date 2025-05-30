@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Lineage.Ancestral.Legacies.Managers;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.UI
 {
@@ -133,9 +134,8 @@ namespace Lineage.Ancestral.Legacies.UI
             {
                 bool success = ResourceManager.Instance.PerformGiftOfSustenance();
                 if (success)
-                {
-                    // TODO: Add visual feedback (particles, sound)
-                    UnityEngine.Debug.Log("Gift of Sustenance performed!");
+                {                    // TODO: Add visual feedback (particles, sound)
+                    Log.Info("Gift of Sustenance performed!", Log.LogCategory.UI);
                 }
             }
         }
