@@ -21,6 +21,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         public Transform spawnPoint;
         public float spawnRadius = 2f;
 
+        
         private List<Pop> livingPops = new List<Pop>();
 
         // Events
@@ -101,6 +102,7 @@ namespace Lineage.Ancestral.Legacies.Managers
             if (pop != null)
             {
                 pop.name = GenerateRandomName();
+                pop.transform.localScale = Vector3.one * Random.Range(0.9f, 1.1f); // Randomize size slightly
                 livingPops.Add(pop);
                 currentPopulation++;
                 OnPopulationChanged?.Invoke(currentPopulation);

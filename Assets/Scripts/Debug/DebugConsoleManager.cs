@@ -200,15 +200,8 @@ namespace Lineage.Ancestral.Legacies.Debug
         {
             if (!enableConsole) return;
 
-            // Handle legacy input for toggle
-            if (Input.GetKeyDown(legacyToggleKey) || Input.GetKeyDown(legacyToggleKeyAlt))
-            {
-                ToggleConsole();
-            }
-            
             if (!isConsoleVisible) return;
 
-            HandleInputNavigation();
             UpdateSuggestions();
         }
 
@@ -242,11 +235,45 @@ namespace Lineage.Ancestral.Legacies.Debug
         {
             var inputActions = new InputActionMap("DebugConsole");
             
+            // Existing toggle action
             toggleConsoleAction = inputActions.AddAction("ToggleConsole", InputActionType.Button);
             toggleConsoleAction.AddBinding("<Keyboard>/f2");
             toggleConsoleAction.AddBinding("<Keyboard>/backquote");
-            
             toggleConsoleAction.performed += _ => ToggleConsole();
+            
+            // Add navigation actions
+            var executeAction = inputActions.AddAction("Execute", InputActionType.Button);
+            executeAction.AddBinding("<Keyboard>/enter");
+            executeAction.AddBinding("<Keyboard>/numpadEnter");
+            executeAction.performed += _ => { if (isInputFocused) ExecuteCommand(); };
+            
+            var historyUpAction = inputActions.AddAction("HistoryUp", InputActionType.Button);
+            historyUpAction.AddBinding("<Keyboard>/upArrow");
+            historyUpAction.performed += _ => { if (isInputFocused) NavigateHistory(-1); };
+            
+            var historyDownAction = inputActions.AddAction("HistoryDown", InputActionType.Button);
+            historyDownAction.AddBinding("<Keyboard>/downArrow");
+            historyDownAction.performed += _ => { if (isInputFocused) NavigateHistory(1); };
+            
+            var tabAction = inputActions.AddAction("Tab", InputActionType.Button);
+            tabAction.AddBinding("<Keyboard>/tab");
+            tabAction.performed += _ => { 
+                if (isInputFocused && showSuggestions && filteredSuggestions.Count > 0) 
+                    SelectSuggestion(selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0); 
+            };
+            
+            var escapeAction = inputActions.AddAction("Escape", InputActionType.Button);
+            escapeAction.AddBinding("<Keyboard>/escape");
+            escapeAction.performed += _ => {
+                if (isInputFocused) {
+                    if (showSuggestions) {
+                        showSuggestions = false;
+                        selectedSuggestionIndex = -1;
+                    } else {
+                        ToggleConsole();
+                    }
+                }
+            };
             
             inputActions.Enable();
         }
@@ -475,42 +502,6 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
         }
 
-        private void HandleInputNavigation()
-        {
-            if (!isInputFocused) return;
-            
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
-            {
-                ExecuteCommand();
-            }
-            else if (Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                NavigateHistory(-1);
-            }
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                NavigateHistory(1);
-            }
-            else if (Input.GetKeyDown(KeyCode.Tab) && showSuggestions)
-            {
-                if (filteredSuggestions.Count > 0)
-                {
-                    SelectSuggestion(selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0);
-                }
-            }
-            else if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                if (showSuggestions)
-                {
-                    showSuggestions = false;
-                    selectedSuggestionIndex = -1;
-                }
-                else
-                {
-                    ToggleConsole();
-                }
-            }
-        }
 
         private void HandleInputKeys()
         {
