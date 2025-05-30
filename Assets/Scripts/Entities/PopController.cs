@@ -8,25 +8,25 @@ using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Entities
 {
-    [RequireComponent(typeof(NavMeshAgent))]
+    [RequireComponent(typeof(Pop))]
     public class PopController : MonoBehaviour
     {
         // Component references
+        private Pop pop;
         private NavMeshAgent agent;
-        private Animator animator;
 
         // State
         private bool isSelected = false;
         private Transform selectionIndicator;
 
-        public Pop pop;
+        private bool _hasStoredOriginalColor = false;
+        private Color _originalColor = Color.white;
 
         private void Awake()
         {
             // Get required components
-            agent = GetComponent<NavMeshAgent>();
-            animator = GetComponent<Animator>();
             pop = GetComponent<Pop>();
+            agent = GetComponent<NavMeshAgent>();
 
             // Setup NavMeshAgent for 2D
             if (agent != null)
@@ -70,6 +70,25 @@ namespace Lineage.Ancestral.Legacies.Entities
         {
             isSelected = selected;
 
+            var renderer = GetComponentInChildren<SpriteRenderer>();
+            if (renderer != null)
+            {
+                if (selected)
+                {
+                    // Store original color
+                    if (!_hasStoredOriginalColor)
+                    {
+                        _originalColor = renderer.color;
+                        _hasStoredOriginalColor = true;
+                    }
+                    renderer.color = new Color(_originalColor.r * 1.2f, _originalColor.g * 1.2f, _originalColor.b * 1.2f, _originalColor.a);
+                }
+                else if (_hasStoredOriginalColor)
+                {
+                    renderer.color = _originalColor;
+                }
+            }
+
             // Show/hide selection indicator
             if (selectionIndicator != null)
             {
@@ -82,43 +101,33 @@ namespace Lineage.Ancestral.Legacies.Entities
         /// </summary>
         public void MoveTo(Vector3 targetPosition)
         {
-            if (agent != null && agent.isActiveAndEnabled)
+            if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
             {
                 agent.SetDestination(targetPosition);
 
                 // Play animation if available
-                if (animator != null)
+                if (pop.animator != null)
                 {
-                    animator.SetBool("IsMoving", true);
+                    pop.animator.SetBool("IsMoving", true);
                 }
-            }
 
-            // Get the Pop component to access its state machine
-            if (pop == null)
-            {
-                pop = GetComponent<Pop>();
-                if (pop == null)
+                // Notify Pop's state machine
+                var stateMachine = GetComponent<PopStateMachine>();
+                if (stateMachine != null)
                 {
-                    Log.Error($"[PopController] No Pop component found on {gameObject.name}", Log.LogCategory.General);
-                    return;
+                    // You might want to transition to a moving state here
+                    // stateMachine.ChangeState(new MoveToState(destination));
                 }
-            }
-            
-            var popStateMachine = pop.GetComponent<AI.PopStateMachine>();
-            if (popStateMachine != null)
-            {
-                popStateMachine.ChangeState(new CommandedState(targetPosition));
-                Log.Debug($"Commanding {name} to move to {targetPosition}", Log.LogCategory.AI);
             }
         }
 
         private void Update()
         {
             // Update animation state based on movement
-            if (animator != null && agent != null)
+            if (pop.animator != null && agent != null)
             {
                 bool isMoving = agent.velocity.magnitude > 0.1f;
-                animator.SetBool("IsMoving", isMoving);
+                pop.animator.SetBool("IsMoving", isMoving);
 
                 // Face the direction of movement
                 if (isMoving)

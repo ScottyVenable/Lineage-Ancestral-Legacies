@@ -1,104 +1,147 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-using TMPro;
-using Lineage.Ancestral.Legacies.Managers;
 using Lineage.Ancestral.Legacies.Entities;
+using Lineage.Ancestral.Legacies.Managers;
+using Lineage.Ancestral.Legacies.Systems.Inventory;
+using Lineage.Ancestral.Legacies.Debug;
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace Lineage.Ancestral.Legacies.Debug
 {
-    /// <summary>
-    /// Enhanced in-game debug console with advanced logging integration, command history, and filtering.
-    /// Toggle with F2. Supports resizing, markdown-like formatting, and colored text.
-    /// </summary>
     public class DebugConsoleManager : MonoBehaviour
     {
-        private Canvas consoleCanvas;
-        private RectTransform window;
-        private RectTransform contentArea;
-        private TextMeshProUGUI outputText;
-        private TMP_InputField inputField;
-        private ScrollRect scrollRect;
-        private Button minimizeButton;
-        private RectTransform resizeHandle;
-        private bool isOpen = false;
-        private bool isMinimized = false;
-        private Vector2 dragOffset;
-        private Vector2 resizeStart;
-        private Dictionary<string, Action<string[]>> commands = new Dictionary<string, Action<string[]>>();        // Enhanced features
+        [Header("Console Settings")]
+        [SerializeField] private bool enableConsole = true;
+        [SerializeField] private KeyCode legacyToggleKey = KeyCode.F2;
+        [SerializeField] private KeyCode legacyToggleKeyAlt = KeyCode.BackQuote; // Tilde/backtick
+        [SerializeField] private int maxHistoryCount = 50;
+        [SerializeField] private int maxLogCount = 100;
+
+        [Header("UI Settings")]
+        [SerializeField] private Vector2 consoleSize = new Vector2(800, 400);
+        [SerializeField] private Vector2 consolePosition = new Vector2(50, 50);
+        [SerializeField] private bool isDraggable = true;
+        [SerializeField] private bool isResizable = true;
+
+        // Input System support
+        private InputAction toggleAction;
+        private InputAction toggleActionAlt;
+
+        // Console state
+        private bool isConsoleVisible = false;
+        private string currentInput = "";
         private List<string> commandHistory = new List<string>();
+        private List<string> consoleLog = new List<string>();
         private int historyIndex = -1;
+        private Vector2 scrollPosition = Vector2.zero;
+        private Rect consoleRect;
+        private bool isDragging = false;
+        private bool isResizing = false;
+        private Vector2 dragOffset;
+
+        // Auto-completion
         private List<string> suggestions = new List<string>();
-        private bool showingSuggestions = false;
-        private LogCategory currentLogFilter = LogCategory.All;
-        private List<string> logBuffer = new List<string>();
-        private int maxLogLines = 1000;
-        private Dictionary<string, string> commandDescriptions = new Dictionary<string, string>();
-        private GameObject suggestionPanel;
-        private TextMeshProUGUI suggestionText;
-        private string currentFilterText = "";
-        
-        // Log filtering
-        public enum LogCategory
-        {
-            All,
-            General,
-            Combat,
-            AI,
-            Inventory,
-            Quest,
-            Debug,
-            Warning,
-            Error
-        }
+        private int selectedSuggestion = -1;
+        private bool showSuggestions = false;
 
-        [RuntimeInitializeOnLoadMethod]
-        static void InitConsole()
-        {
-            var go = new GameObject("DebugConsoleManager");
-            DontDestroyOnLoad(go);
-            go.AddComponent<DebugConsoleManager>();
-        }
+        // Command registry
+        private Dictionary<string, ConsoleCommand> commands = new Dictionary<string, ConsoleCommand>();
 
-        void Awake()
+        // Manager references
+        private PopulationManager populationManager;
+        private ResourceManager resourceManager;
+        private SelectionManager selectionManager;
+        private AdvancedLogger logger;
+
+        // Console command delegate
+        public delegate string CommandDelegate(string[] args);
+
+        // Console command structure
+        [System.Serializable]
+        public class ConsoleCommand
         {
-            CreateUI();
-            RegisterCommands();
-            window.gameObject.SetActive(isOpen);
-        }        void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.F2))
+            public string name;
+            public string description;
+            public CommandDelegate command;
+            public string usage;
+
+            public ConsoleCommand(string name, string description, string usage, CommandDelegate command)
             {
-                ToggleConsole();
+                this.name = name;
+                this.description = description;
+                this.usage = usage;
+                this.command = command;
             }
-            
-            if (isOpen)
+        }
+
+        private void Awake()
+        {
+            // Initialize console rect
+            consoleRect = new Rect(consolePosition.x, consolePosition.y, consoleSize.x, consoleSize.y);
+
+            // Get manager references
+            populationManager = FindFirstObjectByType<PopulationManager>();
+            resourceManager = FindFirstObjectByType<ResourceManager>();
+            selectionManager = FindFirstObjectByType<SelectionManager>();
+            logger = FindFirstObjectByType<AdvancedLogger>();
+
+            // Setup input actions for new Input System
+            SetupInputActions();
+
+            // Register all commands
+            RegisterCommands();
+
+            // Log console initialization
+            LogToConsole("Debug Console initialized. Type 'help' for available commands.");
+        }
+
+        private void SetupInputActions()
+        {
+            if (enableConsole)
+            {
+                // Create Input Actions for new Input System
+                try
+                {
+                    toggleAction = new InputAction("ToggleConsole", InputActionType.Button, "<Keyboard>/f2");
+                    toggleActionAlt = new InputAction("ToggleConsoleAlt", InputActionType.Button, "<Keyboard>/backquote");
+
+                    toggleAction.performed += _ => ToggleConsole();
+                    toggleActionAlt.performed += _ => ToggleConsole();
+
+                    toggleAction.Enable();
+                    toggleActionAlt.Enable();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"Failed to setup Input System actions: {e.Message}. Falling back to legacy input.");
+                }
+            }
+        }
+
+        private void Update()
+        {
+            // Legacy Input Manager support as fallback
+            if (enableConsole && (toggleAction == null || toggleActionAlt == null))
+            {
+                if (Input.GetKeyDown(legacyToggleKey) || Input.GetKeyDown(legacyToggleKeyAlt))
+                {
+                    ToggleConsole();
+                }
+            }
+
+            // Handle input when console is visible
+            if (isConsoleVisible)
             {
                 HandleConsoleInput();
             }
         }
-        
-        private void ToggleConsole()
-        {
-            isOpen = !isOpen;
-            window.gameObject.SetActive(isOpen);
-            if (isOpen) 
-            {
-                inputField.ActivateInputField();
-                inputField.Select();
-            }
-        }
-        
+
         private void HandleConsoleInput()
         {
-            // Command history navigation
+            // Handle command history navigation
             if (Input.GetKeyDown(KeyCode.UpArrow))
             {
                 NavigateHistory(-1);
@@ -107,904 +150,1125 @@ namespace Lineage.Ancestral.Legacies.Debug
             {
                 NavigateHistory(1);
             }
-            
-            // Execute command
-            if (Input.GetKeyDown(KeyCode.Return) && !string.IsNullOrEmpty(inputField.text))
-            {
-                ExecuteCurrentCommand();
-            }
-            
-            // Tab for auto-completion
+
+            // Handle auto-completion
             if (Input.GetKeyDown(KeyCode.Tab))
             {
-                AutoComplete();
+                HandleAutoComplete();
             }
-            
-            // Real-time suggestion updates
-            if (inputField.text != currentFilterText)
+
+            // Handle command execution
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
             {
-                currentFilterText = inputField.text;
+                ExecuteCommand();
+            }
+
+            // Handle suggestion navigation
+            if (showSuggestions)
+            {
+                if (Input.GetKeyDown(KeyCode.UpArrow) && selectedSuggestion > 0)
+                {
+                    selectedSuggestion--;
+                }
+                else if (Input.GetKeyDown(KeyCode.DownArrow) && selectedSuggestion < suggestions.Count - 1)
+                {
+                    selectedSuggestion++;
+                }
+            }
+        }
+
+        private void ToggleConsole()
+        {
+            isConsoleVisible = !isConsoleVisible;
+            
+            if (isConsoleVisible)
+            {
+                // Focus input when opening
+                GUI.FocusControl("ConsoleInput");
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (!isConsoleVisible) return;
+
+            // Draw console window
+            GUI.skin.window.fontSize = 12;
+            consoleRect = GUI.Window(0, consoleRect, DrawConsoleWindow, "Debug Console");
+
+            // Handle dragging and resizing
+            if (isDraggable || isResizable)
+            {
+                HandleWindowInteraction();
+            }
+        }
+
+        private void DrawConsoleWindow(int windowID)
+        {
+            GUILayout.BeginVertical();
+
+            // Log area
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(consoleRect.height - 80));
+            
+            foreach (string logEntry in consoleLog)
+            {
+                GUILayout.Label(logEntry, GUI.skin.textField);
+            }
+
+            GUILayout.EndScrollView();
+
+            // Input area
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("> ", GUILayout.Width(20));
+            
+            GUI.SetNextControlName("ConsoleInput");
+            string newInput = GUILayout.TextField(currentInput);
+            
+            if (newInput != currentInput)
+            {
+                currentInput = newInput;
                 UpdateSuggestions();
             }
-        }
-        
-        private void ExecuteCurrentCommand()
-        {
-            var line = inputField.text;
-            AddToHistory(line);
-            inputField.text = string.Empty;
-            historyIndex = -1;
-            HideSuggestions();
-            AppendLine("> " + line);
-            ProcessCommand(line);
-        }
 
-        void CreateUI()
-        {
-            // create canvas
-            GameObject cgo = new GameObject("ConsoleCanvas");
-            consoleCanvas = cgo.AddComponent<Canvas>();
-            consoleCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            cgo.AddComponent<CanvasScaler>();
-            cgo.AddComponent<GraphicRaycaster>();
-            DontDestroyOnLoad(cgo);
-
-            // window
-            GameObject wgo = new GameObject("ConsoleWindow");
-            wgo.transform.SetParent(cgo.transform);
-            window = wgo.AddComponent<RectTransform>();
-            window.sizeDelta = new Vector2(600, 300);
-            window.anchorMin = new Vector2(0.05f, 0.05f);
-            window.anchorMax = new Vector2(0.95f, 0.5f);
-            window.pivot = new Vector2(0, 1);
-            var img = wgo.AddComponent<Image>(); img.color = new Color(0,0,0,0.9f);
-
-            // header for drag + minimize
-            GameObject header = new GameObject("Header");
-            header.transform.SetParent(wgo.transform);
-            var hrt = header.AddComponent<RectTransform>();
-            hrt.anchorMin = new Vector2(0, 1); hrt.anchorMax = new Vector2(1, 1);
-            hrt.sizeDelta = new Vector2(0, 30); hrt.pivot = new Vector2(0,1);
-            var himg = header.AddComponent<Image>(); himg.color = new Color(0.1f,0.1f,0.1f,1);
-            // drag events
-            var trig = header.AddComponent<EventTrigger>();
-            AddEvent(trig, EventTriggerType.BeginDrag, e => OnBeginDrag((PointerEventData)e));
-            AddEvent(trig, EventTriggerType.Drag, e => OnDrag((PointerEventData)e));
-            // minimize button
-            GameObject mb = new GameObject("Minimize"); mb.transform.SetParent(header.transform);
-            var mbrt = mb.AddComponent<RectTransform>();
-            mbrt.anchorMin = new Vector2(1,0); mbrt.anchorMax = new Vector2(1,1);
-            mbrt.sizeDelta = new Vector2(30,30); mbrt.pivot = new Vector2(1,0.5f);
-            minimizeButton = mb.AddComponent<Button>();
-            var mbimg = mb.AddComponent<Image>(); mbimg.color = Color.gray;
-            minimizeButton.onClick.AddListener(ToggleMinimize);
-
-            // scroll area for output
-            GameObject sg = new GameObject("ScrollArea"); sg.transform.SetParent(wgo.transform);
-            contentArea = sg.AddComponent<RectTransform>();
-            contentArea.anchorMin = new Vector2(0,0.2f); contentArea.anchorMax = new Vector2(1,1);
-            contentArea.offsetMin = new Vector2(10,10); contentArea.offsetMax = new Vector2(-10,-40);
-            scrollRect = sg.AddComponent<ScrollRect>(); scrollRect.horizontal = false;
-            var sback = sg.AddComponent<Image>(); sback.color = Color.clear;
-            // viewport
-            GameObject vp = new GameObject("Viewport"); vp.transform.SetParent(sg.transform);
-            var vprt = vp.AddComponent<RectTransform>(); vprt.anchorMin=Vector2.zero; vprt.anchorMax=Vector2.one; vprt.offsetMin=vprt.offsetMax=Vector2.zero;
-            var mask = vp.AddComponent<Mask>(); mask.showMaskGraphic=false;
-            var vpimg = vp.AddComponent<Image>(); vpimg.color = Color.clear;
-            scrollRect.viewport = vprt;
-            // text content
-            GameObject ct = new GameObject("Content"); ct.transform.SetParent(vp.transform);
-            var ctrt = ct.AddComponent<RectTransform>(); ctrt.anchorMin=Vector2.zero; ctrt.anchorMax=Vector2.one; ctrt.offsetMin=ctrt.offsetMax=Vector2.zero;
-            outputText = ct.AddComponent<TextMeshProUGUI>();
-            outputText.color = Color.white;
-            outputText.fontSize = 14;
-            // Use legacy enableWordWrapping (obsolete) with warning suppression
-            #pragma warning disable 0618
-            outputText.enableWordWrapping = true;
-            #pragma warning restore 0618
-            outputText.alignment = TextAlignmentOptions.TopLeft;
-            scrollRect.content = ctrt;
-
-            // input field
-            GameObject ig = new GameObject("InputField"); ig.transform.SetParent(wgo.transform);
-            var irt = ig.AddComponent<RectTransform>(); irt.anchorMin=new Vector2(0,0); irt.anchorMax=new Vector2(1,0); irt.sizeDelta=new Vector2(0,30); irt.pivot=new Vector2(0,0);
-            inputField = ig.AddComponent<TMP_InputField>(); var tf = ig.AddComponent<TextMeshProUGUI>(); tf.color=Color.white; tf.fontSize=14;
-            inputField.textComponent = tf;
-            var ph = ig.AddComponent<TextMeshProUGUI>(); ph.text="Enter command..."; ph.color=Color.gray; inputField.placeholder=ph;
-
-            // resize handle
-            GameObject rh = new GameObject("Resize"); rh.transform.SetParent(wgo.transform);
-            resizeHandle = rh.AddComponent<RectTransform>();
-            resizeHandle.anchorMin=resizeHandle.anchorMax=new Vector2(1,0);
-            resizeHandle.sizeDelta=new Vector2(20,20); resizeHandle.anchoredPosition=new Vector2(-10,10);
-            var rhimg = rh.AddComponent<Image>(); rhimg.color=Color.gray;
-            var rtrig = rh.AddComponent<EventTrigger>();
-            AddEvent(rtrig, EventTriggerType.BeginDrag, e => OnBeginResize((PointerEventData)e));
-            AddEvent(rtrig, EventTriggerType.Drag, e => OnDragResize((PointerEventData)e));
-        }
-
-        void AddEvent(EventTrigger trg, EventTriggerType t, Action<BaseEventData> cb) { var e=new EventTrigger.Entry{eventID=t}; e.callback.AddListener(cb.Invoke); trg.triggers.Add(e); }
-
-        void OnBeginDrag(PointerEventData e) { RectTransformUtility.ScreenPointToLocalPointInRectangle(window,e.position,null, out dragOffset); }
-        void OnDrag(PointerEventData e) { Vector2 lp; RectTransformUtility.ScreenPointToLocalPointInRectangle(consoleCanvas.transform as RectTransform,e.position,null, out lp); window.anchoredPosition = lp - dragOffset; }
-        void OnBeginResize(PointerEventData e){ resizeStart=window.sizeDelta; }
-        void OnDragResize(PointerEventData e){ var s=resizeStart + new Vector2(e.delta.x,-e.delta.y); window.sizeDelta=new Vector2(Mathf.Max(200,s.x),Mathf.Max(100,s.y)); }
-
-        void ToggleMinimize(){ isMinimized=!isMinimized; contentArea.gameObject.SetActive(!isMinimized); inputField.gameObject.SetActive(!isMinimized); }
-
-        void AppendLine(string line){ outputText.text += ParseMarkdown(line)+"\n"; Canvas.ForceUpdateCanvases(); scrollRect.verticalNormalizedPosition=0; }
-        string ParseMarkdown(string s)
-        {
-            // Bold: **text**
-            s = Regex.Replace(s, @"\*\*(.*?)\*\*", "<b>$1</b>");
-            // Italic: *text*
-            s = Regex.Replace(s, @"\*(.*?)\*", "<i>$1</i>");
-            return s;
-        }        void RegisterCommands()
-        {
-            commands.Clear();
-            
-            // Basic console commands
-            commands["help"] = args => {
-                if (args.Length == 0)
-                {
-                    AppendLine("<color=cyan>=== Debug Console Help ===</color>");
-                    AppendLine("<color=yellow>Basic Commands:</color>");
-                    foreach(var k in commands.Keys.OrderBy(x => x)) 
-                        AppendLine($"  {k}");
-                    AppendLine("\n<color=yellow>Usage:</color> help [command] for detailed info");
-                    AppendLine("<color=yellow>Navigation:</color> Up/Down arrows for history, Tab for autocomplete");
-                }
-                else
-                {
-                    ShowCommandHelp(args[0]);
-                }
-            };
-            
-            commands["echo"] = args => AppendLine(string.Join(" ", args));
-            commands["clear"] = args => { outputText.text = string.Empty; logBuffer.Clear(); };
-            
-            // Scene management
-            commands["scene_load"] = args => {
-                if (args.Length == 0) { AppendLine("<color=red>Usage:</color> scene_load <scene_name>"); return; }
-                try { SceneManager.LoadScene(args[0]); AppendLine($"<color=green>Loading scene:</color> {args[0]}"); }
-                catch (Exception e) { AppendLine($"<color=red>Error loading scene:</color> {e.Message}"); }
-            };
-            
-            commands["scene_list"] = args => {
-                AppendLine("<color=cyan>=== Available Scenes ===</color>");
-                for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
-                {
-                    var scenePath = SceneUtility.GetScenePathByBuildIndex(i);
-                    var sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
-                    AppendLine($"  {i}: {sceneName}");
-                }
-            };
-            
-            commands["scene_reload"] = args => {
-                var currentScene = SceneManager.GetActiveScene();
-                AppendLine($"<color=green>Reloading scene:</color> {currentScene.name}");
-                SceneManager.LoadScene(currentScene.name);
-            };
-            
-            // Application control
-            commands["quit"] = args => {
-                AppendLine("<color=yellow>Quitting application...</color>");
-                #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-                #else
-                Application.Quit();
-                #endif
-            };
-            
-            commands["timescale"] = args => {
-                if (args.Length == 0) { 
-                    AppendLine($"<color=cyan>Current timescale:</color> {Time.timeScale}"); 
-                    return; 
-                }
-                if (float.TryParse(args[0], out float scale)) {
-                    Time.timeScale = Mathf.Max(0, scale);
-                    AppendLine($"<color=green>Timescale set to:</color> {Time.timeScale}");
-                } else {
-                    AppendLine("<color=red>Usage:</color> timescale <float_value>");
-                }
-            };
-            
-            // System information
-            commands["sysinfo"] = args => {
-                AppendLine("<color=cyan>=== System Information ===</color>");
-                AppendLine($"<color=yellow>Unity Version:</color> {Application.unityVersion}");
-                AppendLine($"<color=yellow>Platform:</color> {Application.platform}");
-                AppendLine($"<color=yellow>FPS:</color> {(1.0f / Time.unscaledDeltaTime):F1}");
-                AppendLine($"<color=yellow>Frame Count:</color> {Time.frameCount}");
-                AppendLine($"<color=yellow>Time Scale:</color> {Time.timeScale}");
-                AppendLine($"<color=yellow>Memory Usage:</color> {(System.GC.GetTotalMemory(false) / 1024f / 1024f):F2} MB");
-                AppendLine($"<color=yellow>Graphics Memory:</color> {(UnityEngine.Profiling.Profiler.usedHeapSizeLong / 1024f / 1024f):F2} MB");
-            };
-            
-            // Player cheats
-            commands["god_mode"] = args => {
-                var player = FindFirstObjectByType<MonoBehaviour>(); // This would be your actual player class
-                AppendLine("<color=yellow>God mode toggle</color> (implement with actual player reference)");
-            };
-            
-            commands["noclip"] = args => {
-                AppendLine("<color=yellow>Noclip toggle</color> (implement with actual player movement)");
-            };
-            
-            commands["teleport"] = args => {
-                if (args.Length < 3) { 
-                    AppendLine("<color=red>Usage:</color> teleport <x> <y> <z>"); 
-                    return; 
-                }
-                if (float.TryParse(args[0], out float x) && float.TryParse(args[1], out float y) && float.TryParse(args[2], out float z)) {
-                    var player = FindFirstObjectByType<Camera>()?.transform; // Use camera as fallback
-                    if (player != null) {
-                        player.position = new Vector3(x, y, z);
-                        AppendLine($"<color=green>Teleported to:</color> {x}, {y}, {z}");
-                    } else {
-                        AppendLine("<color=red>Error:</color> No player object found");
-                    }
-                } else {
-                    AppendLine("<color=red>Error:</color> Invalid coordinates");
-                }
-            };
-            
-            // Log filtering
-            commands["log_filter"] = args => {
-                if (args.Length == 0) {
-                    AppendLine($"<color=cyan>Current filter:</color> {currentLogFilter}");
-                    AppendLine("<color=yellow>Available filters:</color> " + string.Join(", ", Enum.GetNames(typeof(LogCategory))));
-                    return;
-                }
-                if (Enum.TryParse<LogCategory>(args[0], true, out var category)) {
-                    currentLogFilter = category;
-                    AppendLine($"<color=green>Log filter set to:</color> {category}");
-                } else {
-                    AppendLine("<color=red>Error:</color> Invalid category");
-                }
-            };
-              // Memory management
-            commands["gc_collect"] = args => {
-                System.GC.Collect();
-                AppendLine("<color=green>Garbage collection forced</color>");
-            };            // Stats overlay commands
-            commands["stats_toggle"] = args => {
-                AppendLine("<color=green>Stats overlay toggle command received</color>");
-                AppendLine("<color=yellow>Note:</color> Stats overlay controls available in development builds (F3 to toggle)");
-            };
-            
-            commands["stats_fps"] = args => {
-                if (args.Length == 0) { AppendLine("<color=red>Usage:</color> stats_fps <true/false>"); return; }
-                AppendLine("<color=green>FPS display toggle command received</color>");
-                AppendLine("<color=yellow>Note:</color> Stats overlay controls available in development builds");
-            };
-            
-            // Visual debugger commands
-            commands["debug_draw"] = args => {
-                AppendLine("<color=green>Debug visualizer command received</color>");
-                AppendLine("<color=yellow>Note:</color> Visual debugging available in development builds only (F4 to toggle)");
-            };
-            
-            commands["draw_line"] = args => {
-                if (args.Length < 6) { 
-                    AppendLine("<color=red>Usage:</color> draw_line <x1> <y1> <z1> <x2> <y2> <z2> [duration]"); 
-                    return; 
-                }
-                AppendLine("<color=yellow>Debug line drawing available in development builds only</color>");
-            };
-            
-            commands["draw_sphere"] = args => {
-                if (args.Length < 4) { 
-                    AppendLine("<color=red>Usage:</color> draw_sphere <x> <y> <z> <radius> [duration]"); 
-                    return; 
-                }
-                AppendLine("<color=yellow>Debug sphere drawing available in development builds only</color>");
-            };
-            
-            commands["clear_debug"] = args => {
-                AppendLine("<color=green>Debug visualization clear command received</color>");
-            };
-            
-            // Add integration with AdvancedLogger
-            RegisterAdvancedLoggerIntegration();
-            
-            // Population/Entity management commands
-            commands["spawn_pop"] = args => {
-                try {
-                    var popManager = PopulationManager.Instance;
-                    if (popManager == null) {
-                        AppendLine("<color=red>Error:</color> PopulationManager not found");
-                        return;
-                    }
-                    
-                    Vector3 spawnPos = Vector3.zero;
-                    if (args.Length >= 3) {
-                        if (float.TryParse(args[0], out float x) && float.TryParse(args[1], out float y) && float.TryParse(args[2], out float z)) {
-                            spawnPos = new Vector3(x, y, z);
-                        } else {
-                            AppendLine("<color=red>Error:</color> Invalid coordinates");
-                            return;
-                        }
-                    } else {
-                        // Use default spawn location
-                        spawnPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
-                    }
-                    
-                    var newPop = popManager.SpawnPopAt(spawnPos);
-                    if (newPop != null) {
-                        AppendLine($"<color=green>Spawned pop:</color> {newPop.name} at {spawnPos}");
-                    } else {
-                        AppendLine("<color=red>Error:</color> Failed to spawn pop (population cap reached?)");
-                    }
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error spawning pop:</color> {e.Message}");
-                }
-            };
-            
-            commands["kill_all_pops"] = args => {
-                try {
-                    var popManager = PopulationManager.Instance;
-                    if (popManager == null) {
-                        AppendLine("<color=red>Error:</color> PopulationManager not found");
-                        return;
-                    }
-                    
-                    var livingPops = popManager.GetLivingPops();
-                    int count = livingPops.Count;
-                    
-                    // Kill all pops (iterate backwards to avoid collection modification issues)
-                    for (int i = livingPops.Count - 1; i >= 0; i--) {
-                        if (livingPops[i] != null) {
-                            popManager.KillPop(livingPops[i]);
-                        }
-                    }
-                    
-                    AppendLine($"<color=yellow>Killed {count} pops</color>");
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error killing pops:</color> {e.Message}");
-                }
-            };
-            
-            commands["list_pops"] = args => {
-                try {
-                    var popManager = PopulationManager.Instance;
-                    if (popManager == null) {
-                        AppendLine("<color=red>Error:</color> PopulationManager not found");
-                        return;
-                    }
-                    
-                    var livingPops = popManager.GetLivingPops();
-                    AppendLine($"<color=cyan>=== Living Pops ({livingPops.Count}/{popManager.populationCap}) ===</color>");
-                    
-                    for (int i = 0; i < livingPops.Count; i++) {
-                        var pop = livingPops[i];
-                        if (pop != null) {
-                            var pos = pop.transform.position;
-                            AppendLine($"  {i}: <color=yellow>{pop.name}</color> - Health: {pop.health:F1}, Position: ({pos.x:F1}, {pos.y:F1}, {pos.z:F1})");
-                        }
-                    }
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error listing pops:</color> {e.Message}");
-                }
-            };
-            
-            commands["set_pop_cap"] = args => {
-                if (args.Length == 0) { 
-                    AppendLine("<color=red>Usage:</color> set_pop_cap <number>"); 
-                    return; 
-                }
-                
-                if (int.TryParse(args[0], out int newCap) && newCap >= 0) {
-                    var popManager = PopulationManager.Instance;
-                    if (popManager != null) {
-                        popManager.populationCap = newCap;
-                        AppendLine($"<color=green>Population cap set to:</color> {newCap}");
-                    } else {
-                        AppendLine("<color=red>Error:</color> PopulationManager not found");
-                    }
-                } else {
-                    AppendLine("<color=red>Error:</color> Invalid number");
-                }
-            };
-            
-            // Inventory system commands
-            commands["give_item"] = args => {
-                if (args.Length < 1) {
-                    AppendLine("<color=red>Usage:</color> give_item <item_id> [amount] [target_pop_name]");
-                    AppendLine("<color=yellow>Available items:</color> Check ItemSO assets in project");
-                    return;
-                }
-                
-                try {
-                    string itemId = args[0];
-                    int amount = args.Length > 1 && int.TryParse(args[1], out int qty) ? qty : 1;
-                    string targetName = args.Length > 2 ? args[2] : null;
-                    
-                    // Find target pop
-                    var targetPop = FindTargetPop(targetName);
-                    if (targetPop == null) {
-                        AppendLine("<color=red>Error:</color> No target pop found. Use list_pops to see available targets.");
-                        return;
-                    }
-                    
-                    var inventory = targetPop.GetComponent<Lineage.Ancestral.Legacies.Systems.Inventory.InventoryComponent>();
-                    if (inventory == null) {
-                        AppendLine("<color=red>Error:</color> Target pop has no inventory component");
-                        return;
-                    }
-                    
-                    if (inventory.AddItem(itemId, amount)) {
-                        AppendLine($"<color=green>Added {amount}x {itemId} to {targetPop.name}'s inventory</color>");
-                    } else {
-                        AppendLine("<color=red>Error:</color> Failed to add item (inventory full?)");
-                    }
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error giving item:</color> {e.Message}");
-                }
-            };
-            
-            commands["remove_item"] = args => {
-                if (args.Length < 1) {
-                    AppendLine("<color=red>Usage:</color> remove_item <item_id> [amount] [target_pop_name]");
-                    return;
-                }
-                
-                try {
-                    string itemId = args[0];
-                    int amount = args.Length > 1 && int.TryParse(args[1], out int qty) ? qty : 1;
-                    string targetName = args.Length > 2 ? args[2] : null;
-                    
-                    var targetPop = FindTargetPop(targetName);
-                    if (targetPop == null) {
-                        AppendLine("<color=red>Error:</color> No target pop found");
-                        return;
-                    }
-                    
-                    var inventory = targetPop.GetComponent<Lineage.Ancestral.Legacies.Systems.Inventory.InventoryComponent>();
-                    if (inventory == null) {
-                        AppendLine("<color=red>Error:</color> Target pop has no inventory component");
-                        return;
-                    }
-                    
-                    if (inventory.RemoveItem(itemId, amount)) {
-                        AppendLine($"<color=green>Removed {amount}x {itemId} from {targetPop.name}'s inventory</color>");
-                    } else {
-                        AppendLine("<color=red>Error:</color> Failed to remove item (not enough items?)");
-                    }
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error removing item:</color> {e.Message}");
-                }
-            };
-            
-            commands["list_inventory"] = args => {
-                try {
-                    string targetName = args.Length > 0 ? args[0] : null;
-                    var targetPop = FindTargetPop(targetName);
-                    
-                    if (targetPop == null) {
-                        AppendLine("<color=red>Error:</color> No target pop found");
-                        return;
-                    }
-                    
-                    var inventory = targetPop.GetComponent<Lineage.Ancestral.Legacies.Systems.Inventory.InventoryComponent>();
-                    if (inventory == null) {
-                        AppendLine("<color=red>Error:</color> Target pop has no inventory component");
-                        return;
-                    }
-                    
-                    AppendLine($"<color=cyan>=== {targetPop.name}'s Inventory ===</color>");
-                    var items = inventory.GetAllItems();
-                    if (items.Count == 0) {
-                        AppendLine("  <color=gray>Empty</color>");
-                    } else {
-                        foreach (var item in items) {
-                            AppendLine($"  <color=yellow>{item.Key}</color>: {item.Value}");
-                        }
-                        AppendLine($"<color=gray>Capacity: {inventory.GetTotalItemCount()}/{inventory.capacity}</color>");
-                    }
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error listing inventory:</color> {e.Message}");
-                }
-            };
-            
-            // Pop stat modification commands
-            commands["set_health"] = args => {
-                if (args.Length < 1) {
-                    AppendLine("<color=red>Usage:</color> set_health <value> [target_pop_name]");
-                    return;
-                }
-                
-                if (float.TryParse(args[0], out float health)) {
-                    string targetName = args.Length > 1 ? args[1] : null;
-                    var targetPop = FindTargetPop(targetName);
-                    
-                    if (targetPop == null) {
-                        AppendLine("<color=red>Error:</color> No target pop found");
-                        return;
-                    }
-                    
-                    targetPop.health = health;
-                    AppendLine($"<color=green>Set {targetPop.name}'s health to:</color> {health}");
-                } else {
-                    AppendLine("<color=red>Error:</color> Invalid health value");
-                }
-            };
-            
-            commands["set_needs"] = args => {
-                if (args.Length < 4) {
-                    AppendLine("<color=red>Usage:</color> set_needs <hunger> <thirst> <energy> [target_pop_name]");
-                    return;
-                }
-                
-                if (float.TryParse(args[0], out float hunger) && 
-                    float.TryParse(args[1], out float thirst) && 
-                    float.TryParse(args[2], out float energy)) {
-                    
-                    string targetName = args.Length > 3 ? args[3] : null;
-                    var targetPop = FindTargetPop(targetName);
-                    
-                    if (targetPop == null) {
-                        AppendLine("<color=red>Error:</color> No target pop found");
-                        return;
-                    }
-                    
-                    var needs = targetPop.GetComponent<Lineage.Ancestral.Legacies.Systems.Needs.NeedsComponent>();
-                    if (needs != null) {
-                        needs.hunger = hunger;
-                        needs.thirst = thirst;
-                        needs.energy = energy;
-                        AppendLine($"<color=green>Set {targetPop.name}'s needs:</color> H:{hunger} T:{thirst} E:{energy}");
-                    } else {
-                        AppendLine("<color=red>Error:</color> Target pop has no needs component");
-                    }
-                } else {
-                    AppendLine("<color=red>Error:</color> Invalid need values");
-                }
-            };
-            
-            // AI and state control
-            commands["toggle_ai"] = args => {
-                try {
-                    bool enable = true;
-                    if (args.Length > 0) {
-                        if (!bool.TryParse(args[0], out enable)) {
-                            AppendLine("<color=red>Usage:</color> toggle_ai [true/false]");
-                            return;
-                        }
-                    }
-                    
-                    var pops = FindObjectsByType<Lineage.Ancestral.Legacies.Entities.Pop>(FindObjectsSortMode.None);
-                    int count = 0;
-                    
-                    foreach (var pop in pops) {
-                        var stateMachine = pop.GetComponent<Lineage.Ancestral.Legacies.AI.PopStateMachine>();
-                        if (stateMachine != null) {
-                            stateMachine.enabled = enable;
-                            count++;
-                        }
-                    }
-                    
-                    AppendLine($"<color=green>{(enable ? "Enabled" : "Disabled")} AI for {count} pops</color>");
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error toggling AI:</color> {e.Message}");
-                }
-            };
-            
-            // Resource management commands
-            commands["add_resources"] = args => {
-                if (args.Length < 2) {
-                    AppendLine("<color=red>Usage:</color> add_resources <resource_type> <amount>");
-                    AppendLine("<color=yellow>Resource types:</color> food, faith, wood");
-                    return;
-                }
-                
-                try {
-                    string resourceType = args[0].ToLower();
-                    if (float.TryParse(args[1], out float amount)) {
-                        var resourceManager = ResourceManager.Instance;
-                        if (resourceManager == null) {
-                            AppendLine("<color=red>Error:</color> ResourceManager not found");
-                            return;
-                        }
-                        
-                        switch (resourceType) {
-                            case "food":
-                                resourceManager.AddFood(amount);
-                                AppendLine($"<color=green>Added {amount} food</color>");
-                                break;
-                            case "faith":
-                                resourceManager.AddFaith(amount);
-                                AppendLine($"<color=green>Added {amount} faith</color>");
-                                break;
-                            case "wood":
-                                resourceManager.AddWood(amount);
-                                AppendLine($"<color=green>Added {amount} wood</color>");
-                                break;
-                            default:
-                                AppendLine("<color=red>Error:</color> Unknown resource type");
-                                break;
-                        }
-                    } else {
-                        AppendLine("<color=red>Error:</color> Invalid amount");
-                    }
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error adding resources:</color> {e.Message}");
-                }
-            };
-            
-            commands["show_resources"] = args => {
-                try {
-                    var resourceManager = ResourceManager.Instance;
-                    if (resourceManager == null) {
-                        AppendLine("<color=red>Error:</color> ResourceManager not found");
-                        return;
-                    }
-                    
-                    AppendLine("<color=cyan>=== Current Resources ===</color>");
-                    AppendLine($"<color=yellow>Food:</color> {resourceManager.currentFood:F1}");
-                    AppendLine($"<color=yellow>Faith:</color> {resourceManager.currentFaithPoints:F1}");
-                    AppendLine($"<color=yellow>Wood:</color> {resourceManager.currentWood:F1}");
-                    AppendLine($"<color=yellow>Efficient Gathering:</color> {resourceManager.hasEfficientGathering}");
-                } catch (Exception e) {
-                    AppendLine($"<color=red>Error showing resources:</color> {e.Message}");
-                }
-            };
-
-            // ...existing code...
-        }
-          void RegisterAdvancedLoggerIntegration()
-        {
-            // Subscribe to AdvancedLogger messages if available in development builds
-            try {
-                // This will only work in development builds where AdvancedLogger is compiled
-                AppendLine("<color=cyan>Debug console initialized</color>");
-                AppendLine("<color=yellow>Advanced logging integration available in development builds</color>");
-            } catch {
-                // AdvancedLogger might not be available in release builds
-                AppendLine("<color=gray>Running in release mode - limited debug features</color>");
-            }
-        }
-        
-        /// <summary>
-        /// Method for AdvancedLogger to append log messages to the console
-        /// </summary>
-        public void AppendLogMessage(string message)
-        {
-            if (isOpen && !isMinimized)
+            if (GUILayout.Button("Execute", GUILayout.Width(70)))
             {
-                AppendLine(message);
+                ExecuteCommand();
+            }
+
+            GUILayout.EndHorizontal();
+
+            // Suggestions
+            if (showSuggestions && suggestions.Count > 0)
+            {
+                DrawSuggestions();
+            }
+
+            GUILayout.EndVertical();
+
+            // Make window draggable
+            if (isDraggable)
+            {
+                GUI.DragWindow();
             }
         }
-        
-        void ShowCommandHelp(string command)
+
+        private void DrawSuggestions()
         {
-            var helpText = command.ToLower() switch {
-                "help" => "Usage: help [command] - Show help for all commands or specific command",
-                "echo" => "Usage: echo <message> - Echo a message to console",
-                "clear" => "Usage: clear - Clear the console output",
-                "scene_load" => "Usage: scene_load <scene_name> - Load a specific scene",
-                "scene_list" => "Usage: scene_list - List all available scenes",
-                "scene_reload" => "Usage: scene_reload - Reload the current scene",
-                "quit" => "Usage: quit - Exit the application",
-                "timescale" => "Usage: timescale [value] - Get or set the time scale",
-                "sysinfo" => "Usage: sysinfo - Display system information",
-                "teleport" => "Usage: teleport <x> <y> <z> - Teleport player to coordinates",
-                "log_filter" => "Usage: log_filter [category] - Get or set log category filter",
-                "gc_collect" => "Usage: gc_collect - Force garbage collection",
-                _ => $"No help available for '{command}'"
-            };
-            AppendLine($"<color=green>{helpText}</color>");
-        }void ProcessCommand(string line)
-        {
-            var parts=line.Split(' ',StringSplitOptions.RemoveEmptyEntries);
-            var cmd=parts[0].ToLower();
-            var args=parts.Length>1? parts[1..] : new string[0];
-            if(commands.ContainsKey(cmd)) commands[cmd].Invoke(args);
-            else AppendLine($"<color=red>Error:</color> Unknown command '{cmd}'");
+            GUILayout.BeginVertical("box");
+            for (int i = 0; i < Mathf.Min(suggestions.Count, 5); i++)
+            {
+                bool isSelected = i == selectedSuggestion;
+                GUI.backgroundColor = isSelected ? Color.cyan : Color.white;
+                
+                if (GUILayout.Button(suggestions[i], GUI.skin.label))
+                {
+                    currentInput = suggestions[i];
+                    showSuggestions = false;
+                }
+            }
+            GUI.backgroundColor = Color.white;
+            GUILayout.EndVertical();
         }
-        
-        void NavigateHistory(int direction)
+
+        private void HandleWindowInteraction()
+        {
+            Event currentEvent = Event.current;
+            Vector2 mousePos = currentEvent.mousePosition;
+
+            // Check if mouse is in resize area (bottom-right corner)
+            Rect resizeArea = new Rect(consoleRect.x + consoleRect.width - 20, 
+                                     consoleRect.y + consoleRect.height - 20, 20, 20);
+
+            if (isResizable && resizeArea.Contains(mousePos))
+            {
+                if (currentEvent.type == EventType.MouseDown)
+                {
+                    isResizing = true;
+                }
+            }
+
+            if (currentEvent.type == EventType.MouseDrag && isResizing)
+            {
+                consoleRect.width = mousePos.x - consoleRect.x;
+                consoleRect.height = mousePos.y - consoleRect.y;
+                consoleRect.width = Mathf.Max(400, consoleRect.width);
+                consoleRect.height = Mathf.Max(200, consoleRect.height);
+            }
+
+            if (currentEvent.type == EventType.MouseUp)
+            {
+                isResizing = false;
+            }
+        }
+
+        private void NavigateHistory(int direction)
         {
             if (commandHistory.Count == 0) return;
-            
+
             historyIndex += direction;
             historyIndex = Mathf.Clamp(historyIndex, -1, commandHistory.Count - 1);
-            
-            if (historyIndex == -1)
+
+            if (historyIndex >= 0)
             {
-                inputField.text = "";
+                currentInput = commandHistory[historyIndex];
             }
             else
             {
-                inputField.text = commandHistory[commandHistory.Count - 1 - historyIndex];
-            }
-            
-            // Move cursor to end
-            inputField.stringPosition = inputField.text.Length;
-        }
-        
-        void AddToHistory(string command)
-        {
-            if (string.IsNullOrWhiteSpace(command)) return;
-            
-            // Remove duplicate if it exists
-            commandHistory.Remove(command);
-            // Add to end
-            commandHistory.Add(command);
-            
-            // Limit history size
-            if (commandHistory.Count > 50)
-            {
-                commandHistory.RemoveAt(0);
+                currentInput = "";
             }
         }
-        
-        void AutoComplete()
-        {
-            string input = inputField.text.ToLower();
-            if (string.IsNullOrEmpty(input)) return;
-            
-            var matches = commands.Keys.Where(cmd => cmd.StartsWith(input)).ToList();
-            
-            if (matches.Count == 1)
-            {
-                inputField.text = matches[0];
-                inputField.stringPosition = inputField.text.Length;
-            }
-            else if (matches.Count > 1)
-            {
-                AppendLine($"<color=yellow>Suggestions:</color> {string.Join(", ", matches)}");
-            }
-        }
-          // Helper method to find a target pop by name
-        private Pop FindTargetPop(string targetName)
-        {
-            var popManager = PopulationManager.Instance;
-            if (popManager == null) return null;
-            
-            var livingPops = popManager.GetLivingPops();
-            if (livingPops == null || livingPops.Count == 0) return null;
-            
-            // If no specific name provided, return the first pop
-            if (string.IsNullOrEmpty(targetName))
-            {
-                return livingPops.FirstOrDefault();
-            }
-            
-            // Find pop by name (case insensitive)
-            return livingPops.FirstOrDefault(p => 
-                string.Equals(p.name, targetName, StringComparison.OrdinalIgnoreCase));
-        }
-        
-        // Enhanced auto-completion and suggestion methods
+
         private void UpdateSuggestions()
         {
-            if (string.IsNullOrEmpty(inputField.text))
+            suggestions.clear();
+            selectedSuggestion = -1;
+
+            if (string.IsNullOrEmpty(currentInput))
             {
-                HideSuggestions();
+                showSuggestions = false;
                 return;
             }
-            
-            string input = inputField.text.ToLower();
-            suggestions.Clear();
-            
+
             foreach (var command in commands.Keys)
             {
-                if (command.StartsWith(input))
+                if (command.StartsWith(currentInput, StringComparison.OrdinalIgnoreCase))
                 {
                     suggestions.Add(command);
                 }
             }
-            
-            if (suggestions.Count > 0)
+
+            showSuggestions = suggestions.Count > 0;
+            if (showSuggestions)
             {
-                ShowSuggestions();
+                selectedSuggestion = 0;
+            }
+        }
+
+        private void HandleAutoComplete()
+        {
+            if (showSuggestions && suggestions.Count > 0)
+            {
+                currentInput = suggestions[selectedSuggestion];
+                showSuggestions = false;
+            }
+        }
+
+        private void ExecuteCommand()
+        {
+            if (string.IsNullOrEmpty(currentInput)) return;
+
+            // Add to history
+            if (commandHistory.Count == 0 || commandHistory[commandHistory.Count - 1] != currentInput)
+            {
+                commandHistory.Add(currentInput);
+                if (commandHistory.Count > maxHistoryCount)
+                {
+                    commandHistory.RemoveAt(0);
+                }
+            }
+
+            // Log the command
+            LogToConsole($"> {currentInput}");
+
+            // Parse and execute
+            string[] parts = currentInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 0)
+            {
+                string commandName = parts[0].ToLower();
+                string[] args = parts.Skip(1).ToArray();
+
+                if (commands.ContainsKey(commandName))
+                {
+                    try
+                    {
+                        string result = commands[commandName].command(args);
+                        if (!string.IsNullOrEmpty(result))
+                        {
+                            LogToConsole(result);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LogToConsole($"Error executing command: {e.Message}", true);
+                    }
+                }
+                else
+                {
+                    LogToConsole($"Unknown command: {commandName}. Type 'help' for available commands.", true);
+                }
+            }
+
+            // Clear input
+            currentInput = "";
+            historyIndex = -1;
+            showSuggestions = false;
+
+            // Auto-scroll to bottom
+            scrollPosition.y = float.MaxValue;
+        }
+
+        private void LogToConsole(string message, bool isError = false)
+        {
+            string timestamp = DateTime.Now.ToString("HH:mm:ss");
+            string prefix = isError ? "[ERROR]" : "[INFO]";
+            string logEntry = $"[{timestamp}] {prefix} {message}";
+
+            consoleLog.Add(logEntry);
+
+            // Trim log if too long
+            if (consoleLog.Count > maxLogCount)
+            {
+                consoleLog.RemoveAt(0);
+            }
+
+            // Also log to Unity console
+            if (isError)
+            {
+                Debug.LogError(message);
             }
             else
             {
-                HideSuggestions();
+                Debug.Log(message);
             }
-        }
-        
-        private void ShowSuggestions()
-        {
-            if (suggestionPanel == null)
+
+            // Log to AdvancedLogger if available
+            if (logger != null)
             {
-                CreateSuggestionPanel();
-            }
-            
-            suggestionPanel.SetActive(true);
-            showingSuggestions = true;
-            
-            string suggestionList = string.Join("\n", suggestions.Take(5));
-            suggestionText.text = suggestionList;
-        }
-        
-        private void HideSuggestions()
-        {
-            if (suggestionPanel != null)
-            {
-                suggestionPanel.SetActive(false);
-            }
-            showingSuggestions = false;
-        }
-        
-        private void CreateSuggestionPanel()
-        {
-            suggestionPanel = new GameObject("SuggestionPanel");
-            suggestionPanel.transform.SetParent(window.transform, false);
-            
-            RectTransform suggestionRect = suggestionPanel.AddComponent<RectTransform>();
-            suggestionRect.anchorMin = new Vector2(0, 0);
-            suggestionRect.anchorMax = new Vector2(1, 0.2f);
-            suggestionRect.offsetMin = new Vector2(10, 10);
-            suggestionRect.offsetMax = new Vector2(-10, 50);
-            
-            Image suggestionBg = suggestionPanel.AddComponent<Image>();
-            suggestionBg.color = new Color(0.15f, 0.15f, 0.15f, 0.95f);
-            
-            GameObject textObj = new GameObject("SuggestionText");
-            textObj.transform.SetParent(suggestionPanel.transform, false);
-            
-            RectTransform textRect = textObj.AddComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = new Vector2(5, 5);
-            textRect.offsetMax = new Vector2(-5, -5);
-            
-            suggestionText = textObj.AddComponent<TextMeshProUGUI>();
-            suggestionText.fontSize = 12;
-            suggestionText.color = Color.yellow;
-            suggestionText.alignment = TextAlignmentOptions.TopLeft;
-            
-            suggestionPanel.SetActive(false);
-        }
-        
-        // Enhanced registration method with descriptions
-        public void RegisterCommand(string command, string description, Action<string[]> handler)
-        {
-            commands[command] = handler;
-            commandDescriptions[command] = description;
-        }
-        
-        // Log filtering methods
-        public void AppendLogMessage(string message, string category = "General")
-        {
-            LogCategory msgCategory = LogCategory.General;
-            Enum.TryParse(category, true, out msgCategory);
-            
-            if (currentLogFilter != LogCategory.All && currentLogFilter != msgCategory)
-            {
-                return; // Filter out this message
-            }
-            
-            logBuffer.Add($"[{DateTime.Now:HH:mm:ss}] {message}");
-            
-            // Maintain buffer size
-            if (logBuffer.Count > maxLogLines)
-            {
-                logBuffer.RemoveAt(0);
-            }
-            
-            // Update display
-            RefreshLogDisplay();
-        }
-        
-        private void RefreshLogDisplay()
-        {
-            if (outputText != null)
-            {
-                outputText.text = string.Join("\n", logBuffer);
-                
-                // Auto-scroll to bottom
-                Canvas.ForceUpdateCanvases();
-                if (scrollRect != null)
+                if (isError)
                 {
-                    scrollRect.verticalNormalizedPosition = 0f;
+                    logger.LogError("DebugConsole", message);
                 }
+                else
+                {
+                    logger.LogInfo("DebugConsole", message);
+                }
+            }
+        }
+
+        private void RegisterCommands()
+        {
+            // General commands
+            RegisterCommand("help", "Show all available commands", "help [command]", HelpCommand);
+            RegisterCommand("clear", "Clear console log", "clear", ClearCommand);
+            RegisterCommand("quit", "Quit application", "quit", QuitCommand);
+
+            // Population commands
+            RegisterCommand("spawn_pop", "Spawn a new pop at position", "spawn_pop <x> <y> [z]", SpawnPopCommand);
+            RegisterCommand("kill_pop", "Kill selected pop or pop by ID", "kill_pop [id]", KillPopCommand);
+            RegisterCommand("list_pops", "List all pops with their IDs", "list_pops", ListPopsCommand);
+            RegisterCommand("select_pop", "Select pop by ID", "select_pop <id>", SelectPopCommand);
+            RegisterCommand("move_pop", "Move selected pop to position", "move_pop <x> <y> [z]", MovePopCommand);
+
+            // Health and needs commands
+            RegisterCommand("set_health", "Set pop health", "set_health <value> [pop_id]", SetHealthCommand);
+            RegisterCommand("set_hunger", "Set pop hunger", "set_hunger <value> [pop_id]", SetHungerCommand);
+            RegisterCommand("set_thirst", "Set pop thirst", "set_thirst <value> [pop_id]", SetThirstCommand);
+            RegisterCommand("set_energy", "Set pop energy", "set_energy <value> [pop_id]", SetEnergyCommand);
+            RegisterCommand("heal_pop", "Fully heal pop", "heal_pop [pop_id]", HealPopCommand);
+
+            // Inventory commands
+            RegisterCommand("give_item", "Give item to pop", "give_item <item_name> <quantity> [pop_id]", GiveItemCommand);
+            RegisterCommand("remove_item", "Remove item from pop", "remove_item <item_name> <quantity> [pop_id]", RemoveItemCommand);
+            RegisterCommand("clear_inventory", "Clear pop inventory", "clear_inventory [pop_id]", ClearInventoryCommand);
+            RegisterCommand("list_inventory", "List pop inventory", "list_inventory [pop_id]", ListInventoryCommand);
+
+            // Resource commands
+            RegisterCommand("give_food", "Add food to resources", "give_food <amount>", GiveFoodCommand);
+            RegisterCommand("give_faith", "Add faith to resources", "give_faith <amount>", GiveFaithCommand);
+            RegisterCommand("give_wood", "Add wood to resources", "give_wood <amount>", GiveWoodCommand);
+            RegisterCommand("set_food", "Set food amount", "set_food <amount>", SetFoodCommand);
+            RegisterCommand("set_faith", "Set faith amount", "set_faith <amount>", SetFaithCommand);
+            RegisterCommand("set_wood", "Set wood amount", "set_wood <amount>", SetWoodCommand);
+            RegisterCommand("resources", "Show current resources", "resources", ShowResourcesCommand);
+
+            // AI and state commands
+            RegisterCommand("set_ai_state", "Set pop AI state", "set_ai_state <state_name> [pop_id]", SetAIStateCommand);
+            RegisterCommand("list_ai_states", "List available AI states", "list_ai_states", ListAIStatesCommand);
+            RegisterCommand("pop_info", "Show detailed pop information", "pop_info [pop_id]", PopInfoCommand);
+
+            // Time and simulation commands
+            RegisterCommand("timescale", "Set time scale", "timescale <scale>", TimeScaleCommand);
+            RegisterCommand("pause", "Pause/unpause simulation", "pause", PauseCommand);
+
+            // Debug visualization commands
+            RegisterCommand("toggle_debug", "Toggle debug visualization", "toggle_debug", ToggleDebugCommand);
+            RegisterCommand("toggle_stats", "Toggle stats overlay", "toggle_stats", ToggleStatsCommand);
+            RegisterCommand("debug_pop_paths", "Toggle pop path visualization", "debug_pop_paths", DebugPopPathsCommand);
+
+            LogToConsole($"Registered {commands.Count} debug commands.");
+        }
+
+        private void RegisterCommand(string name, string description, string usage, CommandDelegate command)
+        {
+            commands[name] = new ConsoleCommand(name, description, usage, command);
+        }
+
+        #region Command Implementations
+
+        private string HelpCommand(string[] args)
+        {
+            if (args.Length > 0)
+            {
+                string commandName = args[0].ToLower();
+                if (commands.ContainsKey(commandName))
+                {
+                    var cmd = commands[commandName];
+                    return $"{cmd.name}: {cmd.description}\nUsage: {cmd.usage}";
+                }
+                else
+                {
+                    return $"Unknown command: {commandName}";
+                }
+            }
+
+            string result = "Available commands:\n";
+            foreach (var cmd in commands.Values.OrderBy(c => c.name))
+            {
+                result += $"  {cmd.name} - {cmd.description}\n";
+            }
+            result += "\nType 'help <command>' for detailed usage.";
+            return result;
+        }
+
+        private string ClearCommand(string[] args)
+        {
+            consoleLog.Clear();
+            return "";
+        }
+
+        private string QuitCommand(string[] args)
+        {
+            #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+            #else
+            Application.Quit();
+            #endif
+            return "Quitting application...";
+        }
+
+        private string SpawnPopCommand(string[] args)
+        {
+            if (args.Length < 2)
+            {
+                return "Usage: spawn_pop <x> <y> [z]";
+            }
+
+            if (!float.TryParse(args[0], out float x) || !float.TryParse(args[1], out float y))
+            {
+                return "Invalid coordinates. Use numbers for x and y.";
+            }
+
+            float z = 0f;
+            if (args.Length > 2 && !float.TryParse(args[2], out z))
+            {
+                return "Invalid z coordinate.";
+            }
+
+            Vector3 position = new Vector3(x, y, z);
+
+            if (populationManager != null)
+            {
+                try
+                {
+                    var pop = populationManager.SpawnPop(position);
+                    if (pop != null)
+                    {
+                        return $"Spawned pop at {position}. Pop ID: {pop.GetInstanceID()}";
+                    }
+                    else
+                    {
+                        return "Failed to spawn pop.";
+                    }
+                }
+                catch (Exception e)
+                {
+                    return $"Error spawning pop: {e.Message}";
+                }
+            }
+            else
+            {
+                return "PopulationManager not found.";
+            }
+        }
+
+        private string KillPopCommand(string[] args)
+        {
+            Pop targetPop = null;
+
+            if (args.Length > 0)
+            {
+                // Kill by ID
+                if (int.TryParse(args[0], out int popId))
+                {
+                    var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
+                    targetPop = allPops.FirstOrDefault(p => p.GetInstanceID() == popId);
+                }
+            }
+            else
+            {
+                // Kill selected pop
+                if (selectionManager != null)
+                {
+                    var selectedPops = selectionManager.GetSelectedPops();
+                    if (selectedPops.Count > 0)
+                    {
+                        var popController = selectedPops[0].GetComponent<PopController>();
+                        if (popController != null)
+                        {
+                            targetPop = popController.GetPop();
+                        }
+                    }
+                }
+            }
+
+            if (targetPop != null)
+            {
+                string popName = $"Pop {targetPop.GetInstanceID()}";
+                Destroy(targetPop.gameObject);
+                return $"Killed {popName}";
+            }
+            else
+            {
+                return "No pop found to kill. Select a pop or provide a valid ID.";
+            }
+        }
+
+        private string ListPopsCommand(string[] args)
+        {
+            var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
+            
+            if (allPops.Length == 0)
+            {
+                return "No pops found.";
+            }
+
+            string result = $"Found {allPops.Length} pops:\n";
+            foreach (var pop in allPops)
+            {
+                var controller = pop.GetComponent<PopController>();
+                string stateName = controller?.GetCurrentStateName() ?? "Unknown";
+                result += $"  ID: {pop.GetInstanceID()}, Position: {pop.transform.position}, State: {stateName}, Health: {pop.health:F1}\n";
+            }
+
+            return result;
+        }
+
+        private string SelectPopCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: select_pop <id>";
+            }
+
+            if (!int.TryParse(args[0], out int popId))
+            {
+                return "Invalid pop ID.";
+            }
+
+            var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
+            var targetPop = allPops.FirstOrDefault(p => p.GetInstanceID() == popId);
+
+            if (targetPop != null)
+            {
+                var controller = targetPop.GetComponent<PopController>();
+                if (controller != null)
+                {
+                    controller.ForceSelect();
+                    return $"Selected pop {popId}";
+                }
+                else
+                {
+                    return "Pop has no PopController component.";
+                }
+            }
+            else
+            {
+                return $"Pop with ID {popId} not found.";
+            }
+        }
+
+        private string MovePopCommand(string[] args)
+        {
+            if (args.Length < 2)
+            {
+                return "Usage: move_pop <x> <y> [z]";
+            }
+
+            if (!float.TryParse(args[0], out float x) || !float.TryParse(args[1], out float y))
+            {
+                return "Invalid coordinates.";
+            }
+
+            float z = 0f;
+            if (args.Length > 2 && !float.TryParse(args[2], out z))
+            {
+                return "Invalid z coordinate.";
+            }
+
+            Vector3 targetPosition = new Vector3(x, y, z);
+
+            if (selectionManager != null)
+            {
+                var selectedPops = selectionManager.GetSelectedPops();
+                if (selectedPops.Count > 0)
+                {
+                    var popController = selectedPops[0].GetComponent<PopController>();
+                    if (popController != null)
+                    {
+                        popController.MoveTo(targetPosition);
+                        return $"Moving selected pop to {targetPosition}";
+                    }
+                    else
+                    {
+                        return "Selected object has no PopController.";
+                    }
+                }
+                else
+                {
+                    return "No pop selected. Select a pop first.";
+                }
+            }
+            else
+            {
+                return "SelectionManager not found.";
+            }
+        }
+
+        private string SetHealthCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_health <value> [pop_id]";
+            }
+
+            if (!float.TryParse(args[0], out float healthValue))
+            {
+                return "Invalid health value.";
+            }
+
+            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            targetPop.health = Mathf.Clamp(healthValue, 0f, targetPop.maxHealth);
+            return $"Set health of pop {targetPop.GetInstanceID()} to {targetPop.health:F1}";
+        }
+
+        private string SetHungerCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_hunger <value> [pop_id]";
+            }
+
+            if (!float.TryParse(args[0], out float hungerValue))
+            {
+                return "Invalid hunger value.";
+            }
+
+            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            targetPop.hunger = Mathf.Clamp(hungerValue, 0f, 100f);
+            return $"Set hunger of pop {targetPop.GetInstanceID()} to {targetPop.hunger:F1}";
+        }
+
+        private string SetThirstCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_thirst <value> [pop_id]";
+            }
+
+            if (!float.TryParse(args[0], out float thirstValue))
+            {
+                return "Invalid thirst value.";
+            }
+
+            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            targetPop.thirst = Mathf.Clamp(thirstValue, 0f, 100f);
+            return $"Set thirst of pop {targetPop.GetInstanceID()} to {targetPop.thirst:F1}";
+        }
+
+        private string SetEnergyCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_energy <value> [pop_id]";
+            }
+
+            if (!float.TryParse(args[0], out float energyValue))
+            {
+                return "Invalid energy value.";
+            }
+
+            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            targetPop.energy = Mathf.Clamp(energyValue, 0f, 100f);
+            return $"Set energy of pop {targetPop.GetInstanceID()} to {targetPop.energy:F1}";
+        }
+
+        private string HealPopCommand(string[] args)
+        {
+            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            targetPop.health = targetPop.maxHealth;
+            targetPop.hunger = 100f;
+            targetPop.thirst = 100f;
+            targetPop.energy = 100f;
+
+            return $"Fully healed pop {targetPop.GetInstanceID()}";
+        }        private string GiveItemCommand(string[] args)
+        {
+            if (args.Length < 2)
+            {
+                return "Usage: give_item <item_name> <quantity> [pop_id]";
+            }
+
+            string itemName = args[0];
+            if (!int.TryParse(args[1], out int quantity))
+            {
+                return "Invalid quantity.";
+            }
+
+            Pop targetPop = GetTargetPop(args.Length > 2 ? args[2] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            var inventory = targetPop.GetComponent<InventoryComponent>();
+            if (inventory == null)
+            {
+                return "Pop has no inventory component.";
+            }
+
+            bool success = inventory.AddItem(itemName, quantity);
+            if (success)
+            {
+                return $"Gave {quantity} {itemName} to pop {targetPop.GetInstanceID()}";
+            }
+            else
+            {
+                return $"Failed to give {quantity} {itemName} to pop {targetPop.GetInstanceID()} (inventory may be full)";
+            }
+        }        private string RemoveItemCommand(string[] args)
+        {
+            if (args.Length < 2)
+            {
+                return "Usage: remove_item <item_name> <quantity> [pop_id]";
+            }
+
+            string itemName = args[0];
+            if (!int.TryParse(args[1], out int quantity))
+            {
+                return "Invalid quantity.";
+            }
+
+            Pop targetPop = GetTargetPop(args.Length > 2 ? args[2] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            var inventory = targetPop.GetComponent<InventoryComponent>();
+            if (inventory == null)
+            {
+                return "Pop has no inventory component.";
+            }
+
+            bool success = inventory.RemoveItem(itemName, quantity);
+            if (success)
+            {
+                return $"Removed {quantity} {itemName} from pop {targetPop.GetInstanceID()}";
+            }
+            else
+            {
+                return $"Failed to remove {quantity} {itemName} from pop {targetPop.GetInstanceID()} (not enough items)";
+            }
+        }        private string ClearInventoryCommand(string[] args)
+        {
+            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            var inventory = targetPop.GetComponent<InventoryComponent>();
+            if (inventory == null)
+            {
+                return "Pop has no inventory component.";
+            }
+
+            inventory.ClearInventory();
+            return $"Cleared inventory of pop {targetPop.GetInstanceID()}";
+        }        private string ListInventoryCommand(string[] args)
+        {
+            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            var inventory = targetPop.GetComponent<InventoryComponent>();
+            if (inventory == null)
+            {
+                return "Pop has no inventory component.";
+            }
+
+            var items = inventory.GetAllItems();
+            if (items.Count == 0)
+            {
+                return $"Pop {targetPop.GetInstanceID()} inventory is empty.";
+            }
+
+            string result = $"Pop {targetPop.GetInstanceID()} inventory ({inventory.GetTotalItemCount()}/{inventory.capacity}):\n";
+            foreach (var item in items)
+            {
+                result += $"  {item.Key}: {item.Value}\n";
+            }
+
+            return result.TrimEnd('\n');
+        }        private string GiveFoodCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: give_food <amount>";
+            }
+
+            if (!float.TryParse(args[0], out float amount))
+            {
+                return "Invalid amount.";
+            }
+
+            if (resourceManager != null)
+            {
+                resourceManager.AddFood(amount);
+                return $"Added {amount} food. Current food: {resourceManager.currentFood}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }        private string GiveFaithCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: give_faith <amount>";
+            }
+
+            if (!float.TryParse(args[0], out float amount))
+            {
+                return "Invalid amount.";
+            }
+
+            if (resourceManager != null)
+            {
+                resourceManager.AddFaith(amount);
+                return $"Added {amount} faith. Current faith: {resourceManager.currentFaithPoints}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }        private string GiveWoodCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: give_wood <amount>";
+            }
+
+            if (!float.TryParse(args[0], out float amount))
+            {
+                return "Invalid amount.";
+            }
+
+            if (resourceManager != null)
+            {
+                resourceManager.AddWood(amount);
+                return $"Added {amount} wood. Current wood: {resourceManager.currentWood}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }        private string SetFoodCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_food <amount>";
+            }
+
+            if (!float.TryParse(args[0], out float amount))
+            {
+                return "Invalid amount.";
+            }
+
+            if (resourceManager != null)
+            {
+                resourceManager.SetFood(amount);
+                return $"Set food to {amount}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }        private string SetFaithCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_faith <amount>";
+            }
+
+            if (!float.TryParse(args[0], out float amount))
+            {
+                return "Invalid amount.";
+            }
+
+            if (resourceManager != null)
+            {
+                resourceManager.SetFaith(amount);
+                return $"Set faith to {amount}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }        private string SetWoodCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_wood <amount>";
+            }
+
+            if (!float.TryParse(args[0], out float amount))
+            {
+                return "Invalid amount.";
+            }
+
+            if (resourceManager != null)
+            {
+                resourceManager.SetWood(amount);
+                return $"Set wood to {amount}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }
+
+        private string ShowResourcesCommand(string[] args)
+        {
+            if (resourceManager != null)
+            {
+                return $"Resources:\n  Food: {resourceManager.GetFood()}\n  Faith: {resourceManager.GetFaith()}\n  Wood: {resourceManager.GetWood()}";
+            }
+            else
+            {
+                return "ResourceManager not found.";
+            }
+        }        private string SetAIStateCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return "Usage: set_ai_state <state_name> [pop_id]";
+            }
+
+            string stateName = args[0].ToLower();
+            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            var stateMachine = targetPop.GetComponent<AI.PopStateMachine>();
+            if (stateMachine == null)
+            {
+                return "Pop has no state machine.";
+            }
+
+            AI.States.IState newState = null;
+            switch (stateName)
+            {
+                case "idle":
+                    newState = new AI.States.IdleState();
+                    break;
+                case "wander":
+                    newState = new AI.States.WanderState();
+                    break;
+                case "forage":
+                    newState = new AI.States.ForageState();
+                    break;
+                case "commanded":
+                    newState = new AI.States.CommandedState();
+                    break;
+                case "wait":
+                    newState = new AI.States.WaitState();
+                    break;
+                default:
+                    return $"Unknown state '{stateName}'. Available states: idle, wander, forage, commanded, wait";
+            }
+
+            stateMachine.ForceChangeState(newState);
+            return $"Set AI state of pop {targetPop.GetInstanceID()} to {stateName}";
+        }        private string ListAIStatesCommand(string[] args)
+        {
+            return "Available AI States:\n" +
+                   "  idle - Pop stands still and recovers\n" +
+                   "  wander - Pop moves around randomly\n" +
+                   "  forage - Pop searches for food\n" +
+                   "  commanded - Pop follows player commands\n" +
+                   "  wait - Pop waits in place";
+        }
+
+        private string PopInfoCommand(string[] args)
+        {
+            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
+            if (targetPop == null)
+            {
+                return "No valid pop found.";
+            }
+
+            var controller = targetPop.GetComponent<PopController>();
+            string result = $"Pop {targetPop.GetInstanceID()} Info:\n";
+            result += $"  Position: {targetPop.transform.position}\n";
+            result += $"  Health: {targetPop.health:F1}/{targetPop.maxHealth}\n";
+            result += $"  Hunger: {targetPop.hunger:F1}\n";
+            result += $"  Thirst: {targetPop.thirst:F1}\n";
+            result += $"  Energy: {targetPop.energy:F1}\n";
+            result += $"  AI State: {controller?.GetCurrentStateName() ?? "Unknown"}\n";
+            result += $"  Selected: {(controller != null && selectionManager != null && selectionManager.GetSelectedPops().Contains(controller.gameObject))}\n";
+
+            return result;
+        }
+
+        private string TimeScaleCommand(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                return $"Current time scale: {Time.timeScale}";
+            }
+
+            if (!float.TryParse(args[0], out float scale))
+            {
+                return "Invalid time scale value.";
+            }
+
+            Time.timeScale = Mathf.Max(0f, scale);
+            return $"Set time scale to {Time.timeScale}";
+        }
+
+        private string PauseCommand(string[] args)
+        {
+            if (Time.timeScale == 0f)
+            {
+                Time.timeScale = 1f;
+                return "Unpaused simulation";
+            }
+            else
+            {
+                Time.timeScale = 0f;
+                return "Paused simulation";
+            }
+        }
+
+        private string ToggleDebugCommand(string[] args)
+        {
+            var debugManager = FindFirstObjectByType<DebugManager>();
+            if (debugManager != null)
+            {
+                // Toggle debug visualization - adjust based on your DebugManager implementation
+                return "Debug visualization toggled [Implementation needed]";
+            }
+            else
+            {
+                return "DebugManager not found.";
+            }
+        }
+
+        private string ToggleStatsCommand(string[] args)
+        {
+            var statsOverlay = FindFirstObjectByType<DebugStatsOverlay>();
+            if (statsOverlay != null)
+            {
+                // Toggle stats overlay - adjust based on your implementation
+                return "Stats overlay toggled [Implementation needed]";
+            }
+            else
+            {
+                return "DebugStatsOverlay not found.";
+            }
+        }
+
+        private string DebugPopPathsCommand(string[] args)
+        {
+            // Toggle pop path visualization
+            return "Pop path visualization toggled [Implementation needed]";
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private Pop GetTargetPop(string popIdString)
+        {
+            if (!string.IsNullOrEmpty(popIdString) && int.TryParse(popIdString, out int popId))
+            {
+                // Get by ID
+                var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
+                return allPops.FirstOrDefault(p => p.GetInstanceID() == popId);
+            }
+            else
+            {
+                // Get selected pop
+                if (selectionManager != null)
+                {
+                    var selectedPops = selectionManager.GetSelectedPops();
+                    if (selectedPops.Count > 0)
+                    {
+                        var popController = selectedPops[0].GetComponent<PopController>();
+                        return popController?.GetPop();
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        private void OnDestroy()
+        {
+            // Clean up input actions
+            if (toggleAction != null)
+            {
+                toggleAction.Disable();
+                toggleAction.Dispose();
+            }
+
+            if (toggleActionAlt != null)
+            {
+                toggleActionAlt.Disable();
+                toggleActionAlt.Dispose();
             }
         }
     }
 }
-#endif

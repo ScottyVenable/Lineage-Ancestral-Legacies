@@ -202,99 +202,83 @@ namespace Lineage.Ancestral.Legacies.Entities
                    $"Age: {age}, State: {stateMachine?.currentState?.GetType().Name ?? "None"}";
         }
 
-        // Add these methods to the Pop class
-        public void OnSelected()
+        // Add these methods if they don't already exist
+        public void OnSelected(bool selected)
         {
             // Visual feedback for selection
-            var selectionIndicator = transform.Find("SelectionIndicator");
-            if (selectionIndicator != null)
+            var renderer = GetComponentInChildren<SpriteRenderer>();
+            if (renderer != null)
             {
-                selectionIndicator.gameObject.SetActive(true);
+                if (selected)
+                {
+                    // Store original color if first selection
+                    if (!_hasStoredOriginalColor)
+                    {
+                        _originalColor = renderer.color;
+                        _hasStoredOriginalColor = true;
+                    }
+                    // Highlight with a brighter color
+                    renderer.color = new Color(
+                        _originalColor.r * 1.2f,
+                        _originalColor.g * 1.2f, 
+                        _originalColor.b * 1.2f,
+                        _originalColor.a
+                    );
+                }
+                else if (_hasStoredOriginalColor)
+                {
+                    // Restore original color when deselected
+                    renderer.color = _originalColor;
+                }
             }
-            else
+
+            // Show/hide selection indicator
+            var indicator = transform.Find("SelectionIndicator");
+            if (indicator != null)
             {
-                // Create a selection indicator if it doesn't exist
+                indicator.gameObject.SetActive(selected);
+            }
+            else if (selected)
+            {
+                // Create indicator if it doesn't exist
                 CreateSelectionIndicator();
             }
-            
-            // You could also change the sprite color
-            var renderer = GetComponentInChildren<SpriteRenderer>();
-            if (renderer != null)
-            {
-                renderer.color = new Color(1f, 1f, 1f, 1f); // Full brightness
-            }
-
-            Debug.Log.Info($"Pop {name} selected");
         }
 
-        public void OnDeselected()
-        {
-            // Remove visual feedback
-            var selectionIndicator = transform.Find("SelectionIndicator");
-            if (selectionIndicator != null)
-            {
-                selectionIndicator.gameObject.SetActive(false);
-            }
-            
-            var renderer = GetComponentInChildren<SpriteRenderer>();
-            if (renderer != null)
-            {
-                renderer.color = new Color(0.8f, 0.8f, 0.8f, 1f); // Normal brightness
-            }
-        }
+        private bool _hasStoredOriginalColor = false;
+        private Color _originalColor = Color.white;
+        public GameObject selectionIndicator;
+        
+        public Animator animator;
 
         private void CreateSelectionIndicator()
         {
-            // Create a new GameObject for the selection indicator
-            GameObject indicator = new GameObject("SelectionIndicator");
-            indicator.transform.SetParent(transform);
-            indicator.transform.localPosition = Vector3.zero;
-            
-            // Add a sprite renderer component
-            SpriteRenderer renderer = indicator.AddComponent<SpriteRenderer>();
-            
-            // Create a circle selection indicator
-            renderer.sprite = CreateCircleSprite();
-            renderer.color = new Color(0.2f, 0.8f, 0.2f, 0.5f); // Semi-transparent green
-            renderer.sortingOrder = -1; // Behind the character
-            
-            // Make the indicator slightly larger than the character
-            indicator.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
-        }
+            // Create a circle around the character
+            selectionIndicator = new GameObject("SelectionIndicator");
+            selectionIndicator.transform.SetParent(transform);
+            selectionIndicator.transform.localPosition = Vector3.zero;
 
-        private Sprite CreateCircleSprite()
-        {
-            // Create a simple circle texture for the selection indicator
-            int size = 64;
-            Texture2D texture = new Texture2D(size, size);
-            
-            float radius = size / 2f;
-            float radiusSquared = radius * radius;
-            Color transparent = new Color(0, 0, 0, 0);
-            Color white = Color.white;
-            
-            for (int x = 0; x < size; x++)
+            // Create a line renderer for the circle
+            LineRenderer lineRenderer = selectionIndicator.AddComponent<LineRenderer>();
+            lineRenderer.positionCount = 20; // Number of segments in circle
+            lineRenderer.startWidth = 0.05f;
+            lineRenderer.endWidth = 0.05f;
+            lineRenderer.loop = true;
+            lineRenderer.useWorldSpace = false;
+
+            // Set a material - create a simple unlit material if needed
+            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            lineRenderer.material.color = Color.green;
+
+            // Draw a circle
+            float radius = 0.6f; // Adjust based on your character size
+            for (int i = 0; i < lineRenderer.positionCount; i++)
             {
-                for (int y = 0; y < size; y++)
-                {
-                    float distSquared = (x - radius) * (x - radius) + (y - radius) * (y - radius);
-                    
-                    // Create a circle outline
-                    float distFromEdge = Mathf.Abs(distSquared - radiusSquared);
-                    if (distFromEdge < radius * 0.2f) // Outline thickness
-                    {
-                        texture.SetPixel(x, y, white);
-                    }
-                    else
-                    {
-                        texture.SetPixel(x, y, transparent);
-                    }
-                }
+                float angle = i * 360f / lineRenderer.positionCount;
+                float x = radius * Mathf.Cos(angle * Mathf.Deg2Rad);
+                float y = radius * Mathf.Sin(angle * Mathf.Deg2Rad);
+                lineRenderer.SetPosition(i, new Vector3(x, y, 0));
             }
-            
-            texture.Apply();
-            
-            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
         }
     }
 }
