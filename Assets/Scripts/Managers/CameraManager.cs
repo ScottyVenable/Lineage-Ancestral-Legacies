@@ -157,6 +157,13 @@ namespace Lineage.Ancestral.Legacies.Managers
 
     private void HandleZoom()
     {
+        // Check if mouse is over debug console and skip zoom if so
+        var debugConsole = FindFirstObjectByType<Lineage.Ancestral.Legacies.Debug.DebugConsoleManager>();
+        if (debugConsole != null && debugConsole.IsMouseOverConsole())
+        {
+            return;
+        }
+
         float zoomInput = 0f;
         
         // Get input from the Input System if available

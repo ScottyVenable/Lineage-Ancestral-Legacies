@@ -9,6 +9,7 @@ using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Managers;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 using Lineage.Ancestral.Legacies.Debug;
+using TMPro;
 
 namespace Lineage.Ancestral.Legacies.Debug
 {
@@ -26,10 +27,18 @@ namespace Lineage.Ancestral.Legacies.Debug
         [SerializeField] private Vector2 consolePosition = new Vector2(50, 50);
         [SerializeField] private bool isDraggable = true;
         [SerializeField] private bool isResizable = true;
+        [SerializeField] private Texture2D resizeCursor;
+
+        [SerializeField] public Font consolebodyFont;
+        [SerializeField] public Font consoleheaderFont;
 
         // Input System support
         private InputAction toggleAction;
         private InputAction toggleActionAlt;
+        private InputAction enterAction;
+        private InputAction tabAction;
+        private InputAction upArrowAction;
+        private InputAction downArrowAction;
 
         // Console state
         private bool isConsoleVisible = false;
@@ -116,12 +125,20 @@ namespace Lineage.Ancestral.Legacies.Debug
                 {
                     toggleAction = new InputAction("ToggleConsole", InputActionType.Button, "<Keyboard>/f2");
                     toggleActionAlt = new InputAction("ToggleConsoleAlt", InputActionType.Button, "<Keyboard>/backquote");
+                    
+                    // Console-specific input actions
+                    enterAction = new InputAction("ExecuteCommand", InputActionType.Button, "<Keyboard>/enter");
+                    tabAction = new InputAction("AutoComplete", InputActionType.Button, "<Keyboard>/tab");
+                    upArrowAction = new InputAction("NavigateUp", InputActionType.Button, "<Keyboard>/upArrow");
+                    downArrowAction = new InputAction("NavigateDown", InputActionType.Button, "<Keyboard>/downArrow");
 
                     toggleAction.performed += _ => ToggleConsole();
                     toggleActionAlt.performed += _ => ToggleConsole();
 
                     toggleAction.Enable();
                     toggleActionAlt.Enable();
+                    
+                    // Console input actions are enabled/disabled when console visibility changes
                 }
                 catch (System.Exception e)
                 {
@@ -148,53 +165,137 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
         }
 
-        private void HandleConsoleInput()
-        {
-            // Handle command history navigation
-            if (Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                NavigateHistory(-1);
-            }
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                NavigateHistory(1);
-            }
-
-            // Handle auto-completion
-            if (Input.GetKeyDown(KeyCode.Tab))
-            {
-                HandleAutoComplete();
-            }
-
-            // Handle command execution
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
-            {
-                ExecuteCommand();
-            }
-
-            // Handle suggestion navigation
-            if (showSuggestions)
-            {
-                if (Input.GetKeyDown(KeyCode.UpArrow) && selectedSuggestion > 0)
-                {
-                    selectedSuggestion--;
-                }
-                else if (Input.GetKeyDown(KeyCode.DownArrow) && selectedSuggestion < suggestions.Count - 1)
-                {
-                    selectedSuggestion++;
-                }
-            }
-        }
-
         private void ToggleConsole()
         {
             isConsoleVisible = !isConsoleVisible;
             
             if (isConsoleVisible)
             {
-                // Focus input when opening
+                // Focus input when opening and enable console input actions
                 GUI.FocusControl("ConsoleInput");
+                EnableConsoleInputActions();
             }
+            else
+            {
+                // Disable console input actions when closing
+                DisableConsoleInputActions();
+            }
+        }
+
+        private void EnableConsoleInputActions()
+        {
+            if (enterAction != null && tabAction != null && upArrowAction != null && downArrowAction != null)
+            {
+                enterAction.performed += _ => ExecuteCommand();
+                tabAction.performed += _ => HandleAutoComplete();
+                upArrowAction.performed += _ => HandleUpArrow();
+                downArrowAction.performed += _ => HandleDownArrow();
+
+                enterAction.Enable();
+                tabAction.Enable();
+                upArrowAction.Enable();
+                downArrowAction.Enable();
+            }
+        }
+
+        private void DisableConsoleInputActions()
+        {
+            if (enterAction != null && tabAction != null && upArrowAction != null && downArrowAction != null)
+            {
+                enterAction.performed -= _ => ExecuteCommand();
+                tabAction.performed -= _ => HandleAutoComplete();
+                upArrowAction.performed -= _ => HandleUpArrow();
+                downArrowAction.performed -= _ => HandleDownArrow();
+
+                enterAction.Disable();
+                tabAction.Disable();
+                upArrowAction.Disable();
+                downArrowAction.Disable();
+            }
+        }
+
+        private void HandleUpArrow()
+        {
+            // Handle suggestion navigation (only when suggestions are visible)
+            if (showSuggestions && suggestions.Count > 0)
+            {
+                if (selectedSuggestion > 0)
+                {
+                    selectedSuggestion--;
+                }
+            }
+            // Handle command history navigation (only when suggestions are not visible)
+            else
+            {
+                NavigateHistory(-1);
+            }
+        }
+
+        private void HandleDownArrow()
+        {
+            // Handle suggestion navigation (only when suggestions are visible)
+            if (showSuggestions && suggestions.Count > 0)
+            {
+                if (selectedSuggestion < suggestions.Count - 1)
+                {
+                    selectedSuggestion++;
+                }
+            }
+            // Handle command history navigation (only when suggestions are not visible)
+            else
+            {
+                NavigateHistory(1);
+            }
+        }
+
+        private void HandleConsoleInput()
+        {
+            // Legacy Input Manager support as fallback for console input
+            if (enterAction == null || tabAction == null || upArrowAction == null || downArrowAction == null)
+            {
+                // Handle command execution first (highest priority)
+                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+                {
+                    ExecuteCommand();
+                    return; // Exit early to prevent other input processing
+                }
+
+                // Handle auto-completion
+                if (Input.GetKeyDown(KeyCode.Tab))
+                {
+                    HandleAutoComplete();
+                    return;
+                }
+
+                // Handle suggestion navigation (only when suggestions are visible)
+                if (showSuggestions && suggestions.Count > 0)
+                {
+                    if (Input.GetKeyDown(KeyCode.UpArrow) && selectedSuggestion > 0)
+                    {
+                        selectedSuggestion--;
+                        return;
+                    }
+                    else if (Input.GetKeyDown(KeyCode.DownArrow) && selectedSuggestion < suggestions.Count - 1)
+                    {
+                        selectedSuggestion++;
+                        return;
+                    }
+                }
+
+                // Handle command history navigation (only when suggestions are not visible)
+                if (!showSuggestions)
+                {
+                    if (Input.GetKeyDown(KeyCode.UpArrow))
+                    {
+                        NavigateHistory(-1);
+                    }
+                    else if (Input.GetKeyDown(KeyCode.DownArrow))
+                    {
+                        NavigateHistory(1);
+                    }
+                }
+            }
+            // New Input System is handling console input through actions
         }
 
         private void OnGUI()
@@ -203,6 +304,17 @@ namespace Lineage.Ancestral.Legacies.Debug
 
             // Draw console window
             GUI.skin.window.fontSize = 12;
+            GUI.skin.label.font = consolebodyFont;
+            GUI.skin.window.font = consoleheaderFont;
+            GUI.skin.window.fontSize = 12;
+            GUI.skin.textField.font = consolebodyFont;
+
+            //make the text below bold
+            GUI.skin.textField.fontStyle = FontStyle.Normal;
+            GUI.skin.textField.fontSize = 12;
+            GUI.skin.window.fontStyle = FontStyle.Bold;
+            GUI.skin.button.fontStyle = FontStyle.Bold;
+            GUI.skin.button.font = consolebodyFont;
             consoleRect = GUI.Window(0, consoleRect, DrawConsoleWindow, "Debug Console");
 
             // Handle dragging and resizing
@@ -214,6 +326,8 @@ namespace Lineage.Ancestral.Legacies.Debug
 
         private void DrawConsoleWindow(int windowID)
         {
+            GUI.skin.textField.fontSize = 14;
+            GUI.skin.textField.border = new RectOffset(4, 4, 4, 4);
             GUILayout.BeginVertical();
 
             // Log area
@@ -239,7 +353,7 @@ namespace Lineage.Ancestral.Legacies.Debug
                 UpdateSuggestions();
             }
 
-            if (GUILayout.Button("Execute", GUILayout.Width(70)))
+            if (GUILayout.Button("Execute", GUILayout.Width(90)))
             {
                 ExecuteCommand();
             }
@@ -263,13 +377,18 @@ namespace Lineage.Ancestral.Legacies.Debug
 
         private void DrawSuggestions()
         {
-            GUILayout.BeginVertical("box");
-            for (int i = 0; i < Mathf.Min(suggestions.Count, 5); i++)
+            int maxSuggestions = Mathf.Min(suggestions.Count, 5);
+            float suggestionHeight = 20f; // Height per suggestion item
+            float totalHeight = maxSuggestions * suggestionHeight + 10f; // Add some padding
+            
+            GUILayout.BeginVertical("box", GUILayout.Height(totalHeight));
+            
+            for (int i = 0; i < maxSuggestions; i++)
             {
                 bool isSelected = i == selectedSuggestion;
                 GUI.backgroundColor = isSelected ? Color.cyan : Color.white;
                 
-                if (GUILayout.Button(suggestions[i], GUI.skin.label))
+                if (GUILayout.Button(suggestions[i], GUI.skin.label, GUILayout.Height(suggestionHeight)))
                 {
                     currentInput = suggestions[i];
                     showSuggestions = false;
@@ -292,11 +411,31 @@ namespace Lineage.Ancestral.Legacies.Debug
             Rect resizeArea = new Rect(consoleRect.x + consoleRect.width - 20, 
                                      consoleRect.y + consoleRect.height - 20, 20, 20);
 
-            if (isResizable && resizeArea.Contains(mousePos))
+            if (isResizable)
             {
-                if (currentEvent.type == EventType.MouseDown)
+                // Set cursor when hovering over resize area
+                if (resizeArea.Contains(mousePos))
                 {
-                    isResizing = true;
+                    #if UNITY_EDITOR
+                    UnityEditor.EditorGUIUtility.AddCursorRect(resizeArea, UnityEditor.MouseCursor.ResizeUpRight);
+                    #else
+                    if (resizeCursor != null)
+                    {
+                        Cursor.SetCursor(resizeCursor, new Vector2(resizeCursor.width * 0.5f, resizeCursor.height * 0.5f), CursorMode.Auto);
+                    }
+                    #endif
+                    
+                    if (currentEvent.type == EventType.MouseDown)
+                    {
+                        isResizing = true;
+                    }
+                }
+                else if (!isResizing)
+                {
+                    // Reset cursor when not over resize area and not actively resizing
+                    #if !UNITY_EDITOR
+                    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                    #endif
                 }
             }
 
@@ -311,6 +450,10 @@ namespace Lineage.Ancestral.Legacies.Debug
             if (currentEvent.type == EventType.MouseUp)
             {
                 isResizing = false;
+                // Reset cursor when mouse is released
+                #if !UNITY_EDITOR
+                Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                #endif
             }
         }
 
@@ -904,7 +1047,29 @@ namespace Lineage.Ancestral.Legacies.Debug
                 try
                 {
                     populationManager.SpawnPop();
-                    return $"Spawned pop at {position}";
+                    
+                    // Find the most recently spawned pop (assuming it's the last one in the scene)
+                    var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
+                    if (allPops.Length > 0)
+                    {
+                        GameObject spawnedPop = allPops[allPops.Length - 1].gameObject;
+                        
+                        // Set position with Z = 0
+                        spawnedPop.transform.position = new Vector3(position.x, position.y, 0f);
+                        
+                        // Set sorting layer to "Entities"
+                        var renderer = spawnedPop.GetComponent<SpriteRenderer>();
+                        if (renderer != null)
+                        {
+                            renderer.sortingLayerName = "Entities";
+                        }
+                        
+                        return $"Spawned pop at {spawnedPop.transform.position} on Entities layer";
+                    }
+                    else
+                    {
+                        return "Failed to find the spawned pop";
+                    }
                 }
                 catch (Exception e)
                 {
@@ -1027,6 +1192,11 @@ namespace Lineage.Ancestral.Legacies.Debug
 
         private void OnDestroy()
         {
+            // Reset cursor before cleanup
+            #if !UNITY_EDITOR
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            #endif
+            
             // Clean up input actions
             if (toggleAction != null)
             {
@@ -1039,6 +1209,41 @@ namespace Lineage.Ancestral.Legacies.Debug
                 toggleActionAlt.Disable();
                 toggleActionAlt.Dispose();
             }
+
+            if (enterAction != null)
+            {
+                enterAction.Disable();
+                enterAction.Dispose();
+            }
+
+            if (tabAction != null)
+            {
+                tabAction.Disable();
+                tabAction.Dispose();
+            }
+
+            if (upArrowAction != null)
+            {
+                upArrowAction.Disable();
+                upArrowAction.Dispose();
+            }
+
+            if (downArrowAction != null)
+            {
+                downArrowAction.Disable();
+                downArrowAction.Dispose();
+            }
+        }
+
+        public bool IsMouseOverConsole()
+        {
+            if (!isConsoleVisible) return false;
+            
+            Vector2 mousePos = Input.mousePosition;
+            // Convert screen space mouse position to GUI space
+            mousePos.y = Screen.height - mousePos.y;
+            
+            return consoleRect.Contains(mousePos);
         }
     }
 }

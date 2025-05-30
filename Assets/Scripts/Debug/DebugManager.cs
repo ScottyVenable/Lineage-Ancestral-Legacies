@@ -24,9 +24,9 @@ namespace Lineage.Ancestral.Legacies.Debug
         [SerializeField] private bool enableDebugSystems = true;
         [SerializeField] private bool autoInitialize = true;
           [Header("Component References")]
-        [SerializeField] private DebugConsoleManager consoleManager;
-        [SerializeField] private DebugStatsOverlay statsOverlay;
-        [SerializeField] private DebugVisualizer visualizer;
+        [SerializeField] public DebugConsoleManager consoleManager;
+        [SerializeField] public DebugStatsOverlay statsOverlay;
+        [SerializeField] public DebugVisualizer visualizer;
         
         // Input System
         private InputAction helpAction;
