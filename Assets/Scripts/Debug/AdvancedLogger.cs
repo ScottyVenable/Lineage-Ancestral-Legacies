@@ -160,7 +160,7 @@ namespace Lineage.Ancestral.Legacies.Debug
             if (console != null)
             {
                 string coloredMessage = GetColoredMessage(level, message);
-                console.AppendLogMessage(coloredMessage);
+                console.consoleLog.Add(coloredMessage);
             }
         }
 

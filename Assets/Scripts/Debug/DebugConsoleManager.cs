@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Lineage.Ancestral.Legacies.Entities;
@@ -34,7 +35,7 @@ namespace Lineage.Ancestral.Legacies.Debug
         private bool isConsoleVisible = false;
         private string currentInput = "";
         private List<string> commandHistory = new List<string>();
-        private List<string> consoleLog = new List<string>();
+        public List<string> consoleLog = new List<string>();
         private int historyIndex = -1;
         private Vector2 scrollPosition = Vector2.zero;
         private Rect consoleRect;
@@ -45,7 +46,7 @@ namespace Lineage.Ancestral.Legacies.Debug
         // Auto-completion
         private List<string> suggestions = new List<string>();
         private int selectedSuggestion = -1;
-        private bool showSuggestions = false;
+        private bool showSuggestions = true;
 
         // Command registry
         private Dictionary<string, ConsoleCommand> commands = new Dictionary<string, ConsoleCommand>();
@@ -54,10 +55,9 @@ namespace Lineage.Ancestral.Legacies.Debug
         private PopulationManager populationManager;
         private ResourceManager resourceManager;
         private SelectionManager selectionManager;
-        private AdvancedLogger logger;
 
-        // Console command delegate
-        public delegate string CommandDelegate(string[] args);
+        // Console command delegate - updated to support data blocks
+        public delegate string CommandDelegate(List<string> positionalArgs, Dictionary<string, object> dataBlock);
 
         // Console command structure
         [System.Serializable]
@@ -67,14 +67,24 @@ namespace Lineage.Ancestral.Legacies.Debug
             public string description;
             public CommandDelegate command;
             public string usage;
+            public bool requiresEntityTarget;
 
-            public ConsoleCommand(string name, string description, string usage, CommandDelegate command)
+            public ConsoleCommand(string name, string description, string usage, CommandDelegate command, bool requiresEntityTarget = false)
             {
                 this.name = name;
                 this.description = description;
                 this.usage = usage;
                 this.command = command;
+                this.requiresEntityTarget = requiresEntityTarget;
             }
+        }
+
+        // Command parsing result
+        private class ParsedCommand
+        {
+            public string commandName;
+            public List<string> positionalArgs = new List<string>();
+            public Dictionary<string, object> dataBlock = new Dictionary<string, object>();
         }
 
         private void Awake()
@@ -86,7 +96,6 @@ namespace Lineage.Ancestral.Legacies.Debug
             populationManager = FindFirstObjectByType<PopulationManager>();
             resourceManager = FindFirstObjectByType<ResourceManager>();
             selectionManager = FindFirstObjectByType<SelectionManager>();
-            logger = FindFirstObjectByType<AdvancedLogger>();
 
             // Setup input actions for new Input System
             SetupInputActions();
@@ -116,7 +125,7 @@ namespace Lineage.Ancestral.Legacies.Debug
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogWarning($"Failed to setup Input System actions: {e.Message}. Falling back to legacy input.");
+                    Debug.Log.Error($"Failed to setup Input System actions: {e.Message}. Falling back to legacy input.");
                 }
             }
         }
@@ -275,6 +284,10 @@ namespace Lineage.Ancestral.Legacies.Debug
             Event currentEvent = Event.current;
             Vector2 mousePos = currentEvent.mousePosition;
 
+            // Define minimum sizes
+            const float minWidth = 300f;
+            const float minHeight = 150f;
+
             // Check if mouse is in resize area (bottom-right corner)
             Rect resizeArea = new Rect(consoleRect.x + consoleRect.width - 20, 
                                      consoleRect.y + consoleRect.height - 20, 20, 20);
@@ -291,8 +304,8 @@ namespace Lineage.Ancestral.Legacies.Debug
             {
                 consoleRect.width = mousePos.x - consoleRect.x;
                 consoleRect.height = mousePos.y - consoleRect.y;
-                consoleRect.width = Mathf.Max(400, consoleRect.width);
-                consoleRect.height = Mathf.Max(200, consoleRect.height);
+                consoleRect.width = Mathf.Max(minWidth, consoleRect.width);
+                consoleRect.height = Mathf.Max(minHeight, consoleRect.height);
             }
 
             if (currentEvent.type == EventType.MouseUp)
@@ -320,7 +333,7 @@ namespace Lineage.Ancestral.Legacies.Debug
 
         private void UpdateSuggestions()
         {
-            suggestions.clear();
+            suggestions.Clear();
             selectedSuggestion = -1;
 
             if (string.IsNullOrEmpty(currentInput))
@@ -329,13 +342,33 @@ namespace Lineage.Ancestral.Legacies.Debug
                 return;
             }
 
+            // Support namespace suggestions
+            string input = currentInput.ToLower();
             foreach (var command in commands.Keys)
             {
-                if (command.StartsWith(currentInput, StringComparison.OrdinalIgnoreCase))
+                if (command.StartsWith(input, StringComparison.OrdinalIgnoreCase))
                 {
                     suggestions.Add(command);
                 }
             }
+
+            // Also suggest namespace prefixes
+            var namespaces = new HashSet<string>();
+            foreach (var command in commands.Keys)
+            {
+                var parts = command.Split('.');
+                for (int i = 1; i <= parts.Length; i++)
+                {
+                    string prefix = string.Join(".", parts.Take(i));
+                    if (prefix.StartsWith(input, StringComparison.OrdinalIgnoreCase) && prefix != command)
+                    {
+                        namespaces.Add(prefix);
+                    }
+                }
+            }
+
+            suggestions.AddRange(namespaces);
+            suggestions = suggestions.OrderBy(s => s).ToList();
 
             showSuggestions = suggestions.Count > 0;
             if (showSuggestions)
@@ -370,18 +403,28 @@ namespace Lineage.Ancestral.Legacies.Debug
             // Log the command
             LogToConsole($"> {currentInput}");
 
-            // Parse and execute
-            string[] parts = currentInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 0)
+            // Parse command with new syntax
+            ParsedCommand parsed = ParseCommandLine(currentInput);
+            
+            if (parsed != null && !string.IsNullOrEmpty(parsed.commandName))
             {
-                string commandName = parts[0].ToLower();
-                string[] args = parts.Skip(1).ToArray();
-
-                if (commands.ContainsKey(commandName))
+                if (commands.ContainsKey(parsed.commandName))
                 {
+                    var command = commands[parsed.commandName];
+                    
+                    // Handle contextual entity targeting
+                    if (command.requiresEntityTarget && parsed.positionalArgs.Count == 0)
+                    {
+                        string selectedEntity = GetSelectedEntityTarget();
+                        if (!string.IsNullOrEmpty(selectedEntity))
+                        {
+                            parsed.positionalArgs.Insert(0, selectedEntity);
+                        }
+                    }
+
                     try
                     {
-                        string result = commands[commandName].command(args);
+                        string result = command.command(parsed.positionalArgs, parsed.dataBlock);
                         if (!string.IsNullOrEmpty(result))
                         {
                             LogToConsole(result);
@@ -394,8 +437,12 @@ namespace Lineage.Ancestral.Legacies.Debug
                 }
                 else
                 {
-                    LogToConsole($"Unknown command: {commandName}. Type 'help' for available commands.", true);
+                    LogToConsole($"Unknown command: {parsed.commandName}. Type 'help' for available commands.", true);
                 }
+            }
+            else
+            {
+                LogToConsole("Invalid command syntax. Use: namespace.command [args...] {data...}", true);
             }
 
             // Clear input
@@ -405,6 +452,229 @@ namespace Lineage.Ancestral.Legacies.Debug
 
             // Auto-scroll to bottom
             scrollPosition.y = float.MaxValue;
+        }
+
+        private ParsedCommand ParseCommandLine(string line)
+        {
+            var result = new ParsedCommand();
+            
+            try
+            {
+                // Extract command name (everything before first space or bracket)
+                string commandPart = line.Trim();
+                int spaceIndex = commandPart.IndexOf(' ');
+                int bracketIndex = commandPart.IndexOf('[');
+                int braceIndex = commandPart.IndexOf('{');
+                
+                int firstSeparator = int.MaxValue;
+                if (spaceIndex >= 0) firstSeparator = Math.Min(firstSeparator, spaceIndex);
+                if (bracketIndex >= 0) firstSeparator = Math.Min(firstSeparator, bracketIndex);
+                if (braceIndex >= 0) firstSeparator = Math.Min(firstSeparator, braceIndex);
+                
+                if (firstSeparator == int.MaxValue)
+                {
+                    result.commandName = commandPart.ToLower();
+                    return result;
+                }
+                
+                result.commandName = commandPart.Substring(0, firstSeparator).Trim().ToLower();
+                string argumentsPart = commandPart.Substring(firstSeparator).Trim();
+
+                // Parse positional arguments [...]
+                var positionalMatch = Regex.Match(argumentsPart, @"\[(.*?)\]");
+                if (positionalMatch.Success)
+                {
+                    string argsContent = positionalMatch.Groups[1].Value;
+                    result.positionalArgs = ParsePositionalArguments(argsContent);
+                }
+
+                // Parse data block {...}
+                var dataBlockMatch = Regex.Match(argumentsPart, @"\{(.*)\}");
+                if (dataBlockMatch.Success)
+                {
+                    string dataContent = dataBlockMatch.Groups[1].Value;
+                    result.dataBlock = ParseDataBlock(dataContent);
+                }
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                LogToConsole($"Error parsing command: {e.Message}", true);
+                return null;
+            }
+        }
+
+        private List<string> ParsePositionalArguments(string argsContent)
+        {
+            var args = new List<string>();
+            if (string.IsNullOrWhiteSpace(argsContent)) return args;
+
+            // Simple CSV-like parsing with quote support
+            var parts = new List<string>();
+            bool inQuotes = false;
+            string current = "";
+            
+            for (int i = 0; i < argsContent.Length; i++)
+            {
+                char c = argsContent[i];
+                
+                if (c == '"')
+                {
+                    inQuotes = !inQuotes;
+                }
+                else if (c == ',' && !inQuotes)
+                {
+                    parts.Add(current.Trim());
+                    current = "";
+                }
+                else
+                {
+                    current += c;
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(current))
+            {
+                parts.Add(current.Trim());
+            }
+
+            // Clean up quoted strings
+            foreach (string part in parts)
+            {
+                string cleaned = part.Trim();
+                if (cleaned.StartsWith("\"") && cleaned.EndsWith("\"") && cleaned.Length > 1)
+                {
+                    cleaned = cleaned.Substring(1, cleaned.Length - 2);
+                }
+                args.Add(cleaned);
+            }
+
+            return args;
+        }
+
+        private Dictionary<string, object> ParseDataBlock(string dataContent)
+        {
+            var data = new Dictionary<string, object>();
+            if (string.IsNullOrWhiteSpace(dataContent)) return data;
+
+            // Split by comma, respecting quotes and brackets
+            var pairs = SplitDataBlock(dataContent);
+            
+            foreach (string pair in pairs)
+            {
+                int colonIndex = pair.IndexOf(':');
+                if (colonIndex > 0)
+                {
+                    string key = pair.Substring(0, colonIndex).Trim();
+                    string valueStr = pair.Substring(colonIndex + 1).Trim();
+                    
+                    object value = ParseDataValue(valueStr);
+                    data[key] = value;
+                }
+            }
+
+            return data;
+        }
+
+        private List<string> SplitDataBlock(string content)
+        {
+            var parts = new List<string>();
+            bool inQuotes = false;
+            bool inBrackets = false;
+            int bracketDepth = 0;
+            string current = "";
+            
+            for (int i = 0; i < content.Length; i++)
+            {
+                char c = content[i];
+                
+                if (c == '"' && !inBrackets)
+                {
+                    inQuotes = !inQuotes;
+                    current += c;
+                }
+                else if (c == '[' && !inQuotes)
+                {
+                    inBrackets = true;
+                    bracketDepth++;
+                    current += c;
+                }
+                else if (c == ']' && !inQuotes)
+                {
+                    bracketDepth--;
+                    if (bracketDepth <= 0)
+                    {
+                        inBrackets = false;
+                        bracketDepth = 0;
+                    }
+                    current += c;
+                }
+                else if (c == ',' && !inQuotes && !inBrackets)
+                {
+                    parts.Add(current.Trim());
+                    current = "";
+                }
+                else
+                {
+                    current += c;
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(current))
+            {
+                parts.Add(current.Trim());
+            }
+
+            return parts;
+        }
+
+        private object ParseDataValue(string valueStr)
+        {
+            valueStr = valueStr.Trim();
+            
+            // Handle arrays [...]
+            if (valueStr.StartsWith("[") && valueStr.EndsWith("]"))
+            {
+                string arrayContent = valueStr.Substring(1, valueStr.Length - 2);
+                var arrayItems = ParsePositionalArguments(arrayContent);
+                return arrayItems.ToArray();
+            }
+            
+            // Handle quoted strings
+            if (valueStr.StartsWith("\"") && valueStr.EndsWith("\"") && valueStr.Length > 1)
+            {
+                return valueStr.Substring(1, valueStr.Length - 2);
+            }
+            
+            // Handle booleans
+            if (valueStr.ToLower() == "true") return true;
+            if (valueStr.ToLower() == "false") return false;
+            
+            // Handle numbers
+            if (int.TryParse(valueStr, out int intVal)) return intVal;
+            if (float.TryParse(valueStr, out float floatVal)) return floatVal;
+            
+            // Default to string
+            return valueStr;
+        }
+
+        private string GetSelectedEntityTarget()
+        {
+            if (selectionManager != null)
+            {
+                var selectedPops = selectionManager.GetSelectedPops();
+                if (selectedPops.Count == 1)
+                {
+                    var popController = selectedPops[0].GetComponent<PopController>();
+                    if (popController != null)
+                    {
+                        var pop = popController.GetPop();
+                        return pop != null ? pop.GetInstanceID().ToString() : null;
+                    }
+                }
+            }
+            return null;
         }
 
         private void LogToConsole(string message, bool isError = false)
@@ -424,90 +694,82 @@ namespace Lineage.Ancestral.Legacies.Debug
             // Also log to Unity console
             if (isError)
             {
-                Debug.LogError(message);
+                Debug.Log.Error(message);
             }
             else
             {
-                Debug.Log(message);
+                Debug.Log.Error(message);
             }
 
-            // Log to AdvancedLogger if available
-            if (logger != null)
+            if (isError)
             {
-                if (isError)
-                {
-                    logger.LogError("DebugConsole", message);
-                }
-                else
-                {
-                    logger.LogInfo("DebugConsole", message);
-                }
+                AdvancedLogger.LogError(LogCategory.General, message);
+            }
+            else
+            {
+                AdvancedLogger.LogInfo(LogCategory.General, message);
             }
         }
 
-        private void RegisterCommands()
+        public void RegisterCommands()
         {
             // General commands
             RegisterCommand("help", "Show all available commands", "help [command]", HelpCommand);
             RegisterCommand("clear", "Clear console log", "clear", ClearCommand);
-            RegisterCommand("quit", "Quit application", "quit", QuitCommand);
+            RegisterCommand("game.quit", "Quit application", "game.quit", QuitCommand);
+            RegisterCommand("quit", "Quit application (alias)", "quit", QuitCommand);
+            RegisterCommand("system.info", "Show system information", "system.info", SystemInfoCommand);
 
-            // Population commands
-            RegisterCommand("spawn_pop", "Spawn a new pop at position", "spawn_pop <x> <y> [z]", SpawnPopCommand);
-            RegisterCommand("kill_pop", "Kill selected pop or pop by ID", "kill_pop [id]", KillPopCommand);
-            RegisterCommand("list_pops", "List all pops with their IDs", "list_pops", ListPopsCommand);
-            RegisterCommand("select_pop", "Select pop by ID", "select_pop <id>", SelectPopCommand);
-            RegisterCommand("move_pop", "Move selected pop to position", "move_pop <x> <y> [z]", MovePopCommand);
+            // Entity commands
+            RegisterCommand("entity.inspect", "Show detailed entity information", "entity.inspect [entity_id]", EntityInspectCommand, true);
+            RegisterCommand("entity.health", "Set entity health", "entity.health [entity_id, value] or entity.health [value]", EntityHealthCommand, true);
+            RegisterCommand("entity.state.set", "Set entity AI state", "entity.state.set [entity_id, state_name] or entity.state.set [state_name]", EntitySetStateCommand, true);
+            RegisterCommand("entity.traits.add", "Add trait to entity", "entity.traits.add [entity_id, trait_name] or entity.traits.add [trait_name]", EntityAddTraitCommand, true);
+            RegisterCommand("entity.inventory.list", "List entity inventory", "entity.inventory.list [entity_id]", EntityInventoryListCommand, true);
+            RegisterCommand("entity.inventory.add", "Add item to entity inventory", "entity.inventory.add [entity_id, item_name, quantity] or entity.inventory.add [item_name, quantity]", EntityInventoryAddCommand, true);
+            RegisterCommand("entity.teleport", "Teleport entity to position", "entity.teleport [entity_id, x, y, z] or entity.teleport [x, y, z]", EntityTeleportCommand, true);
 
-            // Health and needs commands
-            RegisterCommand("set_health", "Set pop health", "set_health <value> [pop_id]", SetHealthCommand);
-            RegisterCommand("set_hunger", "Set pop hunger", "set_hunger <value> [pop_id]", SetHungerCommand);
-            RegisterCommand("set_thirst", "Set pop thirst", "set_thirst <value> [pop_id]", SetThirstCommand);
-            RegisterCommand("set_energy", "Set pop energy", "set_energy <value> [pop_id]", SetEnergyCommand);
-            RegisterCommand("heal_pop", "Fully heal pop", "heal_pop [pop_id]", HealPopCommand);
+            // Spawn commands
+            RegisterCommand("spawn.pop", "Spawn a new pop", "spawn.pop [x, y, z] {name:\"PopName\", health:100, ...}", SpawnPopCommand);
 
-            // Inventory commands
-            RegisterCommand("give_item", "Give item to pop", "give_item <item_name> <quantity> [pop_id]", GiveItemCommand);
-            RegisterCommand("remove_item", "Remove item from pop", "remove_item <item_name> <quantity> [pop_id]", RemoveItemCommand);
-            RegisterCommand("clear_inventory", "Clear pop inventory", "clear_inventory [pop_id]", ClearInventoryCommand);
-            RegisterCommand("list_inventory", "List pop inventory", "list_inventory [pop_id]", ListInventoryCommand);
+            // Lineage commands
+            RegisterCommand("lineage.resources.show", "Show current lineage resources", "lineage.resources.show", LineageResourcesShowCommand);
+            RegisterCommand("lineage.resources.add", "Add resources to lineage", "lineage.resources.add [resource_type, amount]", LineageResourcesAddCommand);
+            RegisterCommand("lineage.pops.list", "List all pops in lineage", "lineage.pops.list", LineagePopsListCommand);
+            RegisterCommand("lineage.pops.set_cap", "Set population cap", "lineage.pops.set_cap [value]", LineagePopsSetCapCommand);
 
-            // Resource commands
-            RegisterCommand("give_food", "Add food to resources", "give_food <amount>", GiveFoodCommand);
-            RegisterCommand("give_faith", "Add faith to resources", "give_faith <amount>", GiveFaithCommand);
-            RegisterCommand("give_wood", "Add wood to resources", "give_wood <amount>", GiveWoodCommand);
-            RegisterCommand("set_food", "Set food amount", "set_food <amount>", SetFoodCommand);
-            RegisterCommand("set_faith", "Set faith amount", "set_faith <amount>", SetFaithCommand);
-            RegisterCommand("set_wood", "Set wood amount", "set_wood <amount>", SetWoodCommand);
-            RegisterCommand("resources", "Show current resources", "resources", ShowResourcesCommand);
+            // Game commands
+            RegisterCommand("game.time.set", "Set game time", "game.time.set [value_or_preset]", GameTimeSetCommand);
+            RegisterCommand("game.time.add", "Add time to game", "game.time.add [amount]", GameTimeAddCommand);
+            RegisterCommand("game.timescale", "Set time scale", "game.timescale [scale]", GameTimescaleCommand);
+            RegisterCommand("game.pause", "Pause/unpause simulation", "game.pause", GamePauseCommand);
 
-            // AI and state commands
-            RegisterCommand("set_ai_state", "Set pop AI state", "set_ai_state <state_name> [pop_id]", SetAIStateCommand);
-            RegisterCommand("list_ai_states", "List available AI states", "list_ai_states", ListAIStatesCommand);
-            RegisterCommand("pop_info", "Show detailed pop information", "pop_info [pop_id]", PopInfoCommand);
+            // Scene commands
+            RegisterCommand("scene.load", "Load a scene", "scene.load [scene_name]", SceneLoadCommand);
+            RegisterCommand("scene.list", "List available scenes", "scene.list", SceneListCommand);
 
-            // Time and simulation commands
-            RegisterCommand("timescale", "Set time scale", "timescale <scale>", TimeScaleCommand);
-            RegisterCommand("pause", "Pause/unpause simulation", "pause", PauseCommand);
+            // Debug commands
+            RegisterCommand("debug.draw.vision", "Toggle vision cone for entity", "debug.draw.vision [entity_id]", DebugDrawVisionCommand, true);
+            RegisterCommand("debug.stats.toggle", "Toggle stats overlay", "debug.stats.toggle", DebugStatsToggleCommand);
 
-            // Debug visualization commands
-            RegisterCommand("toggle_debug", "Toggle debug visualization", "toggle_debug", ToggleDebugCommand);
-            RegisterCommand("toggle_stats", "Toggle stats overlay", "toggle_stats", ToggleStatsCommand);
-            RegisterCommand("debug_pop_paths", "Toggle pop path visualization", "debug_pop_paths", DebugPopPathsCommand);
+            // Legacy command aliases for backward compatibility
+            RegisterCommand("spawn_pop", "Legacy: Spawn pop", "spawn_pop <x> <y> [z]", LegacySpawnPopCommand);
+            RegisterCommand("list_pops", "Legacy: List pops", "list_pops", LegacyListPopsCommand);
+            RegisterCommand("resources", "Legacy: Show resources", "resources", LegacyShowResourcesCommand);
 
             LogToConsole($"Registered {commands.Count} debug commands.");
         }
 
-        private void RegisterCommand(string name, string description, string usage, CommandDelegate command)
+        public void RegisterCommand(string name, string description, string usage, CommandDelegate command, bool requiresEntityTarget = false)
         {
-            commands[name] = new ConsoleCommand(name, description, usage, command);
+            commands[name] = new ConsoleCommand(name, description, usage, command, requiresEntityTarget);
         }
 
         #region Command Implementations
 
-        private string HelpCommand(string[] args)
+        private string HelpCommand(List<string> args, Dictionary<string, object> data)
         {
-            if (args.Length > 0)
+            if (args.Count > 0)
             {
                 string commandName = args[0].ToLower();
                 if (commands.ContainsKey(commandName))
@@ -522,21 +784,27 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
 
             string result = "Available commands:\n";
-            foreach (var cmd in commands.Values.OrderBy(c => c.name))
+            var groupedCommands = commands.Values.GroupBy(c => c.name.Split('.')[0]).OrderBy(g => g.Key);
+            
+            foreach (var group in groupedCommands)
             {
-                result += $"  {cmd.name} - {cmd.description}\n";
+                result += $"\n{group.Key.ToUpper()}:\n";
+                foreach (var cmd in group.OrderBy(c => c.name))
+                {
+                    result += $"  {cmd.name} - {cmd.description}\n";
+                }
             }
-            result += "\nType 'help <command>' for detailed usage.";
+            result += "\nType 'help [command]' for detailed usage.";
             return result;
         }
 
-        private string ClearCommand(string[] args)
+        private string ClearCommand(List<string> args, Dictionary<string, object> data)
         {
             consoleLog.Clear();
             return "";
         }
 
-        private string QuitCommand(string[] args)
+        private string QuitCommand(List<string> args, Dictionary<string, object> data)
         {
             #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -546,39 +814,97 @@ namespace Lineage.Ancestral.Legacies.Debug
             return "Quitting application...";
         }
 
-        private string SpawnPopCommand(string[] args)
+        private string SystemInfoCommand(List<string> args, Dictionary<string, object> data)
         {
-            if (args.Length < 2)
+            return $"System Info:\n" +
+                   $"  Unity Version: {Application.unityVersion}\n" +
+                   $"  Platform: {Application.platform}\n" +
+                   $"  Time Scale: {Time.timeScale}\n" +
+                   $"  Frame Rate: {1f / Time.unscaledDeltaTime:F1} FPS\n" +
+                   $"  Memory Usage: {System.GC.GetTotalMemory(false) / 1024 / 1024} MB";
+        }
+
+        private string EntityInspectCommand(List<string> args, Dictionary<string, object> data)
+        {
+            if (args.Count == 0) return "No entity specified or selected.";
+            
+            Pop targetPop = GetPopById(args[0]);
+            if (targetPop == null) return $"Entity '{args[0]}' not found.";
+
+            var controller = targetPop.GetComponent<PopController>();
+            string result = $"Entity {targetPop.GetInstanceID()} Info:\n";
+            result += $"  Position: {targetPop.transform.position}\n";
+            result += $"  Health: {targetPop.health:F1}/{targetPop.maxHealth}\n";
+            result += $"  Hunger: {targetPop.hunger:F1}\n";
+            result += $"  Thirst: {targetPop.thirst:F1}\n";
+            result += $"  Energy: {targetPop.stamina:F1}\n";
+            result += $"  AI State: {controller?.GetCurrentStateName() ?? "Unknown"}\n";
+
+            return result;
+        }
+
+        private string EntityHealthCommand(List<string> args, Dictionary<string, object> data)
+        {
+            if (args.Count == 0) return "Usage: entity.health [entity_id, value] or entity.health [value]";
+            
+            string entityId = args.Count > 1 ? args[0] : null;
+            string valueStr = args.Count > 1 ? args[1] : args[0];
+            
+            if (string.IsNullOrEmpty(entityId))
             {
-                return "Usage: spawn_pop <x> <y> [z]";
+                entityId = GetSelectedEntityTarget();
+                if (string.IsNullOrEmpty(entityId)) return "No entity specified or selected.";
             }
+            
+            if (!float.TryParse(valueStr, out float value)) return "Invalid health value.";
+            
+            Pop targetPop = GetPopById(entityId);
+            if (targetPop == null) return $"Entity '{entityId}' not found.";
+            
+            if (valueStr.ToLower() == "full")
+            {
+                targetPop.health = targetPop.maxHealth;
+            }
+            else
+            {
+                targetPop.health = Mathf.Clamp(value, 0f, targetPop.maxHealth);
+            }
+            
+            return $"Set health of entity {entityId} to {targetPop.health:F1}";
+        }
+
+        // Legacy command implementations for backward compatibility
+        private string LegacySpawnPopCommand(List<string> args, Dictionary<string, object> data)
+        {
+            // Convert legacy args to new format
+            var newArgs = new List<string>();
+            if (args.Count >= 2)
+            {
+                newArgs.Add(args[0]); // x
+                newArgs.Add(args[1]); // y
+                if (args.Count > 2) newArgs.Add(args[2]); // z
+            }
+            return SpawnPopCommand(newArgs, new Dictionary<string, object>());
+        }
+
+        private string SpawnPopCommand(List<string> args, Dictionary<string, object> data)
+        {
+            if (args.Count < 2) return "Usage: spawn.pop [x, y, z] {name:\"PopName\", ...}";
 
             if (!float.TryParse(args[0], out float x) || !float.TryParse(args[1], out float y))
             {
-                return "Invalid coordinates. Use numbers for x and y.";
+                return "Invalid coordinates.";
             }
 
-            float z = 0f;
-            if (args.Length > 2 && !float.TryParse(args[2], out z))
-            {
-                return "Invalid z coordinate.";
-            }
-
+            float z = args.Count > 2 && float.TryParse(args[2], out float zVal) ? zVal : 0f;
             Vector3 position = new Vector3(x, y, z);
 
             if (populationManager != null)
             {
                 try
                 {
-                    var pop = populationManager.SpawnPop(position);
-                    if (pop != null)
-                    {
-                        return $"Spawned pop at {position}. Pop ID: {pop.GetInstanceID()}";
-                    }
-                    else
-                    {
-                        return "Failed to spawn pop.";
-                    }
+                    populationManager.SpawnPop();
+                    return $"Spawned pop at {position}";
                 }
                 catch (Exception e)
                 {
@@ -591,45 +917,59 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
         }
 
-        private string KillPopCommand(string[] args)
+        // Additional command stubs - implement based on existing methods
+        private string EntitySetStateCommand(List<string> args, Dictionary<string, object> data) => "Entity state command [Implementation needed]";
+        private string EntityAddTraitCommand(List<string> args, Dictionary<string, object> data) => "Entity add trait command [Implementation needed]";
+        private string EntityInventoryListCommand(List<string> args, Dictionary<string, object> data) => "Entity inventory list command [Implementation needed]";
+        private string EntityInventoryAddCommand(List<string> args, Dictionary<string, object> data) => "Entity inventory add command [Implementation needed]";
+        private string EntityTeleportCommand(List<string> args, Dictionary<string, object> data) => "Entity teleport command [Implementation needed]";
+        private string LineageResourcesShowCommand(List<string> args, Dictionary<string, object> data) => ShowResourcesCommand(new string[0]);
+        private string LineageResourcesAddCommand(List<string> args, Dictionary<string, object> data) => "Lineage resources add command [Implementation needed]";
+        private string LineagePopsListCommand(List<string> args, Dictionary<string, object> data) => ListPopsCommand(new string[0]);
+        private string LineagePopsSetCapCommand(List<string> args, Dictionary<string, object> data) => "Lineage pops set cap command [Implementation needed]";
+        private string GameTimeSetCommand(List<string> args, Dictionary<string, object> data) => "Game time set command [Implementation needed]";
+        private string GameTimeAddCommand(List<string> args, Dictionary<string, object> data) => "Game time add command [Implementation needed]";
+        private string GameTimescaleCommand(List<string> args, Dictionary<string, object> data) => TimeScaleCommand(args.ToArray());
+        private string GamePauseCommand(List<string> args, Dictionary<string, object> data) => PauseCommand(new string[0]);
+        private string SceneLoadCommand(List<string> args, Dictionary<string, object> data) => "Scene load command [Implementation needed]";
+        private string SceneListCommand(List<string> args, Dictionary<string, object> data) => "Scene list command [Implementation needed]";
+        private string DebugDrawVisionCommand(List<string> args, Dictionary<string, object> data) => "Debug draw vision command [Implementation needed]";
+        private string DebugStatsToggleCommand(List<string> args, Dictionary<string, object> data) => "Debug stats toggle command [Implementation needed]";
+
+        private string LegacyListPopsCommand(List<string> args, Dictionary<string, object> data)
         {
-            Pop targetPop = null;
+            return ListPopsCommand(new string[0]);
+        }
 
-            if (args.Length > 0)
+        private string LegacyShowResourcesCommand(List<string> args, Dictionary<string, object> data)
+        {
+            return ShowResourcesCommand(new string[0]);
+        }
+
+        #endregion
+
+        #region Legacy Helper Methods (for backward compatibility)
+
+        private Pop GetPopById(string idStr)
+        {
+            if (int.TryParse(idStr, out int id))
             {
-                // Kill by ID
-                if (int.TryParse(args[0], out int popId))
-                {
-                    var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
-                    targetPop = allPops.FirstOrDefault(p => p.GetInstanceID() == popId);
-                }
+                var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
+                return allPops.FirstOrDefault(p => p.GetInstanceID() == id);
+            }
+            return null;
+        }
+
+        // Keep existing legacy methods for reference/compatibility
+        private string ShowResourcesCommand(string[] args)
+        {
+            if (resourceManager != null)
+            {
+                return $"Resources:\n  Food: {resourceManager.currentFood}\n  Faith: {resourceManager.currentFaithPoints}\n  Wood: {resourceManager.currentWood}";
             }
             else
             {
-                // Kill selected pop
-                if (selectionManager != null)
-                {
-                    var selectedPops = selectionManager.GetSelectedPops();
-                    if (selectedPops.Count > 0)
-                    {
-                        var popController = selectedPops[0].GetComponent<PopController>();
-                        if (popController != null)
-                        {
-                            targetPop = popController.GetPop();
-                        }
-                    }
-                }
-            }
-
-            if (targetPop != null)
-            {
-                string popName = $"Pop {targetPop.GetInstanceID()}";
-                Destroy(targetPop.gameObject);
-                return $"Killed {popName}";
-            }
-            else
-            {
-                return "No pop found to kill. Select a pop or provide a valid ID.";
+                return "ResourceManager not found.";
             }
         }
 
@@ -649,513 +989,6 @@ namespace Lineage.Ancestral.Legacies.Debug
                 string stateName = controller?.GetCurrentStateName() ?? "Unknown";
                 result += $"  ID: {pop.GetInstanceID()}, Position: {pop.transform.position}, State: {stateName}, Health: {pop.health:F1}\n";
             }
-
-            return result;
-        }
-
-        private string SelectPopCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: select_pop <id>";
-            }
-
-            if (!int.TryParse(args[0], out int popId))
-            {
-                return "Invalid pop ID.";
-            }
-
-            var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
-            var targetPop = allPops.FirstOrDefault(p => p.GetInstanceID() == popId);
-
-            if (targetPop != null)
-            {
-                var controller = targetPop.GetComponent<PopController>();
-                if (controller != null)
-                {
-                    controller.ForceSelect();
-                    return $"Selected pop {popId}";
-                }
-                else
-                {
-                    return "Pop has no PopController component.";
-                }
-            }
-            else
-            {
-                return $"Pop with ID {popId} not found.";
-            }
-        }
-
-        private string MovePopCommand(string[] args)
-        {
-            if (args.Length < 2)
-            {
-                return "Usage: move_pop <x> <y> [z]";
-            }
-
-            if (!float.TryParse(args[0], out float x) || !float.TryParse(args[1], out float y))
-            {
-                return "Invalid coordinates.";
-            }
-
-            float z = 0f;
-            if (args.Length > 2 && !float.TryParse(args[2], out z))
-            {
-                return "Invalid z coordinate.";
-            }
-
-            Vector3 targetPosition = new Vector3(x, y, z);
-
-            if (selectionManager != null)
-            {
-                var selectedPops = selectionManager.GetSelectedPops();
-                if (selectedPops.Count > 0)
-                {
-                    var popController = selectedPops[0].GetComponent<PopController>();
-                    if (popController != null)
-                    {
-                        popController.MoveTo(targetPosition);
-                        return $"Moving selected pop to {targetPosition}";
-                    }
-                    else
-                    {
-                        return "Selected object has no PopController.";
-                    }
-                }
-                else
-                {
-                    return "No pop selected. Select a pop first.";
-                }
-            }
-            else
-            {
-                return "SelectionManager not found.";
-            }
-        }
-
-        private string SetHealthCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_health <value> [pop_id]";
-            }
-
-            if (!float.TryParse(args[0], out float healthValue))
-            {
-                return "Invalid health value.";
-            }
-
-            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            targetPop.health = Mathf.Clamp(healthValue, 0f, targetPop.maxHealth);
-            return $"Set health of pop {targetPop.GetInstanceID()} to {targetPop.health:F1}";
-        }
-
-        private string SetHungerCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_hunger <value> [pop_id]";
-            }
-
-            if (!float.TryParse(args[0], out float hungerValue))
-            {
-                return "Invalid hunger value.";
-            }
-
-            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            targetPop.hunger = Mathf.Clamp(hungerValue, 0f, 100f);
-            return $"Set hunger of pop {targetPop.GetInstanceID()} to {targetPop.hunger:F1}";
-        }
-
-        private string SetThirstCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_thirst <value> [pop_id]";
-            }
-
-            if (!float.TryParse(args[0], out float thirstValue))
-            {
-                return "Invalid thirst value.";
-            }
-
-            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            targetPop.thirst = Mathf.Clamp(thirstValue, 0f, 100f);
-            return $"Set thirst of pop {targetPop.GetInstanceID()} to {targetPop.thirst:F1}";
-        }
-
-        private string SetEnergyCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_energy <value> [pop_id]";
-            }
-
-            if (!float.TryParse(args[0], out float energyValue))
-            {
-                return "Invalid energy value.";
-            }
-
-            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            targetPop.energy = Mathf.Clamp(energyValue, 0f, 100f);
-            return $"Set energy of pop {targetPop.GetInstanceID()} to {targetPop.energy:F1}";
-        }
-
-        private string HealPopCommand(string[] args)
-        {
-            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            targetPop.health = targetPop.maxHealth;
-            targetPop.hunger = 100f;
-            targetPop.thirst = 100f;
-            targetPop.energy = 100f;
-
-            return $"Fully healed pop {targetPop.GetInstanceID()}";
-        }        private string GiveItemCommand(string[] args)
-        {
-            if (args.Length < 2)
-            {
-                return "Usage: give_item <item_name> <quantity> [pop_id]";
-            }
-
-            string itemName = args[0];
-            if (!int.TryParse(args[1], out int quantity))
-            {
-                return "Invalid quantity.";
-            }
-
-            Pop targetPop = GetTargetPop(args.Length > 2 ? args[2] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            var inventory = targetPop.GetComponent<InventoryComponent>();
-            if (inventory == null)
-            {
-                return "Pop has no inventory component.";
-            }
-
-            bool success = inventory.AddItem(itemName, quantity);
-            if (success)
-            {
-                return $"Gave {quantity} {itemName} to pop {targetPop.GetInstanceID()}";
-            }
-            else
-            {
-                return $"Failed to give {quantity} {itemName} to pop {targetPop.GetInstanceID()} (inventory may be full)";
-            }
-        }        private string RemoveItemCommand(string[] args)
-        {
-            if (args.Length < 2)
-            {
-                return "Usage: remove_item <item_name> <quantity> [pop_id]";
-            }
-
-            string itemName = args[0];
-            if (!int.TryParse(args[1], out int quantity))
-            {
-                return "Invalid quantity.";
-            }
-
-            Pop targetPop = GetTargetPop(args.Length > 2 ? args[2] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            var inventory = targetPop.GetComponent<InventoryComponent>();
-            if (inventory == null)
-            {
-                return "Pop has no inventory component.";
-            }
-
-            bool success = inventory.RemoveItem(itemName, quantity);
-            if (success)
-            {
-                return $"Removed {quantity} {itemName} from pop {targetPop.GetInstanceID()}";
-            }
-            else
-            {
-                return $"Failed to remove {quantity} {itemName} from pop {targetPop.GetInstanceID()} (not enough items)";
-            }
-        }        private string ClearInventoryCommand(string[] args)
-        {
-            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            var inventory = targetPop.GetComponent<InventoryComponent>();
-            if (inventory == null)
-            {
-                return "Pop has no inventory component.";
-            }
-
-            inventory.ClearInventory();
-            return $"Cleared inventory of pop {targetPop.GetInstanceID()}";
-        }        private string ListInventoryCommand(string[] args)
-        {
-            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            var inventory = targetPop.GetComponent<InventoryComponent>();
-            if (inventory == null)
-            {
-                return "Pop has no inventory component.";
-            }
-
-            var items = inventory.GetAllItems();
-            if (items.Count == 0)
-            {
-                return $"Pop {targetPop.GetInstanceID()} inventory is empty.";
-            }
-
-            string result = $"Pop {targetPop.GetInstanceID()} inventory ({inventory.GetTotalItemCount()}/{inventory.capacity}):\n";
-            foreach (var item in items)
-            {
-                result += $"  {item.Key}: {item.Value}\n";
-            }
-
-            return result.TrimEnd('\n');
-        }        private string GiveFoodCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: give_food <amount>";
-            }
-
-            if (!float.TryParse(args[0], out float amount))
-            {
-                return "Invalid amount.";
-            }
-
-            if (resourceManager != null)
-            {
-                resourceManager.AddFood(amount);
-                return $"Added {amount} food. Current food: {resourceManager.currentFood}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }        private string GiveFaithCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: give_faith <amount>";
-            }
-
-            if (!float.TryParse(args[0], out float amount))
-            {
-                return "Invalid amount.";
-            }
-
-            if (resourceManager != null)
-            {
-                resourceManager.AddFaith(amount);
-                return $"Added {amount} faith. Current faith: {resourceManager.currentFaithPoints}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }        private string GiveWoodCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: give_wood <amount>";
-            }
-
-            if (!float.TryParse(args[0], out float amount))
-            {
-                return "Invalid amount.";
-            }
-
-            if (resourceManager != null)
-            {
-                resourceManager.AddWood(amount);
-                return $"Added {amount} wood. Current wood: {resourceManager.currentWood}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }        private string SetFoodCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_food <amount>";
-            }
-
-            if (!float.TryParse(args[0], out float amount))
-            {
-                return "Invalid amount.";
-            }
-
-            if (resourceManager != null)
-            {
-                resourceManager.SetFood(amount);
-                return $"Set food to {amount}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }        private string SetFaithCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_faith <amount>";
-            }
-
-            if (!float.TryParse(args[0], out float amount))
-            {
-                return "Invalid amount.";
-            }
-
-            if (resourceManager != null)
-            {
-                resourceManager.SetFaith(amount);
-                return $"Set faith to {amount}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }        private string SetWoodCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_wood <amount>";
-            }
-
-            if (!float.TryParse(args[0], out float amount))
-            {
-                return "Invalid amount.";
-            }
-
-            if (resourceManager != null)
-            {
-                resourceManager.SetWood(amount);
-                return $"Set wood to {amount}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }
-
-        private string ShowResourcesCommand(string[] args)
-        {
-            if (resourceManager != null)
-            {
-                return $"Resources:\n  Food: {resourceManager.GetFood()}\n  Faith: {resourceManager.GetFaith()}\n  Wood: {resourceManager.GetWood()}";
-            }
-            else
-            {
-                return "ResourceManager not found.";
-            }
-        }        private string SetAIStateCommand(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                return "Usage: set_ai_state <state_name> [pop_id]";
-            }
-
-            string stateName = args[0].ToLower();
-            Pop targetPop = GetTargetPop(args.Length > 1 ? args[1] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            var stateMachine = targetPop.GetComponent<AI.PopStateMachine>();
-            if (stateMachine == null)
-            {
-                return "Pop has no state machine.";
-            }
-
-            AI.States.IState newState = null;
-            switch (stateName)
-            {
-                case "idle":
-                    newState = new AI.States.IdleState();
-                    break;
-                case "wander":
-                    newState = new AI.States.WanderState();
-                    break;
-                case "forage":
-                    newState = new AI.States.ForageState();
-                    break;
-                case "commanded":
-                    newState = new AI.States.CommandedState();
-                    break;
-                case "wait":
-                    newState = new AI.States.WaitState();
-                    break;
-                default:
-                    return $"Unknown state '{stateName}'. Available states: idle, wander, forage, commanded, wait";
-            }
-
-            stateMachine.ForceChangeState(newState);
-            return $"Set AI state of pop {targetPop.GetInstanceID()} to {stateName}";
-        }        private string ListAIStatesCommand(string[] args)
-        {
-            return "Available AI States:\n" +
-                   "  idle - Pop stands still and recovers\n" +
-                   "  wander - Pop moves around randomly\n" +
-                   "  forage - Pop searches for food\n" +
-                   "  commanded - Pop follows player commands\n" +
-                   "  wait - Pop waits in place";
-        }
-
-        private string PopInfoCommand(string[] args)
-        {
-            Pop targetPop = GetTargetPop(args.Length > 0 ? args[0] : null);
-            if (targetPop == null)
-            {
-                return "No valid pop found.";
-            }
-
-            var controller = targetPop.GetComponent<PopController>();
-            string result = $"Pop {targetPop.GetInstanceID()} Info:\n";
-            result += $"  Position: {targetPop.transform.position}\n";
-            result += $"  Health: {targetPop.health:F1}/{targetPop.maxHealth}\n";
-            result += $"  Hunger: {targetPop.hunger:F1}\n";
-            result += $"  Thirst: {targetPop.thirst:F1}\n";
-            result += $"  Energy: {targetPop.energy:F1}\n";
-            result += $"  AI State: {controller?.GetCurrentStateName() ?? "Unknown"}\n";
-            result += $"  Selected: {(controller != null && selectionManager != null && selectionManager.GetSelectedPops().Contains(controller.gameObject))}\n";
 
             return result;
         }
@@ -1188,69 +1021,6 @@ namespace Lineage.Ancestral.Legacies.Debug
                 Time.timeScale = 0f;
                 return "Paused simulation";
             }
-        }
-
-        private string ToggleDebugCommand(string[] args)
-        {
-            var debugManager = FindFirstObjectByType<DebugManager>();
-            if (debugManager != null)
-            {
-                // Toggle debug visualization - adjust based on your DebugManager implementation
-                return "Debug visualization toggled [Implementation needed]";
-            }
-            else
-            {
-                return "DebugManager not found.";
-            }
-        }
-
-        private string ToggleStatsCommand(string[] args)
-        {
-            var statsOverlay = FindFirstObjectByType<DebugStatsOverlay>();
-            if (statsOverlay != null)
-            {
-                // Toggle stats overlay - adjust based on your implementation
-                return "Stats overlay toggled [Implementation needed]";
-            }
-            else
-            {
-                return "DebugStatsOverlay not found.";
-            }
-        }
-
-        private string DebugPopPathsCommand(string[] args)
-        {
-            // Toggle pop path visualization
-            return "Pop path visualization toggled [Implementation needed]";
-        }
-
-        #endregion
-
-        #region Helper Methods
-
-        private Pop GetTargetPop(string popIdString)
-        {
-            if (!string.IsNullOrEmpty(popIdString) && int.TryParse(popIdString, out int popId))
-            {
-                // Get by ID
-                var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
-                return allPops.FirstOrDefault(p => p.GetInstanceID() == popId);
-            }
-            else
-            {
-                // Get selected pop
-                if (selectionManager != null)
-                {
-                    var selectedPops = selectionManager.GetSelectedPops();
-                    if (selectedPops.Count > 0)
-                    {
-                        var popController = selectedPops[0].GetComponent<PopController>();
-                        return popController?.GetPop();
-                    }
-                }
-            }
-
-            return null;
         }
 
         #endregion

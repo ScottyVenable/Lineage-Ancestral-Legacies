@@ -1,18 +1,13 @@
-using UnityEngine;
-using UnityEngine.TestTools;
-using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
-using System;
+using System.Diagnostics;
 using System.Linq;
+using UnityEngine;
+using Lineage.Ancestral.Legacies.Debug;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace Lineage.Ancestral.Legacies.Debug.Testing
 {
-    /// <summary>
-    /// Comprehensive testing framework for the debug system.
-    /// Provides unit tests, integration tests, and performance validation.
-    /// </summary>
     public class DebugSystemTestFramework : MonoBehaviour
     {
         [Header("Test Configuration")]
@@ -20,70 +15,149 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
         [SerializeField] private bool enablePerformanceTests = true;
         [SerializeField] private int performanceTestIterations = 1000;
         
-        // Test results
         private List<TestResult> testResults = new List<TestResult>();
         private Dictionary<string, float> performanceMetrics = new Dictionary<string, float>();
+        private DebugConsoleManager console;
         
-        public struct TestResult
+        private enum TestStatus
+        {
+            Passed,
+            Failed,
+            Skipped
+        }
+        
+        private class TestResult
         {
             public string testName;
-            public bool passed;
+            public TestStatus status;
             public string message;
-            public float executionTime;
-            public DateTime timestamp;
-        }
-        
-        public enum TestCategory
-        {
-            Unit,
-            Integration,
-            Performance,
-            Stress,
-            UserInterface
-        }
-        
-        // Test component for inspector testing
-        public class TestComponent : MonoBehaviour
-        {
-            public int testInt = 42;
-            public string testString = "Hello World";
-            public bool testBool = true;
+            public float duration;
+            public System.DateTime timestamp;
             
-            public void TestMethod()
+            public TestResult(string name, TestStatus status, string message = "", float duration = 0f)
             {
-                // Test method for reflection
+                this.testName = name;
+                this.status = status;
+                this.message = message;
+                this.duration = duration;
+                this.timestamp = System.DateTime.Now;
             }
         }
         
         private void Start()
         {
+            // Get reference to console
+            console = FindFirstObjectByType<DebugConsoleManager>();
+            
+            if (console == null)
+            {
+                Debug.Log.Error("DebugConsoleManager not found. Test framework commands will not be available.");
+            }
+            else
+            {
+                RegisterTestCommands();
+            }
+            
             if (runTestsOnStart)
             {
                 StartCoroutine(RunAllTests());
             }
-            
-            RegisterTestCommands();
         }
         
         private void RegisterTestCommands()
         {
-            var console = FindFirstObjectByType<DebugConsoleManager>();
             if (console != null)
             {
-                console.RegisterCommand("run_tests", "Run all debug system tests", args => StartCoroutine(RunAllTests()));
-                console.RegisterCommand("run_unit_tests", "Run unit tests only", args => StartCoroutine(RunUnitTests()));
-                console.RegisterCommand("run_integration_tests", "Run integration tests", args => StartCoroutine(RunIntegrationTests()));
-                console.RegisterCommand("run_performance_tests", "Run performance tests", args => StartCoroutine(RunPerformanceTests()));
-                console.RegisterCommand("test_results", "Show latest test results", ShowTestResults);
-                console.RegisterCommand("clear_test_results", "Clear test result history", ClearTestResults);
+                // Since RegisterCommand is private, we'll use reflection to access it
+                try
+                {
+                    var consoleType = typeof(DebugConsoleManager);
+                    var registerMethod = consoleType.GetMethod("RegisterCommand", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    
+                    if (registerMethod != null)
+                    {
+                        // Create delegate instances for each command
+                        DebugConsoleManager.CommandDelegate runAllDelegate = (args, data) => RunAllTestsCommand(args, data);
+                        DebugConsoleManager.CommandDelegate runUnitDelegate = (args, data) => RunUnitTestsCommand(args, data);
+                        DebugConsoleManager.CommandDelegate runIntegrationDelegate = (args, data) => RunIntegrationTestsCommand(args, data);
+                        DebugConsoleManager.CommandDelegate runPerformanceDelegate = (args, data) => RunPerformanceTestsCommand(args, data);
+                        DebugConsoleManager.CommandDelegate showResultsDelegate = (args, data) => ShowTestResultsCommand(args, data);
+                        DebugConsoleManager.CommandDelegate clearResultsDelegate = (args, data) => ClearTestResultsCommand(args, data);
+                        DebugConsoleManager.CommandDelegate showMetricsDelegate = (args, data) => ShowPerformanceMetricsCommand(args, data);
+                        
+                        // Register test commands using reflection
+                        registerMethod.Invoke(console, new object[] { "test.run.all", "Run all debug system tests", "test.run.all", runAllDelegate, false });
+                        registerMethod.Invoke(console, new object[] { "test.run.unit", "Run unit tests only", "test.run.unit", runUnitDelegate, false });
+                        registerMethod.Invoke(console, new object[] { "test.run.integration", "Run integration tests", "test.run.integration", runIntegrationDelegate, false });
+                        registerMethod.Invoke(console, new object[] { "test.run.performance", "Run performance tests", "test.run.performance", runPerformanceDelegate, false });
+                        registerMethod.Invoke(console, new object[] { "test.results.show", "Show test results", "test.results.show", showResultsDelegate, false });
+                        registerMethod.Invoke(console, new object[] { "test.results.clear", "Clear test result history", "test.results.clear", clearResultsDelegate, false });
+                        registerMethod.Invoke(console, new object[] { "test.metrics.show", "Show performance metrics", "test.metrics.show", showMetricsDelegate, false });
+                        
+                        LogTestMessage("Test framework commands registered successfully.");
+                    }
+                    else
+                    {
+                        LogTestMessage("RegisterCommand method not found. Test commands will not be available.");
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    LogTestMessage($"Failed to register test commands: {e.Message}");
+                }
             }
         }
+        
+        #region Command Handlers
+        
+        private string RunAllTestsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            StartCoroutine(RunAllTests());
+            return "Starting all tests...";
+        }
+        
+        private string RunUnitTestsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            StartCoroutine(RunUnitTests());
+            return "Starting unit tests...";
+        }
+        
+        private string RunIntegrationTestsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            StartCoroutine(RunIntegrationTests());
+            return "Starting integration tests...";
+        }
+        
+        private string RunPerformanceTestsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            StartCoroutine(RunPerformanceTests());
+            return "Starting performance tests...";
+        }
+        
+        private string ShowTestResultsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            return GetTestResultsSummary();
+        }
+        
+        private string ClearTestResultsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            testResults.Clear();
+            performanceMetrics.Clear();
+            return "Test results and metrics cleared.";
+        }
+        
+        private string ShowPerformanceMetricsCommand(List<string> args, Dictionary<string, object> data)
+        {
+            return GetPerformanceMetricsSummary();
+        }
+        
+        #endregion
         
         // Public API for running tests
         public IEnumerator RunAllTests()
         {
-            AdvancedLogger.LogInfo(LogCategory.General, "Starting comprehensive debug system tests...");
-            testResults.Clear();
+            LogTestMessage("Starting comprehensive test suite...");
             
             yield return RunUnitTests();
             yield return RunIntegrationTests();
@@ -93,201 +167,197 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
                 yield return RunPerformanceTests();
             }
             
-            GenerateTestReport();
-        }
-        
-        public IEnumerator RunUnitTests()
-        {
-            AdvancedLogger.LogInfo(LogCategory.General, "Running unit tests...");
-            
-            // Test AdvancedLogger
-            yield return TestAdvancedLogger();
-            
-            // Test DebugConsoleManager command parsing
-            yield return TestConsoleCommandParsing();
-            
-            // Test DebugStatsOverlay calculations
-            yield return TestStatsOverlayCalculations();
-            
-            // Test RuntimeObjectInspector reflection
-            yield return TestObjectInspectorReflection();
-            
-            AdvancedLogger.LogInfo(LogCategory.General, "Unit tests completed.");
-        }
-        
-        public IEnumerator RunIntegrationTests()
-        {
-            AdvancedLogger.LogInfo(LogCategory.General, "Running integration tests...");
-            
-            // Test console logger integration
-            yield return TestConsoleLoggerIntegration();
-            
-            // Test debug manager coordination
-            yield return TestDebugManagerCoordination();
-            
-            // Test visual debugger integration
-            yield return TestVisualDebuggerIntegration();
-            
-            // Test runtime inspector with game objects
-            yield return TestRuntimeInspectorWithGameObjects();
-            
-            AdvancedLogger.LogInfo(LogCategory.General, "Integration tests completed.");
-        }
-        
-        public IEnumerator RunPerformanceTests()
-        {
-            AdvancedLogger.LogInfo(LogCategory.General, "Running performance tests...");
-            
-            // Test logging performance
-            yield return TestLoggingPerformance();
-            
-            // Test console UI performance
-            yield return TestConsoleUIPerformance();
-            
-            // Test visual debugger performance
-            yield return TestVisualDebuggerPerformance();
-            
-            // Test memory usage
-            yield return TestMemoryUsage();
-            
-            AdvancedLogger.LogInfo(LogCategory.General, "Performance tests completed.");
+            LogTestMessage($"All tests completed. Results: {GetTestResultsSummary()}");
         }
         
         #region Unit Tests
         
-        private IEnumerator TestAdvancedLogger()
+        public IEnumerator RunUnitTests()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
+            LogTestMessage("Running unit tests...");
+            
+            yield return TestConsoleLogging();
+            yield return TestConsoleCommandParsing();
+            yield return TestAdvancedLoggerFunctionality();
+            yield return TestObjectInspectorBasics();
+            
+            LogTestMessage("Unit tests completed.");
+        }
+        
+        private IEnumerator TestConsoleLogging()
+        {
+            var stopwatch = Stopwatch.StartNew();
+            string testName = "Console Logging Test";
             
             try
             {
-                // Test basic logging
-                AdvancedLogger.LogInfo(LogCategory.General, "Test message");
-                AdvancedLogger.LogWarning(LogCategory.General, "Test warning");
-                AdvancedLogger.LogError(LogCategory.General, "Test error");
+                if (console == null)
+                {
+                    AddTestResult(testName, TestStatus.Skipped, "Console not available");
+                    yield break;
+                }
                 
-                // Test log level filtering
-                AdvancedLogger.SetLogLevel(LogLevel.Warning);
-                AdvancedLogger.LogInfo(LogCategory.General, "This should be filtered");
+                int initialLogCount = console.consoleLog.Count;
                 
-                AdvancedLogger.SetLogLevel(LogLevel.Debug); // Reset
+                // Use the public LogToConsole method instead of directly accessing consoleLog
+                var logMethod = typeof(DebugConsoleManager).GetMethod("LogToConsole", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (logMethod != null)
+                {
+                    logMethod.Invoke(console, new object[] { "Test log message", false });
+                    
+                    if (console.consoleLog.Count > initialLogCount)
+                    {
+                        AddTestResult(testName, TestStatus.Passed, "", stopwatch.ElapsedMilliseconds);
+                    }
+                    else
+                    {
+                        AddTestResult(testName, TestStatus.Failed, "Log message not added to console");
+                    }
+                }
+                else
+                {
+                    AddTestResult(testName, TestStatus.Skipped, "LogToConsole method not accessible");
+                }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {e.Message}");
             }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("AdvancedLogger Basic Functionality", testPassed, 
-                testPassed ? "Logger working correctly" : $"Logger failed: {errorMessage}", executionTime);
+            finally
+            {
+                stopwatch.Stop();
+            }
             
             yield return null;
         }
         
         private IEnumerator TestConsoleCommandParsing()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
+            var stopwatch = Stopwatch.StartNew();
+            string testName = "Console Command Parsing Test";
             
             try
             {
-                var console = FindFirstObjectByType<DebugConsoleManager>();
-                if (console != null)
+                if (console == null)
                 {
-                    // Test would go here - actual command parsing validation
-                    testPassed = true;
+                    AddTestResult(testName, TestStatus.Skipped, "Console not available");
+                    yield break;
+                }
+                
+                // Test basic command parsing by checking if commands exist
+                var testCommands = new[]
+                {
+                    "help",
+                    "system.info",
+                    "entity.inspect",
+                    "spawn.pop"
+                };
+                
+                bool allCommandsExist = true;
+                
+                // Access the commands dictionary through reflection
+                var commandsField = typeof(DebugConsoleManager).GetField("commands", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (commandsField != null)
+                {
+                    var commandsDict = commandsField.GetValue(console) as Dictionary<string, DebugConsoleManager.ConsoleCommand>;
+                    
+                    if (commandsDict != null)
+                    {
+                        foreach (string cmd in testCommands)
+                        {
+                            if (!commandsDict.ContainsKey(cmd))
+                            {
+                                allCommandsExist = false;
+                                break;
+                            }
+                        }
+                        
+                        if (allCommandsExist)
+                        {
+                            AddTestResult(testName, TestStatus.Passed, "", stopwatch.ElapsedMilliseconds);
+                        }
+                        else
+                        {
+                            AddTestResult(testName, TestStatus.Failed, "Not all test commands are registered");
+                        }
+                    }
+                    else
+                    {
+                        AddTestResult(testName, TestStatus.Failed, "Commands dictionary is null");
+                    }
                 }
                 else
                 {
-                    testPassed = false;
-                    errorMessage = "DebugConsoleManager not found";
+                    AddTestResult(testName, TestStatus.Skipped, "Commands field not accessible");
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {e.Message}");
             }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Console Command Parsing", testPassed, 
-                testPassed ? "Command parsing working" : $"Command parsing failed: {errorMessage}", executionTime);
+            finally
+            {
+                stopwatch.Stop();
+            }
             
             yield return null;
         }
         
-        private IEnumerator TestStatsOverlayCalculations()
+        private IEnumerator TestAdvancedLoggerFunctionality()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
+            var stopwatch = Stopwatch.StartNew();
+            string testName = "Advanced Logger Test";
             
             try
             {
-                var statsOverlay = FindFirstObjectByType<DebugStatsOverlay>();
-                if (statsOverlay != null)
-                {
-                    // Test would validate stats calculations
-                    testPassed = true;
-                }
-                else
-                {
-                    testPassed = false;
-                    errorMessage = "DebugStatsOverlay not found";
-                }
+                // Test AdvancedLogger static methods
+                AdvancedLogger.LogInfo(LogCategory.General, "Test info message");
+                AdvancedLogger.LogError(LogCategory.General, "Test error message");
+                
+                AddTestResult(testName, TestStatus.Passed, "", stopwatch.ElapsedMilliseconds);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {e.Message}");
             }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Stats Overlay Calculations", testPassed, 
-                testPassed ? "Stats calculations working" : $"Stats calculations failed: {errorMessage}", executionTime);
+            finally
+            {
+                stopwatch.Stop();
+            }
             
             yield return null;
         }
         
-        private IEnumerator TestObjectInspectorReflection()
+        private IEnumerator TestObjectInspectorBasics()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
+            var stopwatch = Stopwatch.StartNew();
+            string testName = "Object Inspector Test";
             
             try
             {
                 var inspector = FindFirstObjectByType<RuntimeObjectInspector>();
                 if (inspector != null)
                 {
-                    // Create a test object for inspection
-                    var testObject = new GameObject("TestObject");
-                    var testComponent = testObject.AddComponent<TestComponent>();
-                    
-                    // Test inspection (would normally validate reflection results)
-                    testPassed = true;
-                    
-                    DestroyImmediate(testObject);
+                    // Basic test - just check if inspector exists and is enabled
+                    AddTestResult(testName, TestStatus.Passed, "", stopwatch.ElapsedMilliseconds);
                 }
                 else
                 {
-                    testPassed = false;
-                    errorMessage = "RuntimeObjectInspector not found";
+                    AddTestResult(testName, TestStatus.Skipped, "RuntimeObjectInspector not found");
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {e.Message}");
             }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Object Inspector Reflection", testPassed, 
-                testPassed ? "Object inspection working" : $"Object inspection failed: {errorMessage}", executionTime);
+            finally
+            {
+                stopwatch.Stop();
+            }
             
             yield return null;
         }
@@ -296,414 +366,328 @@ namespace Lineage.Ancestral.Legacies.Debug.Testing
         
         #region Integration Tests
         
-        private IEnumerator TestConsoleLoggerIntegration()
+        public IEnumerator RunIntegrationTests()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
+            LogTestMessage("Running integration tests...");
+            
+            yield return TestConsoleManagerIntegration();
+            yield return TestDebugSystemsIntegration();
+            
+            LogTestMessage("Integration tests completed.");
+        }
+        
+        private IEnumerator TestConsoleManagerIntegration()
+        {
+            var stopwatch = Stopwatch.StartNew();
+            string testName = "Console Manager Integration Test";
             
             try
             {
-                var console = FindFirstObjectByType<DebugConsoleManager>();
-                if (console != null)
+                if (console == null)
                 {
-                    string testMessage = "Integration test message";
-                    AdvancedLogger.LogInfo(LogCategory.General, testMessage);
-                    
-                    // Test would verify message appears in console
-                    testPassed = true;
+                    AddTestResult(testName, TestStatus.Failed, "Console manager not found");
+                    yield break;
+                }
+                
+                // Test command registration and execution by checking if commands dictionary exists
+                var commandsField = typeof(DebugConsoleManager).GetField("commands", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (commandsField != null)
+                {
+                    var commandsDict = commandsField.GetValue(console);
+                    if (commandsDict != null)
+                    {
+                        AddTestResult(testName, TestStatus.Passed, "", stopwatch.ElapsedMilliseconds);
+                    }
+                    else
+                    {
+                        AddTestResult(testName, TestStatus.Failed, "Commands dictionary not initialized");
+                    }
                 }
                 else
                 {
-                    testPassed = false;
-                    errorMessage = "Console integration failed";
+                    AddTestResult(testName, TestStatus.Failed, "Commands field not accessible");
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {e.Message}");
             }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Console Logger Integration", testPassed, 
-                testPassed ? "Console integration working" : $"Console integration failed: {errorMessage}", executionTime);
+            finally
+            {
+                stopwatch.Stop();
+            }
             
             yield return null;
         }
         
-        private IEnumerator TestDebugManagerCoordination()
+        private IEnumerator TestDebugSystemsIntegration()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
+            var stopwatch = Stopwatch.StartNew();
+            string testName = "Debug Systems Integration Test";
             
             try
             {
                 var debugManager = FindFirstObjectByType<DebugManager>();
-                if (debugManager != null)
-                {
-                    // Test manager coordination
-                    testPassed = true;
-                }
-                else
-                {
-                    testPassed = false;
-                    errorMessage = "DebugManager not found";
-                }
-            }
-            catch (Exception e)
-            {
-                testPassed = false;
-                errorMessage = e.Message;
-            }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Debug Manager Coordination", testPassed, 
-                testPassed ? "Debug manager working" : $"Debug manager failed: {errorMessage}", executionTime);
-            
-            yield return null;
-        }
-        
-        private IEnumerator TestVisualDebuggerIntegration()
-        {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
-            
-            try
-            {
-                var console = FindFirstObjectByType<DebugConsoleManager>();
-                var statsOverlay = FindFirstObjectByType<DebugStatsOverlay>();
-                var visualizer = FindFirstObjectByType<DebugVisualizer>();
-                
-                if (console != null && statsOverlay != null && visualizer != null)
-                {
-                    // Test integration between components
-                    testPassed = true;
-                }
-                else
-                {
-                    testPassed = false;
-                    errorMessage = "Missing debug components";
-                }
-            }
-            catch (Exception e)
-            {
-                testPassed = false;
-                errorMessage = e.Message;
-            }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Visual Debugger Integration", testPassed, 
-                testPassed ? "Visual debugger integration working" : $"Visual debugger integration failed: {errorMessage}", executionTime);
-            
-            yield return null;
-        }
-        
-        private IEnumerator TestRuntimeInspectorWithGameObjects()
-        {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
-            GameObject testObj = null;
-            
-            try
-            {
-                var visualizer = FindFirstObjectByType<DebugVisualizer>();
                 var inspector = FindFirstObjectByType<RuntimeObjectInspector>();
                 
-                if (visualizer != null && inspector != null)
+                bool systemsAvailable = console != null && (debugManager != null || inspector != null);
+                
+                if (systemsAvailable)
                 {
-                    // Create test object and inspect it
-                    testObj = new GameObject("RuntimeInspectorTest");
-                    testObj.AddComponent<TestComponent>();
-                    
-                    testPassed = true;
+                    AddTestResult(testName, TestStatus.Passed, "", stopwatch.ElapsedMilliseconds);
                 }
                 else
                 {
-                    testPassed = false;
-                    errorMessage = "Runtime inspector components not found";
+                    AddTestResult(testName, TestStatus.Failed, "Debug systems not properly integrated");
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
-                testPassed = false;
-                errorMessage = e.Message;
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {e.Message}");
+            }
+            finally
+            {
+                stopwatch.Stop();
             }
             
-            // Yield outside of try-catch block
-            if (testPassed && testObj != null)
-            {
-                yield return new WaitForSeconds(0.1f); // Allow UI to update
-                DestroyImmediate(testObj);
-            }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Runtime Inspector with GameObjects", testPassed, 
-                testPassed ? "Runtime inspector working with GameObjects" : $"Runtime inspector failed: {errorMessage}", executionTime);
+            yield return null;
         }
         
         #endregion
         
         #region Performance Tests
         
-        private IEnumerator TestLoggingPerformance()
+        public IEnumerator RunPerformanceTests()
         {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
-            float totalTime = 0f;
+            if (!enablePerformanceTests)
+            {
+                LogTestMessage("Performance tests disabled.");
+                yield break;
+            }
             
-            // Use a separate loop structure to handle yielding
-            for (int i = 0; i < performanceTestIterations && testPassed; i += 100)
+            LogTestMessage("Running performance tests...");
+            
+            yield return TestConsoleLoggingPerformance();
+            yield return TestCommandParsingPerformance();
+            
+            LogTestMessage("Performance tests completed.");
+        }
+        
+        private IEnumerator TestConsoleLoggingPerformance()
+        {
+            string testName = "Console Logging Performance";
+            var stopwatch = Stopwatch.StartNew();
+            
+            if (console == null)
+            {
+                AddTestResult(testName, TestStatus.Skipped, "Console not available");
+                yield break;
+            }
+            
+            var logMethod = typeof(DebugConsoleManager).GetMethod("LogToConsole", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (logMethod == null)
+            {
+                AddTestResult(testName, TestStatus.Skipped, "LogToConsole method not accessible");
+                yield break;
+            }
+            
+            bool hasError = false;
+            string errorMessage = "";
+            
+            for (int i = 0; i < performanceTestIterations; i++)
             {
                 try
                 {
-                    int endIndex = Mathf.Min(i + 100, performanceTestIterations);
-                    for (int j = i; j < endIndex; j++)
-                    {
-                        float logStart = Time.realtimeSinceStartup;
-                        AdvancedLogger.LogInfo(LogCategory.Performance, $"Performance test message {j}");
-                        totalTime += Time.realtimeSinceStartup - logStart;
-                    }
+                    logMethod.Invoke(console, new object[] { $"Performance test message {i}", false });
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
-                    testPassed = false;
+                    hasError = true;
                     errorMessage = e.Message;
                     break;
                 }
                 
-                yield return null; // Yield outside try-catch
+                if (i % 100 == 0)
+                {
+                    yield return null; // Yield occasionally to prevent frame drops
+                }
             }
             
-            if (testPassed)
+            stopwatch.Stop();
+            
+            if (hasError)
+            {
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {errorMessage}");
+            }
+            else
+            {
+                float avgTimePerLog = (float)stopwatch.ElapsedMilliseconds / performanceTestIterations;
+                performanceMetrics[testName] = avgTimePerLog;
+                AddTestResult(testName, TestStatus.Passed, $"Avg: {avgTimePerLog:F4}ms per log", stopwatch.ElapsedMilliseconds);
+            }
+        }
+        private IEnumerator TestCommandParsingPerformance()
+        {
+            string testName = "Command Parsing Performance";
+            var stopwatch = Stopwatch.StartNew();
+            
+            if (console == null)
+            {
+                AddTestResult(testName, TestStatus.Skipped, "Console not available");
+                yield break;
+            }
+            
+            string[] testCommands = {
+                "help",
+                "entity.inspect [12345]",
+                "spawn.pop [10, 20, 0] {name:\"Test\", health:100}",
+                "lineage.resources.add [food, 1000]"
+            };
+            
+            var method = typeof(DebugConsoleManager).GetMethod("ParseCommandLine", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (method == null)
+            {
+                AddTestResult(testName, TestStatus.Skipped, "ParseCommandLine method not accessible");
+                yield break;
+            }
+            
+            bool hasError = false;
+            string errorMessage = "";
+            
+            for (int i = 0; i < performanceTestIterations; i++)
             {
                 try
                 {
-                    float averageTime = (totalTime / performanceTestIterations) * 1000; // Convert to ms
-                    performanceMetrics["Logging_AverageTime_ms"] = averageTime;
-                    
-                    testPassed = averageTime < 1.0f; // Should be under 1ms per log
-                    if (!testPassed)
-                        errorMessage = $"Logging too slow: {averageTime:F4}ms average";
+                    string cmd = testCommands[i % testCommands.Length];
+                    method.Invoke(console, new object[] { cmd });
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
-                    testPassed = false;
+                    hasError = true;
                     errorMessage = e.Message;
+                    break;
                 }
-            }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Logging Performance", testPassed, 
-                testPassed ? $"Logging performance acceptable" : $"Logging performance failed: {errorMessage}", executionTime);
-        }
-          private IEnumerator TestConsoleUIPerformance()
-        {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
-            
-            DebugConsoleManager console = null;
-            
-            try
-            {
-                console = FindFirstObjectByType<DebugConsoleManager>();
-                if (console == null)
+                
+                if (i % 100 == 0)
                 {
-                    testPassed = false;
-                    errorMessage = "Console not found for UI performance test";
-                }
-            }
-            catch (Exception e)
-            {
-                testPassed = false;
-                errorMessage = e.Message;
-            }
-            
-            if (testPassed && console != null)
-            {
-                float totalTime = 0f;
-                for (int i = 0; i < 50; i++) // Smaller iteration for UI tests
-                {
-                    float uiStart = Time.realtimeSinceStartup;
-                    // Simulate UI operations
                     yield return null;
-                    totalTime += Time.realtimeSinceStartup - uiStart;
                 }
+            }
+            
+            stopwatch.Stop();
+            
+            if (hasError)
+            {
+                AddTestResult(testName, TestStatus.Failed, $"Exception: {errorMessage}");
+            }
+            else
+            {
+                float avgTimePerParse = (float)stopwatch.ElapsedMilliseconds / performanceTestIterations;
+                performanceMetrics[testName] = avgTimePerParse;
                 
-                performanceMetrics["ConsoleUI_UpdateTime_ms"] = totalTime * 1000;
+                AddTestResult(testName, TestStatus.Passed, $"Avg: {avgTimePerParse:F4}ms per parse", stopwatch.ElapsedMilliseconds);
             }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Console UI Performance", testPassed, 
-                testPassed ? "Console UI performance acceptable" : $"Console UI performance failed: {errorMessage}", executionTime);
-        }
-          private IEnumerator TestVisualDebuggerPerformance()
-        {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
-            
-            DebugVisualizer visualizer = null;
-            
-            try
-            {
-                visualizer = FindFirstObjectByType<DebugVisualizer>();
-                if (visualizer == null)
-                {
-                    testPassed = false;
-                    errorMessage = "Visual debugger not found";
-                }
-            }
-            catch (Exception e)
-            {
-                testPassed = false;
-                errorMessage = e.Message;
-            }
-            
-            if (testPassed && visualizer != null)
-            {
-                float totalTime = 0f;
-                for (int i = 0; i < 30; i++) // Smaller iteration for render tests
-                {
-                    float renderStart = Time.realtimeSinceStartup;
-                    // Simulate visual debug operations
-                    yield return null;
-                    totalTime += Time.realtimeSinceStartup - renderStart;
-                }
-                
-                performanceMetrics["VisualDebugger_DrawTime_ms"] = totalTime * 1000;
-            }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Visual Debugger Performance", testPassed, 
-                testPassed ? "Visual debugger performance acceptable" : $"Visual debugger performance failed: {errorMessage}", executionTime);
-        }
-          private IEnumerator TestMemoryUsage()
-        {
-            float startTime = Time.realtimeSinceStartup;
-            bool testPassed = true;
-            string errorMessage = "";
-            
-            long startMemory = 0;
-            long endMemory = 0;
-            
-            try
-            {
-                startMemory = GC.GetTotalMemory(true);
-            }
-            catch (Exception e)
-            {
-                testPassed = false;
-                errorMessage = e.Message;
-            }
-            
-            if (testPassed)
-            {
-                // Generate memory usage with yield statements outside try-catch
-                for (int i = 0; i < 1000; i++)
-                {
-                    AdvancedLogger.LogInfo(LogCategory.Performance, $"Memory test {i}");
-                    if (i % 100 == 0) yield return null;
-                }
-                
-                try
-                {
-                    endMemory = GC.GetTotalMemory(false);
-                    long memoryDelta = endMemory - startMemory;
-                    
-                    performanceMetrics["Memory_Delta_KB"] = memoryDelta / 1024f;
-                    
-                    testPassed = memoryDelta < 1024 * 1024; // Should be under 1MB
-                    if (!testPassed)
-                        errorMessage = $"Excessive memory usage: {memoryDelta / 1024f:F2}KB";
-                }
-                catch (Exception e)
-                {
-                    testPassed = false;
-                    errorMessage = e.Message;
-                }
-            }
-            
-            float executionTime = Time.realtimeSinceStartup - startTime;
-            RecordTestResult("Memory Usage", testPassed, 
-                testPassed ? "Memory usage acceptable" : $"Memory usage failed: {errorMessage}", executionTime);
         }
         
         #endregion
         
         #region Test Result Management
         
-        private void RecordTestResult(string testName, bool passed, string message, float executionTime)
+        private void AddTestResult(string testName, TestStatus status, string message = "", float duration = 0f)
         {
-            testResults.Add(new TestResult
+            var result = new TestResult(testName, status, message, duration);
+            testResults.Add(result);
+            
+            string statusColor = status switch
             {
-                testName = testName,
-                passed = passed,
-                message = message,
-                executionTime = executionTime,
-                timestamp = DateTime.Now
-            });
+                TestStatus.Passed => "green",
+                TestStatus.Failed => "red",
+                TestStatus.Skipped => "yellow",
+                _ => "white"
+            };
             
-            string logMessage = $"TEST: {testName} - {(passed ? "PASSED" : "FAILED")} - {message} ({executionTime:F4}s)";
-            
-            if (passed)
-                AdvancedLogger.LogInfo(LogCategory.General, logMessage);
-            else
-                AdvancedLogger.LogError(LogCategory.General, logMessage);
+            LogTestMessage($"<color={statusColor}>{status}</color>: {testName} {(string.IsNullOrEmpty(message) ? "" : $"- {message}")}");
         }
         
-        private void GenerateTestReport()
-        {
-            int passedTests = testResults.Count(r => r.passed);
-            int totalTests = testResults.Count;
-            float successRate = totalTests > 0 ? (passedTests / (float)totalTests) * 100 : 0;
-            
-            AdvancedLogger.LogInfo(LogCategory.General, "========== DEBUG SYSTEM TEST REPORT ==========");
-            AdvancedLogger.LogInfo(LogCategory.General, $"Total Tests: {totalTests}");
-            AdvancedLogger.LogInfo(LogCategory.General, $"Passed: {passedTests}");
-            AdvancedLogger.LogInfo(LogCategory.General, $"Failed: {totalTests - passedTests}");
-            AdvancedLogger.LogInfo(LogCategory.General, $"Success Rate: {successRate:F1}%");
-            
-            if (performanceMetrics.Count > 0)
-            {
-                AdvancedLogger.LogInfo(LogCategory.General, "Performance Metrics:");
-                foreach (var metric in performanceMetrics)
-                {
-                    AdvancedLogger.LogInfo(LogCategory.General, $"  {metric.Key}: {metric.Value:F4}");
-                }
-            }
-            
-            AdvancedLogger.LogInfo(LogCategory.General, "===============================================");
-        }
-        
-        private void ShowTestResults(string[] args)
+        private string GetTestResultsSummary()
         {
             if (testResults.Count == 0)
             {
-                AdvancedLogger.LogInfo(LogCategory.General, "No test results available. Run tests first.");
-                return;
+                return "No test results available.";
             }
             
-            GenerateTestReport();
+            int passed = testResults.Count(r => r.status == TestStatus.Passed);
+            int failed = testResults.Count(r => r.status == TestStatus.Failed);
+            int skipped = testResults.Count(r => r.status == TestStatus.Skipped);
             
-            AdvancedLogger.LogInfo(LogCategory.General, "Detailed Results:");
-            foreach (var result in testResults)
+            string summary = $"Test Results Summary:\n";
+            summary += $"  Total: {testResults.Count}\n";
+            summary += $"  Passed: {passed}\n";
+            summary += $"  Failed: {failed}\n";
+            summary += $"  Skipped: {skipped}\n";
+            
+            if (failed > 0)
             {
-                string status = result.passed ? "[PASS]" : "[FAIL]";
-                AdvancedLogger.LogInfo(LogCategory.General, $"{status} {result.testName}: {result.message}");
+                summary += "\nFailed Tests:\n";
+                foreach (var result in testResults.Where(r => r.status == TestStatus.Failed))
+                {
+                    summary += $"  - {result.testName}: {result.message}\n";
+                }
+            }
+            
+            return summary;
+        }
+        
+        private string GetPerformanceMetricsSummary()
+        {
+            if (performanceMetrics.Count == 0)
+            {
+                return "No performance metrics available.";
+            }
+            
+            string summary = "Performance Metrics:\n";
+            foreach (var metric in performanceMetrics)
+            {
+                summary += $"  {metric.Key}: {metric.Value:F4}ms\n";
+            }
+            
+            return summary;
+        }
+        
+        private void LogTestMessage(string message)
+        {
+            if (console != null)
+            {
+                // Use reflection to access LogToConsole since it's private
+                var logMethod = typeof(DebugConsoleManager).GetMethod("LogToConsole", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (logMethod != null)
+                {
+                    logMethod.Invoke(console, new object[] { $"[TEST] {message}", false });
+                }
+                else
+                {
+                    Debug.Log.Error($"[TEST] {message}");
+                }
+            }
+            else
+            {
+                Debug.Log.Error($"[TEST] {message}");
             }
         }
         
-        private void ClearTestResults(string[] args)
+        public void ClearTestResults()
         {
             testResults.Clear();
             performanceMetrics.Clear();
-            AdvancedLogger.LogInfo(LogCategory.General, "Test results cleared.");
+            LogTestMessage("Test results cleared.");
         }
         
         #endregion

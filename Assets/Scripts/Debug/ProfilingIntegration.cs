@@ -63,12 +63,18 @@ namespace Lineage.Ancestral.Legacies.Debug
             var console = UnityEngine.Object.FindFirstObjectByType<DebugConsoleManager>();
             if (console != null)
             {
-                console.RegisterCommand("profiler_report", "Generate performance profiling report", GenerateProfilingReport);
-                console.RegisterCommand("profiler_clear", "Clear profiling data", ClearProfilingData);
-                console.RegisterCommand("profiler_start", "profiler_start <session_name> - Start a profiling session", StartProfilingSession);
-                console.RegisterCommand("profiler_stop", "profiler_stop <session_name> - Stop a profiling session", StopProfilingSession);
-                console.RegisterCommand("memory_report", "Generate detailed memory usage report", GenerateMemoryReport);
-                console.RegisterCommand("gc_analyze", "Analyze garbage collection patterns", AnalyzeGarbageCollection);
+                console.RegisterCommand("profiler_report", "Generate performance profiling report", "profiler_report", 
+                    (args, data) => { GenerateProfilingReport(args.ToArray()); return "Profiling report generated"; }, false);
+                console.RegisterCommand("profiler_clear", "Clear profiling data", "profiler_clear", 
+                    (args, data) => { ClearProfilingData(args.ToArray()); return "Profiling data cleared"; }, false);
+                console.RegisterCommand("profiler_start", "Start a profiling session", "profiler_start <session_name>", 
+                    (args, data) => { StartProfilingSession(args.ToArray()); return "Profiling session started"; }, false);
+                console.RegisterCommand("profiler_stop", "Stop a profiling session", "profiler_stop <session_name>", 
+                    (args, data) => { StopProfilingSession(args.ToArray()); return "Profiling session stopped"; }, false);
+                console.RegisterCommand("memory_report", "Generate detailed memory usage report", "memory_report", 
+                    (args, data) => { GenerateMemoryReport(args.ToArray()); return "Memory report generated"; }, false);
+                console.RegisterCommand("gc_analyze", "Analyze garbage collection patterns", "gc_analyze", 
+                    (args, data) => { AnalyzeGarbageCollection(args.ToArray()); return "GC analysis completed"; }, false);
             }
         }
         

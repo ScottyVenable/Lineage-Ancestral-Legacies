@@ -240,8 +240,16 @@ namespace Lineage.Ancestral.Legacies.Debug
             var console = FindFirstObjectByType<DebugConsoleManager>();
             if (console != null)
             {
-                console.RegisterCommand("inspect", "inspect <object_name> - Inspect object by name", InspectObjectByName);
-                console.RegisterCommand("inspector_toggle", "Toggle runtime object inspector", args => ToggleInspector());
+                console.RegisterCommand("inspect", "Inspect object by name", "inspect [object_name]", 
+                    (args, data) => { 
+                        InspectObjectByName(args.ToArray()); 
+                        return "Inspect command executed"; 
+                    });
+                console.RegisterCommand("inspector.toggle", "Toggle runtime object inspector", "inspector.toggle", 
+                    (args, data) => { 
+                        ToggleInspector(); 
+                        return "Inspector toggled"; 
+                    });
             }
         }
         
