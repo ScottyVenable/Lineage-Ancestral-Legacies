@@ -11,6 +11,8 @@ using Lineage.Ancestral.Legacies.Managers;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 using Lineage.Ancestral.Legacies.Debug;
 using TMPro;
+using UnityEditorInternal;
+using UnityEditor.Animations;
 
 namespace Lineage.Ancestral.Legacies.Debug
 {
@@ -1119,8 +1121,13 @@ namespace Lineage.Ancestral.Legacies.Debug
             LogToConsole($"Found {allPops.Length} pops:", LogType.Info, Color.white);
             foreach (var pop in allPops)
             {
-                var controller = pop.GetComponent<PopController>();
-                string stateName = controller?.GetCurrentStateName() ?? "Unknown";
+                var animator = pop.GetComponent<Animator>();
+                string stateName = "Unknown";
+                if (animator != null && animator.runtimeAnimatorController != null)
+                {
+                    var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+                    stateName = stateInfo.IsName("") ? "Unknown" : animator.GetLayerName(0);
+                }
                 LogToConsole($"  ID: {pop.GetInstanceID()}, Position: {pop.transform.position}, State: {stateName}, Health: {pop.health:F1}", LogType.Info, Color.white);
             }
         }

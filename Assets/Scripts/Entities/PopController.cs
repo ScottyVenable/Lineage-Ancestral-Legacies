@@ -29,12 +29,14 @@ namespace Lineage.Ancestral.Legacies.Entities
             pop = GetComponent<Pop>();
             agent = GetComponent<NavMeshAgent>();
 
-            if (pop == null) {
+            if (pop == null)
+            {
                 UnityEngine.Debug.LogError($"PopController on {gameObject.name} is missing Pop component!", this);
                 enabled = false;
                 return;
             }
-            if (agent == null) { // Should not happen due to RequireComponent
+            if (agent == null)
+            { // Should not happen due to RequireComponent
                 UnityEngine.Debug.LogError($"PopController on {gameObject.name} is missing NavMeshAgent component!", this);
                 enabled = false;
                 return;
@@ -52,18 +54,19 @@ namespace Lineage.Ancestral.Legacies.Entities
             // For Unity 2022.2+ and the AI Navigation package, updateUpAxis is the correct property.
             // For older built-in NavMesh, you might need to ensure NavMesh is on XY plane
             // and agent's Z position is locked, or sprites are on a child object.
-            #if UNITY_2022_2_OR_NEWER
+#if UNITY_2022_2_OR_NEWER
             agent.updateUpAxis = false;
-            #endif
-            
-            // It's often better to set agent speed, acceleration, etc., after PopData is initialized.
-            // Consider an InitializeAgentProperties() method called from Pop.Start() after its data is set.
-            // For now, setting some defaults or using Pop.move_speed as a fallback:
+#endif
+
+
             float initialSpeed = 3.5f; // A sensible default
-            if (pop.popData != null) {
-                initialSpeed = pop.needsComponent.; // Use PopData's move speed if available
-            } else {
-                initialSpeed = pop.move_speed; // Fallback if popData isn't loaded yet
+            if (pop.popData != null)
+            {
+                //              initialSpeed = pop.needsComponent.; // Use PopData's move speed if available
+            }
+            else
+            {
+                initialSpeed = pop.entityDataComponent.EntityData.speed.baseValue; // Fallback if popData isn't loaded yet
             }
             agent.speed = initialSpeed;
             agent.acceleration = initialSpeed * 2.5f; // Adjust multiplier as needed for responsiveness
@@ -82,11 +85,11 @@ namespace Lineage.Ancestral.Legacies.Entities
                 selectionIndicator = indicatorGO.transform;
                 selectionIndicator.SetParent(transform);
                 selectionIndicator.localPosition = new Vector3(0, -0.3f, 0); // Position slightly below Pop's pivot
-                
+
                 // Adjust scale to be consistent regardless of Pop's scale (if Pop scale changes)
                 selectionIndicator.localScale = new Vector3(
-                    0.5f / transform.localScale.x, 
-                    0.5f / transform.localScale.y, 
+                    0.5f / transform.localScale.x,
+                    0.5f / transform.localScale.y,
                     1f / transform.localScale.z
                 );
 
@@ -100,7 +103,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 // Ensure it sorts correctly (likely behind the Pop, or on a UI layer if using world space UI)
                 // If your Pop's sprite is on sortingOrder 0 in its layer, this puts indicator behind.
                 sr.sortingLayerName = _popSpriteRenderer != null ? _popSpriteRenderer.sortingLayerName : "Default";
-                sr.sortingOrder = _popSpriteRenderer != null ? _popSpriteRenderer.sortingOrder -1 : -1; 
+                sr.sortingOrder = _popSpriteRenderer != null ? _popSpriteRenderer.sortingOrder - 1 : -1;
             }
             selectionIndicator.gameObject.SetActive(false);
         }
@@ -141,14 +144,10 @@ namespace Lineage.Ancestral.Legacies.Entities
                 agent.isStopped = false; // CRITICAL: Ensure agent is allowed to move
                 agent.SetDestination(targetPosition);
 
-                if (pop.Animator != null)
-                {
-                    pop.Animator.SetBool("IsMoving", true);
-                }
             }
             else if (agent != null) // Agent exists but isn't valid for pathing
             {
-                Debug.LogWarning($"PopController: Pop {pop.name} trying to MoveTo({targetPosition}) but agent is not active or on NavMesh. Agent.isActiveAndEnabled: {agent.isActiveAndEnabled}, Agent.isOnNavMesh: {agent.isOnNavMesh}", pop);
+                UnityEngine.Debug.LogWarning($"PopController: Pop {pop.name} trying to MoveTo({targetPosition}) but agent is not active or on NavMesh. Agent.isActiveAndEnabled: {agent.isActiveAndEnabled}, Agent.isOnNavMesh: {agent.isOnNavMesh}", pop);
             }
             // No else for agent == null because Awake would have logged an error and disabled script.
         }
@@ -159,7 +158,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
             {
                 // Check if it has a path before trying to reset it to avoid benign errors.
-                if (agent.hasPath) 
+                if (agent.hasPath)
                 {
                     agent.ResetPath(); // Clears the current path and stops movement.
                 }
@@ -202,28 +201,31 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
 
+            // Commented out for now.
+            /*
             // Check for arrival at destination
             // (This logic was in FixedUpdate in previous advice, Update is also fine)
             if (agent.isOnNavMesh && !agent.pathPending && agent.hasPath)
             {
                 // Using a small buffer for remainingDistance check can be more reliable
-                if (agent.remainingDistance <= agent.stoppingDistance + 0.05f) 
+                if (agent.remainingDistance <= agent.stoppingDistance + 0.05f)
                 {
                     // Also check if velocity is very low, indicating it has actually stopped
-                    if (agent.velocity.sqrMagnitude < 0.01f) 
+                    if (agent.velocity.sqrMagnitude < 0.01f)
                     {
-                        pop.StateMachine?.OnReachedDestination(); // Notify StateMachine (if it exists and is set)
-                        
+                        pop.stateMachine?.currentState.(); // Notify StateMachine (if it exists and is set)
+
                         // It's good practice to clear the path once arrived to prevent agent from
                         // trying to "re-path" if small adjustments occur.
                         // And ensure animation is set to not moving.
-                        if(agent.hasPath) agent.ResetPath(); // Check again before resetting
+                        if (agent.hasPath) agent.ResetPath(); // Check again before resetting
                         pop.Animator.SetBool("IsMoving", false);
                     }
                 }
             }
+            */
         }
-        
+
         public void UpdateAgentSpeed(float newSpeed)
         {
             if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
@@ -236,11 +238,15 @@ namespace Lineage.Ancestral.Legacies.Entities
         // --- Your existing utility methods ---
         public Pop GetPop() { return pop; }
         public PopStateMachine GetStateMachine() { return pop?.GetComponent<PopStateMachine>(); }
-        public string GetCurrentStateName() {
+
+/*    
+        public string GetCurrentStateName()
+        {
             var sm = GetStateMachine();
             // Assuming your IState interface has a 'Name' property
-            return sm?.CurrentState?.Name ?? "No State"; 
+            return sm?.currentState ? ?? "No State";
         }
+*/
         public void ForceSelect()
         {
             var selectionManager = FindFirstObjectByType<Managers.SelectionManager>();
@@ -259,10 +265,12 @@ namespace Lineage.Ancestral.Legacies.Entities
                     }
                     catch (System.Exception ex)
                     {
-                        Debug.LogError($"ForceSelect failed via reflection: {ex.Message}", this);
+                        UnityEngine.Debug.LogError($"ForceSelect failed via reflection: {ex.Message}", this);
                     }
                 }
             }
         }
     }
+    
+    // TODO: At some point we will probably migrate over to an AI class that handles all AI logic
 }

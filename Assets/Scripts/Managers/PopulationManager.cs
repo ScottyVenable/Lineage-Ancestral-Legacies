@@ -1,7 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Ancestral.Legacies.Systems;
+using Lineage.Ancestral.Legacies.Components;
+using Lineage.Ancestral.Legacies.Database;
 
 namespace Lineage.Ancestral.Legacies.Managers
 {
@@ -70,12 +74,10 @@ namespace Lineage.Ancestral.Legacies.Managers
                     currentPopulation--;
                     OnPopulationChanged?.Invoke(currentPopulation);
                     continue;
-                }
-
-                // Check if pop should die from starvation
-                if (pop.hunger <= 0f)
+                }                // Check if pop should die from starvation or critical needs
+                if (pop.entityDataComponent != null && pop.entityDataComponent.HasCriticalNeeds())
                 {
-                    Log.Warning($"Pop {pop.name} died of starvation!", Log.LogCategory.Population);
+                    Log.Warning($"Pop {pop.name} died from critical needs!", Log.LogCategory.Population);
                     KillPop(pop);
                     continue;
                 }
