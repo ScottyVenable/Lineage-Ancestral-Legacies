@@ -11,8 +11,6 @@ using Lineage.Ancestral.Legacies.Managers;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 using Lineage.Ancestral.Legacies.Debug;
 using TMPro;
-using UnityEditorInternal;
-using UnityEditor.Animations;
 
 namespace Lineage.Ancestral.Legacies.Debug
 {
@@ -263,8 +261,7 @@ namespace Lineage.Ancestral.Legacies.Debug
                 if (isInputFocused && showSuggestions && filteredSuggestions.Count > 0) 
                     SelectSuggestion(selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0); 
             };
-            
-            var escapeAction = inputActions.AddAction("Escape", InputActionType.Button);
+              var escapeAction = inputActions.AddAction("Escape", InputActionType.Button);
             escapeAction.AddBinding("<Keyboard>/escape");
             escapeAction.performed += _ => {
                 if (isInputFocused) {
@@ -274,6 +271,12 @@ namespace Lineage.Ancestral.Legacies.Debug
                     } else {
                         ToggleConsole();
                     }
+                } else if (!isConsoleVisible) {
+                    // Quit the game when console is not open and escape is pressed
+                    Application.Quit();
+                    #if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    #endif
                 }
             };
             
@@ -321,16 +324,19 @@ namespace Lineage.Ancestral.Legacies.Debug
             logStyle.normal.textColor = Color.white;
             logStyle.padding = new RectOffset(5, 5, 2, 2);
             logStyle.margin = new RectOffset(0, 0, 0, 0);
-        }
-
-        private void CreateInputStyle()
+        }        private void CreateInputStyle()
         {
             inputStyle = new GUIStyle(GUI.skin.textField);
             inputStyle.font = consoleInputFont;
             inputStyle.fontSize = inputFieldFontSize;
             inputStyle.normal.textColor = Color.white;
             inputStyle.normal.background = MakeTex(2, 2, new Color(0.2f, 0.2f, 0.2f, 0.8f));
+            inputStyle.focused.textColor = Color.white;
             inputStyle.focused.background = MakeTex(2, 2, new Color(0.3f, 0.3f, 0.3f, 0.8f));
+            inputStyle.hover.textColor = Color.white;
+            inputStyle.hover.background = MakeTex(2, 2, new Color(0.25f, 0.25f, 0.25f, 0.8f));
+            inputStyle.active.textColor = Color.white;
+            inputStyle.active.background = MakeTex(2, 2, new Color(0.3f, 0.3f, 0.3f, 0.8f));
             inputStyle.padding = new RectOffset(5, 5, 5, 5);
         }
 
@@ -452,14 +458,25 @@ namespace Lineage.Ancestral.Legacies.Debug
             
             GUI.color = Color.white;
             GUILayout.EndScrollView();
-        }
-
-        private void DrawInputArea()
+        }        private void DrawInputArea()
         {
             GUILayout.BeginHorizontal();
             
             GUI.SetNextControlName("ConsoleInput");
+            
+            // Store the current GUI color to restore after
+            Color originalColor = GUI.color;
+            Color originalBackgroundColor = GUI.backgroundColor;
+            
+            // Ensure consistent styling regardless of focus state
+            GUI.color = Color.white;
+            GUI.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+            
             string newInput = GUILayout.TextField(currentInput, inputStyle, GUILayout.ExpandWidth(true));
+            
+            // Restore original GUI colors
+            GUI.color = originalColor;
+            GUI.backgroundColor = originalBackgroundColor;
             
             if (newInput != currentInput)
             {
@@ -732,9 +749,29 @@ namespace Lineage.Ancestral.Legacies.Debug
                         break;
                     case "resources":
                         ShowResourcesCommand();
-                        break;
-                    case "list_pops":
+                        break;                    case "list_pops":
                         ListPopsCommand();
+                        break;
+                    case "pause":
+                        HandlePauseCommand();
+                        break;
+                    case "resume":
+                        HandleResumeCommand();
+                        break;
+                    case "speed":
+                        HandleSpeedCommand(command);
+                        break;
+                    case "version":
+                        HandleVersionCommand();
+                        break;
+                    case "memory":
+                        HandleMemoryCommand();
+                        break;
+                    case "screenshot":
+                        HandleScreenshotCommand(command);
+                        break;
+                    case "fullscreen":
+                        HandleFullscreenCommand();
                         break;
                     default:
                         LogToConsole($"Unknown command: {command.CommandName}. Type 'help' for available commands.", LogType.Error, Color.red);
@@ -748,12 +785,12 @@ namespace Lineage.Ancestral.Legacies.Debug
         }        private void LoadAvailableCommands()
         {
             availableCommands.Clear();
-            
-            // Add built-in commands
+              // Add built-in commands
             availableCommands.AddRange(new string[]
             {
                 "help", "clear", "quit", "exit", "scene", "spawn", "spawn_pop", "teleport", "tp", 
-                "give", "god", "noclip", "time", "fps", "debug", "resources", "list_pops"
+                "give", "god", "noclip", "time", "fps", "debug", "resources", "list_pops", 
+                "pause", "resume", "speed", "version", "memory", "screenshot", "fullscreen"
             });
             
             // Add registered commands
@@ -862,6 +899,13 @@ namespace Lineage.Ancestral.Legacies.Debug
             LogToConsole("  debug <system> [on/off] - Toggle debug for system", LogType.Info, Color.white);
             LogToConsole("  resources - Show current resources", LogType.Info, Color.white);
             LogToConsole("  list_pops - List all pops", LogType.Info, Color.white);
+            LogToConsole("  pause - Pause the game", LogType.Info, Color.white);
+            LogToConsole("  resume - Resume the game", LogType.Info, Color.white);
+            LogToConsole("  speed <value> - Set game speed (0.1-4.0)", LogType.Info, Color.white);
+            LogToConsole("  version - Show version information", LogType.Info, Color.white);
+            LogToConsole("  memory - Show memory usage and perform GC", LogType.Info, Color.white);
+            LogToConsole("  screenshot [filename] - Take a screenshot", LogType.Info, Color.white);
+            LogToConsole("  fullscreen - Toggle fullscreen mode", LogType.Info, Color.white);
             
             // Show registered commands
             if (registeredCommands.Count > 0)
@@ -1129,7 +1173,106 @@ namespace Lineage.Ancestral.Legacies.Debug
                     stateName = stateInfo.IsName("") ? "Unknown" : animator.GetLayerName(0);
                 }
                 LogToConsole($"  ID: {pop.GetInstanceID()}, Position: {pop.transform.position}, State: {stateName}, Health: {pop.health:F1}", LogType.Info, Color.white);
+            }        }
+
+        private void HandlePauseCommand()
+        {
+            var timeManager = TimeManager.Instance;
+            if (timeManager != null)
+            {
+                timeManager.SetPaused(true);
+                LogToConsole("Game paused.", LogType.System, Color.yellow);
             }
+            else
+            {
+                LogToConsole("TimeManager not found.", LogType.Error, Color.red);
+            }
+        }
+
+        private void HandleResumeCommand()
+        {
+            var timeManager = TimeManager.Instance;
+            if (timeManager != null)
+            {
+                timeManager.SetPaused(false);
+                LogToConsole("Game resumed.", LogType.System, Color.yellow);
+            }
+            else
+            {
+                LogToConsole("TimeManager not found.", LogType.Error, Color.red);
+            }
+        }
+
+        private void HandleSpeedCommand(ParsedCommand command)
+        {
+            var timeManager = TimeManager.Instance;
+            if (timeManager == null)
+            {
+                LogToConsole("TimeManager not found.", LogType.Error, Color.red);
+                return;
+            }
+
+            if (command.Arguments.Count == 0)
+            {
+                LogToConsole($"Current game speed: {timeManager.GameSpeed:F1}x", LogType.Info, Color.white);
+                LogToConsole("Usage: speed <value> (1.0-4.0)", LogType.Info, Color.white);
+                return;
+            }
+
+            if (float.TryParse(command.Arguments[0], out float speed))
+            {
+                timeManager.SetGameSpeed(Mathf.Clamp(speed, 0.1f, 4f));
+                LogToConsole($"Game speed set to: {speed:F1}x", LogType.System, Color.yellow);
+            }
+            else
+            {
+                LogToConsole("Invalid speed value. Use a number between 0.1 and 4.0", LogType.Error, Color.red);
+            }
+        }
+
+        private void HandleVersionCommand()
+        {
+            LogToConsole($"Unity Version: {Application.unityVersion}", LogType.Info, Color.white);
+            LogToConsole($"Application Version: {Application.version}", LogType.Info, Color.white);
+            LogToConsole($"Platform: {Application.platform}", LogType.Info, Color.white);
+            LogToConsole($"Data Path: {Application.dataPath}", LogType.Info, Color.white);
+        }
+
+        private void HandleMemoryCommand()
+        {
+            long totalMemory = System.GC.GetTotalMemory(false);
+            string memoryInfo = $"Allocated Memory: {totalMemory / 1024 / 1024} MB";
+            LogToConsole(memoryInfo, LogType.Info, Color.white);
+            
+            LogToConsole($"System Memory Size: {SystemInfo.systemMemorySize} MB", LogType.Info, Color.white);
+            LogToConsole($"Graphics Memory Size: {SystemInfo.graphicsMemorySize} MB", LogType.Info, Color.white);
+            
+            System.GC.Collect();
+            LogToConsole("Garbage collection performed.", LogType.System, Color.yellow);
+        }
+
+        private void HandleScreenshotCommand(ParsedCommand command)
+        {
+            string filename = command.Arguments.Count > 0 ? command.Arguments[0] : $"screenshot_{System.DateTime.Now:yyyy-MM-dd_HH-mm-ss}.png";
+            
+            if (!filename.EndsWith(".png"))
+                filename += ".png";
+                
+            string path = System.IO.Path.Combine(Application.dataPath, "..", "Screenshots");
+            
+            if (!System.IO.Directory.Exists(path))
+                System.IO.Directory.CreateDirectory(path);
+                
+            string fullPath = System.IO.Path.Combine(path, filename);
+            
+            ScreenCapture.CaptureScreenshot(fullPath);
+            LogToConsole($"Screenshot saved to: {fullPath}", LogType.System, Color.yellow);
+        }
+
+        private void HandleFullscreenCommand()
+        {
+            Screen.fullScreen = !Screen.fullScreen;
+            LogToConsole($"Fullscreen: {(Screen.fullScreen ? "ON" : "OFF")}", LogType.System, Color.yellow);
         }
 
         /// <summary>

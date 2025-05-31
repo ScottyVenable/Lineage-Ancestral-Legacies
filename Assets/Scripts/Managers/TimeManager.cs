@@ -129,10 +129,9 @@ namespace Lineage.Ancestral.Legacies.Managers
         }
         
         private void SetupInputActions()
-        {
-            // Setup time control input actions
+        {            // Setup time control input actions
             pauseAction = new InputAction("PauseToggle", InputActionType.Button);
-            pauseAction.AddBinding("<Keyboard>/space");
+            pauseAction.AddBinding("<Keyboard>/p");
             pauseAction.performed += ctx => TogglePause();
             pauseAction.Enable();
 

@@ -57,16 +57,18 @@ namespace Lineage.Ancestral.Legacies.Entities
 #if UNITY_2022_2_OR_NEWER
             agent.updateUpAxis = false;
 #endif
-
-
             float initialSpeed = 3.5f; // A sensible default
             if (pop.popData != null)
             {
                 //              initialSpeed = pop.needsComponent.; // Use PopData's move speed if available
             }
-            else
+            else if (pop.entityDataComponent != null)
             {
                 initialSpeed = pop.entityDataComponent.EntityData.speed.baseValue; // Fallback if popData isn't loaded yet
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning($"PopController on {gameObject.name}: Could not get speed from PopData or EntityData, using default speed of {initialSpeed}", this);
             }
             agent.speed = initialSpeed;
             agent.acceleration = initialSpeed * 2.5f; // Adjust multiplier as needed for responsiveness

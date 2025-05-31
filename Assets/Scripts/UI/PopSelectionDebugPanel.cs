@@ -153,7 +153,7 @@ namespace Lineage.Ancestral.Legacies.UI
                         var pop = popController.GetPop();
                         if (pop != null)
                         {
-                            info += $"{pop.name}: {popController.GetCurrentStateName()}\n";
+                            info += $"{pop.name}\n";
                             info += $"  Health: {pop.health:F1}, Hunger: {pop.hunger:F1}, Thirst: {pop.thirst:F1}\n\n";
                         }
                     }
@@ -238,38 +238,40 @@ namespace Lineage.Ancestral.Legacies.UI
         private void Awake()
         {
             infoText = GetComponentInChildren<Text>();
-        }
-
-        private void Update()
+        }        private void Update()
         {
-            if (popController != null && infoText != null)
+            // Update less frequently to improve performance
+            if (popController != null && infoText != null && Time.unscaledTime - lastUpdateTime > 0.1f)
             {
                 UpdateInfo();
+                lastUpdateTime = Time.unscaledTime;
             }
         }
+
+        private float lastUpdateTime;
 
         public void SetPopController(PopController controller)
         {
             popController = controller;
             UpdateInfo();
-        }
-
-        private void UpdateInfo()
+        }        private void UpdateInfo()
         {
             if (popController == null || infoText == null) return;
 
             var pop = popController.GetPop();
             if (pop == null)
             {
-                infoText.text = "Invalid Pop";
+                if (infoText.text != "Invalid Pop")
+                    infoText.text = "Invalid Pop";
                 return;
             }
 
-            string info = $"{pop.name}\n";
-            info += $"State: {popController.GetCurrentStateName()}\n";
-            info += $"Health: {pop.health:F1} | Hunger: {pop.hunger:F1} | Thirst: {pop.thirst:F1}";
+            string newInfo = $"{pop.name}\n";
+            newInfo += $"Health: {pop.health:F1} | Hunger: {pop.hunger:F1} | Thirst: {pop.thirst:F1}";
 
-            infoText.text = info;
+            // Only update text if it actually changed (prevents unnecessary UI rebuilds)
+            if (infoText.text != newInfo)
+                infoText.text = newInfo;
         }
 
         /// <summary>
