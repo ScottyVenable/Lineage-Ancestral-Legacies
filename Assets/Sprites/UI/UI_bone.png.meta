@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: bc695f53e451c2c41be70f790f090499
+guid: 6bf6d1d390c2dad43bd3e82d7ce0f68d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1399701440272607455
-    second: bones3_0
+      213: -5177388603050735206
+    second: 9-Sliced
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,8 +51,8 @@ TextureImporter:
   spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 8
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spritePixelsToUnits: 12
+  spriteBorder: {x: 64, y: 64, z: 64, w: 64}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -68,7 +68,7 @@ TextureImporter:
   ignorePngGamma: 0
   applyGammaDecoding: 0
   swizzle: 50462976
-  cookieLightType: 0
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
@@ -97,6 +97,32 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
     buildTarget: WebGL
     maxTextureSize: 2048
     resizeAlgorithm: 0
@@ -113,7 +139,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: bones3_0
+      name: 9-Sliced
       rect:
         serializedVersion: 2
         x: 0
@@ -121,24 +147,64 @@ TextureImporter:
         width: 50
         height: 56
       alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 64, y: 64, z: 64, w: 64}
       customData: 
       outline: []
-      physicsShape: []
-      tessellationDetail: -1
+      physicsShape:
+      - - {x: 126, y: 73}
+        - {x: 120, y: 92}
+        - {x: 108, y: 108}
+        - {x: 92, y: 120}
+        - {x: 73, y: 126}
+        - {x: -73, y: 126}
+        - {x: -92, y: 120}
+        - {x: -108, y: 108}
+        - {x: -120, y: 92}
+        - {x: -126, y: 73}
+        - {x: -126, y: -73}
+        - {x: -120, y: -92}
+        - {x: -108, y: -108}
+        - {x: -92, y: -120}
+        - {x: -73, y: -126}
+        - {x: 73, y: -126}
+        - {x: 92, y: -120}
+        - {x: 108, y: -108}
+        - {x: 120, y: -92}
+        - {x: 126, y: -73}
+      tessellationDetail: 0.2
       bones: []
-      spriteID: fd82d034b0dbc6310800000000000000
-      internalID: 1399701440272607455
+      spriteID: a99410b1f783628b0800000000000000
+      internalID: -5177388603050735206
       vertices: []
       indices: 
       edges: []
       weights: []
     outline: []
     customData: 
-    physicsShape: []
+    physicsShape:
+    - - {x: 126, y: 73}
+      - {x: 120, y: 92}
+      - {x: 108, y: 108}
+      - {x: 92, y: 120}
+      - {x: 73, y: 126}
+      - {x: -73, y: 126}
+      - {x: -92, y: 120}
+      - {x: -108, y: 108}
+      - {x: -120, y: 92}
+      - {x: -126, y: 73}
+      - {x: -126, y: -73}
+      - {x: -120, y: -92}
+      - {x: -108, y: -108}
+      - {x: -92, y: -120}
+      - {x: -73, y: -126}
+      - {x: 73, y: -126}
+      - {x: 92, y: -120}
+      - {x: 108, y: -108}
+      - {x: 120, y: -92}
+      - {x: 126, y: -73}
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -148,7 +214,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      bones3_0: 1399701440272607455
+      9-Sliced: -5177388603050735206
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -153,7 +153,7 @@ namespace Lineage.Ancestral.Legacies.UI
                         var pop = popController.GetPop();
                         if (pop != null)
                         {
-                            info += $"{pop.name}: {popController.GetCurrentStateName()}\n";
+                            info += $"{pop.name}\n";
                             info += $"  Health: {pop.health:F1}, Hunger: {pop.hunger:F1}, Thirst: {pop.thirst:F1}\n\n";
                         }
                     }
@@ -266,7 +266,6 @@ namespace Lineage.Ancestral.Legacies.UI
             }
 
             string info = $"{pop.name}\n";
-            info += $"State: {popController.GetCurrentStateName()}\n";
             info += $"Health: {pop.health:F1} | Hunger: {pop.hunger:F1} | Thirst: {pop.thirst:F1}";
 
             infoText.text = info;

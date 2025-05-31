@@ -18,4 +18,6 @@ namespace Lineage.Ancestral.Legacies.Systems.TraitSystem
         public float effectValue;
         // Additional effect parameters can be added here
     }
+
+    // TODO: Get data from Database to populate traits.
 }
