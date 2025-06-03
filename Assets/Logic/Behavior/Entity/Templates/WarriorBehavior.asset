@@ -1,0 +1,171 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a0a6db6985d5b944ae27c817473f6ca, type: 3}
+  m_Name: WarriorBehavior
+  serializedBehaviorTree: |
+    {
+      "Version": "1.0.0",
+      "Nodes": [
+        {
+          "Id": 1,
+          "Type": "Root",
+          "Position": {"x": 0, "y": 0}
+        },
+        {
+          "Id": 2,
+          "Type": "Priority",
+          "Position": {"x": 0, "y": -100},
+          "Parent": 1
+        },
+        {
+          "Id": 3,
+          "Type": "CheckForEnemiesCondition",
+          "Position": {"x": -150, "y": -200},
+          "Parent": 2,
+          "Properties": {
+            "DetectionRange": 15.0,
+            "EnemyTag": "Enemy"
+          }
+        },
+        {
+          "Id": 4,
+          "Type": "Sequence",
+          "Position": {"x": -150, "y": -300},
+          "Parent": 3
+        },
+        {
+          "Id": 5,
+          "Type": "ShouldFightOrFleeCondition",
+          "Position": {"x": -200, "y": -400},
+          "Parent": 4,
+          "Properties": {
+            "FleeHealthThreshold": 25.0,
+            "MinCombatPowerRatio": 0.7
+          }
+        },
+        {
+          "Id": 6,
+          "Type": "Priority",
+          "Position": {"x": -200, "y": -500},
+          "Parent": 5
+        },
+        {
+          "Id": 7,
+          "Type": "Sequence",
+          "Position": {"x": -250, "y": -600},
+          "Parent": 6,
+          "Comment": "Fight Branch"
+        },
+        {
+          "Id": 8,
+          "Type": "SetEntityStateAction",
+          "Position": {"x": -300, "y": -700},
+          "Parent": 7,
+          "Properties": {
+            "NewState": "Attacking"
+          }
+        },
+        {
+          "Id": 9,
+          "Type": "AttackTargetAction",
+          "Position": {"x": -250, "y": -700},
+          "Parent": 7,
+          "Properties": {
+            "AttackRange": 2.0,
+            "AttackCooldown": 1.5
+          }
+        },
+        {
+          "Id": 10,
+          "Type": "Sequence",
+          "Position": {"x": -150, "y": -600},
+          "Parent": 6,
+          "Comment": "Flee Branch"
+        },
+        {
+          "Id": 11,
+          "Type": "SetEntityStateAction",
+          "Position": {"x": -175, "y": -700},
+          "Parent": 10,
+          "Properties": {
+            "NewState": "Fleeing"
+          }
+        },
+        {
+          "Id": 12,
+          "Type": "FleeFromTargetAction",
+          "Position": {"x": -125, "y": -700},
+          "Parent": 10,
+          "Properties": {
+            "FleeDistance": 20.0,
+            "FleeSpeed": 6.0
+          }
+        },
+        {
+          "Id": 13,
+          "Type": "GuardPatrolAction",
+          "Position": {"x": -50, "y": -400},
+          "Parent": 4,
+          "Properties": {
+            "PatrolRadius": 10.0,
+            "PatrolSpeed": 2.0,
+            "WaitTimeAtPoint": 2.0
+          }
+        },
+        {
+          "Id": 14,
+          "Type": "CheckEntityStatCondition",
+          "Position": {"x": 0, "y": -200},
+          "Parent": 2,
+          "Properties": {
+            "StatToCheck": "Health",
+            "ComparisonOperator": "LessThan",
+            "ComparisonValue": 40.0
+          }
+        },
+        {
+          "Id": 15,
+          "Type": "Sequence",
+          "Position": {"x": 0, "y": -300},
+          "Parent": 14
+        },
+        {
+          "Id": 16,
+          "Type": "SetEntityStateAction",
+          "Position": {"x": -25, "y": -400},
+          "Parent": 15,
+          "Properties": {
+            "NewState": "Healing"
+          }
+        },
+        {
+          "Id": 17,
+          "Type": "RestEntityAction",
+          "Position": {"x": 25, "y": -400},
+          "Parent": 15,
+          "Properties": {
+            "RestDuration": 8.0,
+            "HealthRegenRate": 2.0
+          }
+        },
+        {
+          "Id": 18,
+          "Type": "DefendPositionAction",
+          "Position": {"x": 100, "y": -200},
+          "Parent": 2,
+          "Properties": {
+            "DefenseRadius": 8.0,
+            "AlertnessBonus": 1.5
+          }
+        }
+      ]
+    }

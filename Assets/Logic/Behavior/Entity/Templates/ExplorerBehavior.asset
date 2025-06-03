@@ -1,0 +1,303 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f43bb69448a182a2dea2db3049e, type: 3}
+  m_Name: ExplorerBehavior
+  serializedVersion: 1
+  m_Blackboard:
+    m_Variables:
+    - m_Name: Self
+      m_Guid: explorer_self_001
+      m_Type:
+        m_TypeName: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: ExplorationTarget
+      m_Guid: exploration_target_001
+      m_Type:
+        m_TypeName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: ExplorationRadius
+      m_Guid: exploration_radius_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 25
+    - m_Name: CurrentResource
+      m_Guid: current_resource_001
+      m_Type:
+        m_TypeName: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: HomeBase
+      m_Guid: home_base_001
+      m_Type:
+        m_TypeName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: DiscoveryCount
+      m_Guid: discovery_count_001
+      m_Type:
+        m_TypeName: System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 0
+    - m_Name: RestThreshold
+      m_Guid: rest_threshold_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 30
+    - m_Name: HungerThreshold
+      m_Guid: hunger_threshold_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 40
+  m_Story:
+    m_RootNodeGuid: explorer_root_001
+    m_Nodes:
+    # Root Priority Selector
+    - m_Guid: explorer_root_001
+      m_Type: SelectorNode
+      m_Position: {x: 400, y: 50}
+      m_Children:
+      - emergency_needs_sequence_001
+      - exploration_sequence_001
+      - resource_gathering_sequence_001
+      - return_home_sequence_001
+      - idle_action_001
+    
+    # Emergency Needs Handling (Highest Priority)
+    - m_Guid: emergency_needs_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 100, y: 150}
+      m_Children:
+      - critical_needs_check_001
+      - emergency_response_001
+    
+    - m_Guid: critical_needs_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 50, y: 250}
+      m_Action:
+        $type: CheckEntityStatCondition
+        Self: {m_Guid: explorer_self_001}
+        StatToCheck: Health
+        ComparisonType: LessThan
+        Threshold: {m_Guid: rest_threshold_001}
+        AlternativeCheck: true
+        AlternateStat: Energy
+        AlternateThreshold: {m_Guid: rest_threshold_001}
+    
+    - m_Guid: emergency_response_001
+      m_Type: SelectorNode
+      m_Position: {x: 150, y: 250}
+      m_Children:
+      - find_safe_rest_001
+      - emergency_consume_001
+      - return_to_base_001
+    
+    - m_Guid: find_safe_rest_001
+      m_Type: ActionNode
+      m_Position: {x: 100, y: 350}
+      m_Action:
+        $type: FindSafeRestLocationAction
+        Self: {m_Guid: explorer_self_001}
+        SearchRadius: 15
+        RestDuration: 300
+        TargetLocation: {m_Guid: exploration_target_001}
+    
+    - m_Guid: emergency_consume_001
+      m_Type: ActionNode
+      m_Position: {x: 200, y: 350}
+      m_Action:
+        $type: ConsumeResourceAction
+        Self: {m_Guid: explorer_self_001}
+        ResourceType: Food
+        ConsumeFromInventory: true
+        Amount: 50
+    
+    - m_Guid: return_to_base_001
+      m_Type: ActionNode
+      m_Position: {x: 300, y: 350}
+      m_Action:
+        $type: MoveToPositionAction
+        Self: {m_Guid: explorer_self_001}
+        TargetPosition: {m_Guid: home_base_001}
+        MovementSpeed: 1.5
+        AcceptanceRadius: 2
+    
+    # Active Exploration (Main Activity)
+    - m_Guid: exploration_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 300, y: 150}
+      m_Children:
+      - exploration_energy_check_001
+      - exploration_utility_selector_001
+    
+    - m_Guid: exploration_energy_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 250, y: 250}
+      m_Action:
+        $type: CheckEntityStatCondition
+        Self: {m_Guid: explorer_self_001}
+        StatToCheck: Energy
+        ComparisonType: GreaterThan
+        Threshold: 50
+    
+    - m_Guid: exploration_utility_selector_001
+      m_Type: UtilitySelectorNode
+      m_Position: {x: 350, y: 250}
+      m_Children:
+      - discover_new_area_001
+      - investigate_resource_001
+      - map_terrain_001
+      - scout_ahead_001
+    
+    - m_Guid: discover_new_area_001
+      m_Type: ActionNode
+      m_Position: {x: 250, y: 350}
+      m_Action:
+        $type: ExploreNewAreaAction
+        Self: {m_Guid: explorer_self_001}
+        ExplorationRadius: {m_Guid: exploration_radius_001}
+        NewAreaTarget: {m_Guid: exploration_target_001}
+        DiscoveryReward: 25
+        UtilityScore: 0.8
+    
+    - m_Guid: investigate_resource_001
+      m_Type: ActionNode
+      m_Position: {x: 350, y: 350}
+      m_Action:
+        $type: InvestigateResourceAction
+        Self: {m_Guid: explorer_self_001}
+        SearchRadius: 20
+        ResourceTypes: [Wood, Stone, Food, Water]
+        InvestigationTime: 60
+        TargetResource: {m_Guid: current_resource_001}
+    
+    - m_Guid: map_terrain_001
+      m_Type: ActionNode
+      m_Position: {x: 450, y: 350}
+      m_Action:
+        $type: MapTerrainAction
+        Self: {m_Guid: explorer_self_001}
+        MappingRadius: 15
+        MappingDuration: 120
+        TerrainData: {m_Guid: exploration_target_001}
+    
+    - m_Guid: scout_ahead_001
+      m_Type: ActionNode
+      m_Position: {x: 550, y: 350}
+      m_Action:
+        $type: ScoutAheadAction
+        Self: {m_Guid: explorer_self_001}
+        ScoutDistance: 30
+        DangerDetection: true
+        ReportBack: true
+        ScoutDuration: 180
+    
+    # Resource Gathering (Medium Priority)
+    - m_Guid: resource_gathering_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 500, y: 150}
+      m_Children:
+      - resource_availability_check_001
+      - resource_priority_selector_001
+    
+    - m_Guid: resource_availability_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 450, y: 250}
+      m_Action:
+        $type: CheckResourceAvailabilityCondition
+        Self: {m_Guid: explorer_self_001}
+        SearchRadius: 25
+        MinResourceCount: 1
+        ResourceTypes: [Wood, Stone, Food]
+    
+    - m_Guid: resource_priority_selector_001
+      m_Type: UtilitySelectorNode
+      m_Position: {x: 550, y: 250}
+      m_Children:
+      - gather_rare_resource_001
+      - gather_food_001
+      - gather_materials_001
+    
+    - m_Guid: gather_rare_resource_001
+      m_Type: ActionNode
+      m_Position: {x: 450, y: 350}
+      m_Action:
+        $type: GatherResourceAction
+        Self: {m_Guid: explorer_self_001}
+        ResourceType: RareMaterial
+        GatherAmount: 5
+        GatherTime: 180
+        TargetResource: {m_Guid: current_resource_001}
+        UtilityScore: 0.9
+    
+    - m_Guid: gather_food_001
+      m_Type: ActionNode
+      m_Position: {x: 550, y: 350}
+      m_Action:
+        $type: GatherResourceAction
+        Self: {m_Guid: explorer_self_001}
+        ResourceType: Food
+        GatherAmount: 10
+        GatherTime: 120
+        TargetResource: {m_Guid: current_resource_001}
+        UtilityScore: 0.6
+    
+    - m_Guid: gather_materials_001
+      m_Type: ActionNode
+      m_Position: {x: 650, y: 350}
+      m_Action:
+        $type: GatherResourceAction
+        Self: {m_Guid: explorer_self_001}
+        ResourceType: Stone
+        GatherAmount: 8
+        GatherTime: 150
+        TargetResource: {m_Guid: current_resource_001}
+        UtilityScore: 0.5
+    
+    # Return Home (Lower Priority)
+    - m_Guid: return_home_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 700, y: 150}
+      m_Children:
+      - inventory_full_check_001
+      - journey_home_001
+      - deposit_resources_001
+    
+    - m_Guid: inventory_full_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 650, y: 250}
+      m_Action:
+        $type: CheckInventoryFullCondition
+        Self: {m_Guid: explorer_self_001}
+        FullnessThreshold: 0.8
+    
+    - m_Guid: journey_home_001
+      m_Type: ActionNode
+      m_Position: {x: 700, y: 250}
+      m_Action:
+        $type: MoveToPositionAction
+        Self: {m_Guid: explorer_self_001}
+        TargetPosition: {m_Guid: home_base_001}
+        MovementSpeed: 1.2
+        AcceptanceRadius: 3
+    
+    - m_Guid: deposit_resources_001
+      m_Type: ActionNode
+      m_Position: {x: 750, y: 250}
+      m_Action:
+        $type: DepositResourcesAction
+        Self: {m_Guid: explorer_self_001}
+        DepositAll: true
+        StorageTarget: {m_Guid: home_base_001}
+    
+    # Idle/Default Behavior
+    - m_Guid: idle_action_001
+      m_Type: ActionNode
+      m_Position: {x: 800, y: 150}
+      m_Action:
+        $type: IdleWaitAction
+        Self: {m_Guid: explorer_self_001}
+        WaitDuration: 60
+        RestoreEnergy: 10
+        IdleAnimation: "Idle_Look_Around"

@@ -1,0 +1,406 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f43bb69448a182a2dea2db3049e, type: 3}
+  m_Name: SocialiteBehavior
+  serializedVersion: 1
+  m_Blackboard:
+    m_Variables:
+    - m_Name: Self
+      m_Guid: socialite_self_001
+      m_Type:
+        m_TypeName: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: SocialTarget
+      m_Guid: social_target_001
+      m_Type:
+        m_TypeName: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: GatheringPoint
+      m_Guid: gathering_point_001
+      m_Type:
+        m_TypeName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: SocialRadius
+      m_Guid: social_radius_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 15
+    - m_Name: PartyMembers
+      m_Guid: party_members_001
+      m_Type:
+        m_TypeName: System.Collections.Generic.List`1[[UnityEngine.GameObject, UnityEngine.CoreModule]], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+    - m_Name: ConversationPartner
+      m_Guid: conversation_partner_001
+      m_Type:
+        m_TypeName: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    - m_Name: SocialMood
+      m_Guid: social_mood_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 75
+    - m_Name: MinSocialDistance
+      m_Guid: min_social_distance_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 2
+    - m_Name: GroupActivity
+      m_Guid: group_activity_001
+      m_Type:
+        m_TypeName: System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: "None"
+    - m_Name: LonelinessThreshold
+      m_Guid: loneliness_threshold_001
+      m_Type:
+        m_TypeName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+      m_ObjectValue: 40
+  m_Story:
+    m_RootNodeGuid: socialite_root_001
+    m_Nodes:
+    # Root Priority Selector
+    - m_Guid: socialite_root_001
+      m_Type: SelectorNode
+      m_Position: {x: 400, y: 50}
+      m_Children:
+      - basic_needs_sequence_001
+      - social_crisis_sequence_001
+      - active_social_sequence_001
+      - group_activity_sequence_001
+      - casual_interaction_sequence_001
+      - social_idle_001
+    
+    # Basic Needs (Highest Priority)
+    - m_Guid: basic_needs_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 50, y: 150}
+      m_Children:
+      - urgent_needs_check_001
+      - urgent_needs_response_001
+    
+    - m_Guid: urgent_needs_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 25, y: 250}
+      m_Action:
+        $type: CheckEntityStatCondition
+        Self: {m_Guid: socialite_self_001}
+        StatToCheck: Health
+        ComparisonType: LessThan
+        Threshold: 30
+        AlternativeCheck: true
+        AlternateStat: Hunger
+        AlternateThreshold: 25
+    
+    - m_Guid: urgent_needs_response_001
+      m_Type: SelectorNode
+      m_Position: {x: 75, y: 250}
+      m_Children:
+      - social_help_seeking_001
+      - emergency_self_care_001
+    
+    - m_Guid: social_help_seeking_001
+      m_Type: ActionNode
+      m_Position: {x: 25, y: 350}
+      m_Action:
+        $type: RequestHelpAction
+        Self: {m_Guid: socialite_self_001}
+        HelpType: "Medical"
+        SearchRadius: {m_Guid: social_radius_001}
+        RequestDuration: 60
+        TargetHelper: {m_Guid: social_target_001}
+    
+    - m_Guid: emergency_self_care_001
+      m_Type: ActionNode
+      m_Position: {x: 125, y: 350}
+      m_Action:
+        $type: SelfCareAction
+        Self: {m_Guid: socialite_self_001}
+        CareType: "Emergency"
+        Duration: 120
+        HealthRestore: 25
+    
+    # Social Crisis Management (High Priority)
+    - m_Guid: social_crisis_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 200, y: 150}
+      m_Children:
+      - loneliness_check_001
+      - social_crisis_response_001
+    
+    - m_Guid: loneliness_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 175, y: 250}
+      m_Action:
+        $type: CheckEntityStatCondition
+        Self: {m_Guid: socialite_self_001}
+        StatToCheck: Social
+        ComparisonType: LessThan
+        Threshold: {m_Guid: loneliness_threshold_001}
+    
+    - m_Guid: social_crisis_response_001
+      m_Type: SelectorNode
+      m_Position: {x: 225, y: 250}
+      m_Children:
+      - seek_companionship_001
+      - join_group_activity_001
+      - initiate_social_event_001
+    
+    - m_Guid: seek_companionship_001
+      m_Type: ActionNode
+      m_Position: {x: 175, y: 350}
+      m_Action:
+        $type: SeekCompanionshipAction
+        Self: {m_Guid: socialite_self_001}
+        SearchRadius: {m_Guid: social_radius_001}
+        MinInteractionTime: 300
+        CompanionshipType: "Friendly"
+        Target: {m_Guid: social_target_001}
+    
+    - m_Guid: join_group_activity_001
+      m_Type: ActionNode
+      m_Position: {x: 275, y: 350}
+      m_Action:
+        $type: JoinGroupActivityAction
+        Self: {m_Guid: socialite_self_001}
+        ActivityType: "Any"
+        SearchRadius: 20
+        ParticipationTime: 240
+        GroupLocation: {m_Guid: gathering_point_001}
+    
+    - m_Guid: initiate_social_event_001
+      m_Type: ActionNode
+      m_Position: {x: 375, y: 350}
+      m_Action:
+        $type: InitiateSocialEventAction
+        Self: {m_Guid: socialite_self_001}
+        EventType: "Gathering"
+        InviteRadius: {m_Guid: social_radius_001}
+        EventDuration: 600
+        EventLocation: {m_Guid: gathering_point_001}
+    
+    # Active Social Interactions (Medium-High Priority)
+    - m_Guid: active_social_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 350, y: 150}
+      m_Children:
+      - social_energy_check_001
+      - social_opportunity_selector_001
+    
+    - m_Guid: social_energy_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 325, y: 250}
+      m_Action:
+        $type: CheckEntityStatCondition
+        Self: {m_Guid: socialite_self_001}
+        StatToCheck: Energy
+        ComparisonType: GreaterThan
+        Threshold: 40
+    
+    - m_Guid: social_opportunity_selector_001
+      m_Type: UtilitySelectorNode
+      m_Position: {x: 375, y: 250}
+      m_Children:
+      - deep_conversation_001
+      - storytelling_session_001
+      - conflict_resolution_001
+      - relationship_building_001
+    
+    - m_Guid: deep_conversation_001
+      m_Type: ActionNode
+      m_Position: {x: 275, y: 350}
+      m_Action:
+        $type: DeepConversationAction
+        Self: {m_Guid: socialite_self_001}
+        ConversationLength: 240
+        TopicType: "Personal"
+        Partner: {m_Guid: conversation_partner_001}
+        SocialGain: 30
+        UtilityScore: 0.9
+    
+    - m_Guid: storytelling_session_001
+      m_Type: ActionNode
+      m_Position: {x: 375, y: 350}
+      m_Action:
+        $type: StorytellingAction
+        Self: {m_Guid: socialite_self_001}
+        StoryType: "Adventure"
+        AudienceSize: 5
+        Duration: 180
+        Location: {m_Guid: gathering_point_001}
+        UtilityScore: 0.8
+    
+    - m_Guid: conflict_resolution_001
+      m_Type: ActionNode
+      m_Position: {x: 475, y: 350}
+      m_Action:
+        $type: MediateConflictAction
+        Self: {m_Guid: socialite_self_001}
+        ConflictParties: {m_Guid: party_members_001}
+        MediationTime: 300
+        SuccessBonus: 40
+        UtilityScore: 0.7
+    
+    - m_Guid: relationship_building_001
+      m_Type: ActionNode
+      m_Position: {x: 575, y: 350}
+      m_Action:
+        $type: BuildRelationshipAction
+        Self: {m_Guid: socialite_self_001}
+        TargetEntity: {m_Guid: social_target_001}
+        ActivityType: "Shared_Task"
+        Duration: 360
+        RelationshipGain: 25
+        UtilityScore: 0.6
+    
+    # Group Activities (Medium Priority)
+    - m_Guid: group_activity_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 500, y: 150}
+      m_Children:
+      - group_available_check_001
+      - group_activity_selector_001
+    
+    - m_Guid: group_available_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 475, y: 250}
+      m_Action:
+        $type: CheckGroupAvailabilityCondition
+        Self: {m_Guid: socialite_self_001}
+        MinGroupSize: 3
+        SearchRadius: {m_Guid: social_radius_001}
+        ActivityPreference: "Any"
+    
+    - m_Guid: group_activity_selector_001
+      m_Type: UtilitySelectorNode
+      m_Position: {x: 525, y: 250}
+      m_Children:
+      - organize_feast_001
+      - group_exploration_001
+      - collaborative_work_001
+      - celebration_event_001
+    
+    - m_Guid: organize_feast_001
+      m_Type: ActionNode
+      m_Position: {x: 425, y: 350}
+      m_Action:
+        $type: OrganizeFeastAction
+        Self: {m_Guid: socialite_self_001}
+        RequiredFood: 100
+        MaxGuests: 10
+        FeastDuration: 480
+        Location: {m_Guid: gathering_point_001}
+        UtilityScore: 0.9
+    
+    - m_Guid: group_exploration_001
+      m_Type: ActionNode
+      m_Position: {x: 525, y: 350}
+      m_Action:
+        $type: GroupExplorationAction
+        Self: {m_Guid: socialite_self_001}
+        GroupSize: 4
+        ExplorationRadius: 30
+        Duration: 300
+        Target: {m_Guid: gathering_point_001}
+        UtilityScore: 0.7
+    
+    - m_Guid: collaborative_work_001
+      m_Type: ActionNode
+      m_Position: {x: 625, y: 350}
+      m_Action:
+        $type: CollaborativeWorkAction
+        Self: {m_Guid: socialite_self_001}
+        WorkType: "Construction"
+        TeamSize: 6
+        WorkDuration: 600
+        ProductivityBonus: 1.5
+        UtilityScore: 0.6
+    
+    - m_Guid: celebration_event_001
+      m_Type: ActionNode
+      m_Position: {x: 725, y: 350}
+      m_Action:
+        $type: CelebrationEventAction
+        Self: {m_Guid: socialite_self_001}
+        EventType: "Festival"
+        ParticipantCount: 15
+        Duration: 720
+        Location: {m_Guid: gathering_point_001}
+        UtilityScore: 0.8
+    
+    # Casual Interactions (Lower Priority)
+    - m_Guid: casual_interaction_sequence_001
+      m_Type: SequenceNode
+      m_Position: {x: 650, y: 150}
+      m_Children:
+      - social_opportunity_check_001
+      - casual_social_selector_001
+    
+    - m_Guid: social_opportunity_check_001
+      m_Type: ConditionNode
+      m_Position: {x: 625, y: 250}
+      m_Action:
+        $type: CheckSocialOpportunityCondition
+        Self: {m_Guid: socialite_self_001}
+        MinNearbyEntities: 1
+        SearchRadius: 10
+        SocialMoodThreshold: 50
+    
+    - m_Guid: casual_social_selector_001
+      m_Type: UtilitySelectorNode
+      m_Position: {x: 675, y: 250}
+      m_Children:
+      - casual_chat_001
+      - share_resources_001
+      - social_games_001
+    
+    - m_Guid: casual_chat_001
+      m_Type: ActionNode
+      m_Position: {x: 575, y: 350}
+      m_Action:
+        $type: CasualChatAction
+        Self: {m_Guid: socialite_self_001}
+        ChatDuration: 120
+        TopicType: "Daily_Life"
+        Partner: {m_Guid: conversation_partner_001}
+        SocialGain: 15
+        UtilityScore: 0.5
+    
+    - m_Guid: share_resources_001
+      m_Type: ActionNode
+      m_Position: {x: 675, y: 350}
+      m_Action:
+        $type: ShareResourcesAction
+        Self: {m_Guid: socialite_self_001}
+        ResourceType: "Food"
+        ShareAmount: 20
+        RecipientCount: 3
+        SocialBonus: 20
+        UtilityScore: 0.6
+    
+    - m_Guid: social_games_001
+      m_Type: ActionNode
+      m_Position: {x: 775, y: 350}
+      m_Action:
+        $type: PlaySocialGamesAction
+        Self: {m_Guid: socialite_self_001}
+        GameType: "Strategy"
+        PlayerCount: 4
+        GameDuration: 180
+        FunBonus: 25
+        UtilityScore: 0.4
+    
+    # Social Idle/Default
+    - m_Guid: social_idle_001
+      m_Type: ActionNode
+      m_Position: {x: 800, y: 150}
+      m_Action:
+        $type: SocialIdleAction
+        Self: {m_Guid: socialite_self_001}
+        IdleBehavior: "People_Watching"
+        Duration: 90
+        SocialRestore: 5
+        MoodBonus: 10
