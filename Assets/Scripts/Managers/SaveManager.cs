@@ -312,7 +312,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                             hunger = needsComponent.hunger,
                             thirst = needsComponent.thirst,
                             energy = needsComponent.hunger, // Using hunger as energy placeholder until energy is implemented
-                            currentState = allPops[i].GetComponent<AI.PopStateMachine>()?.currentState?.GetType().Name ?? "Idle",
+                            currentState = "", // Placeholder for future state system""
                             traits = System.Array.Empty<string>() // Placeholder for future traits system
                         };
                     }

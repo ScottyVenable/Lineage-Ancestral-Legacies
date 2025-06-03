@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.AI; // REQUIRED for NavMeshAgent
-using Lineage.Ancestral.Legacies.AI; // For PopStateMachine
 using Lineage.Ancestral.Legacies.Entities; // For Pop
 using Lineage.Ancestral.Legacies.Managers; // For SelectionManager in ForceSelect (optional)
 using Lineage.Ancestral.Legacies.Debug; // For DebugConsoleManager / AdvancedLogger (optional)
@@ -198,34 +197,9 @@ namespace Lineage.Ancestral.Legacies.Entities
                     float newXScale = Mathf.Abs(transform.localScale.x) * (agent.velocity.x > 0 ? 1 : -1);
                     if (transform.localScale.x != newXScale) // Only update if necessary
                     {
-                        transform.localScale = new Vector3(newXScale, transform.localScale.y, transform.localScale.z);
-                    }
+                        transform.localScale = new Vector3(newXScale, transform.localScale.y, transform.localScale.z);                    }
                 }
             }
-
-            // Commented out for now.
-            /*
-            // Check for arrival at destination
-            // (This logic was in FixedUpdate in previous advice, Update is also fine)
-            if (agent.isOnNavMesh && !agent.pathPending && agent.hasPath)
-            {
-                // Using a small buffer for remainingDistance check can be more reliable
-                if (agent.remainingDistance <= agent.stoppingDistance + 0.05f)
-                {
-                    // Also check if velocity is very low, indicating it has actually stopped
-                    if (agent.velocity.sqrMagnitude < 0.01f)
-                    {
-                        pop.stateMachine?.currentState.(); // Notify StateMachine (if it exists and is set)
-
-                        // It's good practice to clear the path once arrived to prevent agent from
-                        // trying to "re-path" if small adjustments occur.
-                        // And ensure animation is set to not moving.
-                        if (agent.hasPath) agent.ResetPath(); // Check again before resetting
-                        pop.Animator.SetBool("IsMoving", false);
-                    }
-                }
-            }
-            */
         }
 
         public void UpdateAgentSpeed(float newSpeed)
@@ -239,16 +213,7 @@ namespace Lineage.Ancestral.Legacies.Entities
 
         // --- Your existing utility methods ---
         public Pop GetPop() { return pop; }
-        public PopStateMachine GetStateMachine() { return pop?.GetComponent<PopStateMachine>(); }
 
-/*    
-        public string GetCurrentStateName()
-        {
-            var sm = GetStateMachine();
-            // Assuming your IState interface has a 'Name' property
-            return sm?.currentState ? ?? "No State";
-        }
-*/
         public void ForceSelect()
         {
             var selectionManager = FindFirstObjectByType<Managers.SelectionManager>();

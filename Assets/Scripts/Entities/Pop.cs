@@ -1,6 +1,5 @@
 using UnityEngine;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
-using Lineage.Ancestral.Legacies.AI;
 using Lineage.Ancestral.Legacies.Managers;
 using Lineage.Ancestral.Legacies.Debug;
 using Lineage.Ancestral.Legacies.Components;
@@ -9,15 +8,14 @@ using UnityEngine.UI;
 using UnityEngine.AI;
 
 namespace Lineage.Ancestral.Legacies.Entities
-{
-    /// <summary>
+{    /// <summary>
     /// Core Pop entity representing a population unit with needs, inventory, and AI.
     /// This version has been migrated to use EntityDataComponent exclusively, eliminating
     /// the synchronization overhead with the old NeedsComponent system.
     /// </summary>
     [RequireComponent(typeof(EntityDataComponent))]
     [RequireComponent(typeof(InventoryComponent))]
-    [RequireComponent(typeof(PopStateMachine))]
+    [RequireComponent(typeof(NavMeshAgent))]
     public class Pop : MonoBehaviour
     {
         [Header("Pop Identity")]
@@ -29,18 +27,15 @@ namespace Lineage.Ancestral.Legacies.Entities
         public float maxHealth = 100f;
 
         [Header("Pop Data Reference")]
-        [SerializeField] public PopData popData;
-
-
-        public EntityDataComponent entityDataComponent;
+        [SerializeField] public PopData popData;        public EntityDataComponent entityDataComponent;
         public InventoryComponent inventoryComponent;
-        public PopStateMachine stateMachine;
 
         [Header("Navigation")]
-        public NavMeshAgent agent;        [Header("Visuals")]
+        public NavMeshAgent agent;[Header("Visuals")]
         public SpriteRenderer spriteRenderer;
         public Image healthBar;
         public Animator animator;
+        public bool lockRotation = true; // Whether to lock rotation to movement direction
 
         // Property for PopController animation access (capital A for compatibility)
         public Animator Animator => animator;
@@ -54,15 +49,19 @@ namespace Lineage.Ancestral.Legacies.Entities
             // Get component references
             entityDataComponent = GetComponent<EntityDataComponent>();
             inventoryComponent = GetComponent<InventoryComponent>();
-            stateMachine = GetComponent<PopStateMachine>();
             agent = GetComponent<NavMeshAgent>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
 
-            // Initialize navigation
-            if (agent == null)
+            // Configure NavMeshAgent settings
+            if (agent != null)
             {
-                agent = gameObject.AddComponent<NavMeshAgent>();
+                agent.speed = 3.5f;
+                agent.acceleration = 8f;
+                agent.angularSpeed = 120f;
+                agent.stoppingDistance = 0.5f;
+                agent.autoBraking = true;
+                agent.autoRepath = true;
             }
 
             // Store original color for selection highlighting
@@ -106,6 +105,11 @@ namespace Lineage.Ancestral.Legacies.Entities
 
             // Update health bar if available
             UpdateHealthBar();
+
+            if (lockRotation && agent != null && agent.isOnNavMesh)
+            {
+                gameObject.transform.rotation = Quaternion.LookRotation(agent.velocity.normalized, Vector3.up);
+            }
         }
 
         /// <summary>
@@ -269,8 +273,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         #region Selection and Interaction
 
         /// <summary>
-        /// Handles pop selection for UI highlighting.
-        /// </summary>
+        /// Handles pop selection for UI highlighting.        /// </summary>
         public void OnSelected(bool selected)
         {
             if (spriteRenderer == null) return;
@@ -288,6 +291,86 @@ namespace Lineage.Ancestral.Legacies.Entities
                     spriteRenderer.color = originalSpriteColor;
                 }
             }
+        }
+
+        #endregion
+
+        #region Navigation        /// <summary>
+        /// Move the pop to a specific world position using NavMesh.
+        /// </summary>
+        /// <param name="targetPosition">The world position to move to</param>
+        /// <returns>True if the destination was set successfully</returns>
+        public bool MoveTo(Vector3 targetPosition)
+        {
+            if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+            {
+                AdvancedLogger.LogWarning(LogCategory.AI, $"Pop {popName}: Cannot move - NavMeshAgent not ready");
+                return false;
+            }
+
+            agent.SetDestination(targetPosition);
+            return true;
+        }
+
+        /// <summary>
+        /// Move the pop to a specific transform location.
+        /// </summary>
+        /// <param name="target">The target transform to move to</param>
+        /// <returns>True if the destination was set successfully</returns>
+        public bool MoveTo(Transform target)
+        {
+            if (target == null)
+            {
+                AdvancedLogger.LogWarning(LogCategory.AI, $"Pop {popName}: Cannot move to null target");
+                return false;
+            }
+
+            return MoveTo(target.position);
+        }
+
+        /// <summary>
+        /// Stop the pop's current movement.
+        /// </summary>
+        public void StopMovement()
+        {
+            if (agent != null && agent.isActiveAndEnabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+            }
+        }
+
+        /// <summary>
+        /// Check if the pop is currently moving.
+        /// </summary>
+        /// <returns>True if the pop is moving</returns>
+        public bool IsMoving()
+        {
+            if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+                return false;
+
+            return agent.hasPath && agent.remainingDistance > agent.stoppingDistance;
+        }
+
+        /// <summary>
+        /// Check if the pop has reached its destination.
+        /// </summary>
+        /// <returns>True if the pop has reached its destination</returns>
+        public bool HasReachedDestination()
+        {
+            if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+                return true; // Consider "reached" if agent is not functional
+
+            return !agent.pathPending && agent.remainingDistance < agent.stoppingDistance;
+        }
+
+        /// <summary>
+        /// Get the current movement speed of the pop.
+        /// </summary>
+        /// <returns>Current speed</returns>
+        public float GetMovementSpeed()
+        {
+            if (agent == null || !agent.isActiveAndEnabled)
+                return 0f;            return agent.velocity.magnitude;
         }
 
         #endregion

@@ -114,10 +114,27 @@ namespace Unity.Behavior.Example
 
         private Quaternion GetTextLookRotation()
         {
-            Vector3 cameraForward = Camera.main.transform.forward;
-            cameraForward.y = 0.0f;
-            cameraForward.Normalize();
-            return Quaternion.LookRotation(cameraForward);
+            // Check if Camera.main exists, otherwise find any camera or use default rotation
+            if (Camera.main != null)
+            {
+                Vector3 cameraForward = Camera.main.transform.forward;
+                cameraForward.y = 0.0f;
+                cameraForward.Normalize();
+                return Quaternion.LookRotation(cameraForward);
+            }
+            
+            // Fallback: try to find any camera in the scene
+            Camera activeCamera = Camera.current ?? UnityEngine.Object.FindFirstObjectByType<Camera>();
+            if (activeCamera != null)
+            {
+                Vector3 cameraForward = activeCamera.transform.forward;
+                cameraForward.y = 0.0f;
+                cameraForward.Normalize();
+                return Quaternion.LookRotation(cameraForward);
+            }
+            
+            // Last resort: return identity rotation (facing forward)
+            return Quaternion.identity;
         }
     }
 }
