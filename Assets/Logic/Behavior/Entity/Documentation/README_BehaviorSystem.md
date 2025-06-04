@@ -91,12 +91,19 @@ Start
 
 ### Animal Entities
 - **Primary Behaviors**: Hunting, Patrolling, Fleeing, Resting
-- **Decision Factors**: Health, Energy, Aggression level
+- **Decision Factors**: Health, Energy, Aggression level, Entity subtypes (carnivore, herbivore)
+- **Subtype Behaviors**: 
+  - Carnivores may hunt when hungry
+  - Herbivores may graze on vegetation
+  - Flee thresholds based on entity configuration
 - **States Used**: Idle, Hunting, Patrolling, Fleeing, Resting, Hiding
 
 ### Monster Entities (Aggressive)
 - **Primary Behaviors**: Hunting, Attacking, Patrolling
-- **Decision Factors**: Health, Attack power, Aggression type
+- **Decision Factors**: Health, Attack power, Aggression type, AI subtype (wolf vs bandit behavior)
+- **Subtype Behaviors**:
+  - Wolf: Pack hunting, territorial behavior
+  - Bandit: Tool-based attacks, strategic positioning
 - **States Used**: Idle, Attacking, Hunting, Patrolling, Fleeing (when low health)
 
 ## Integration Points
@@ -117,16 +124,44 @@ All behavior actions automatically:
 - Full access to all 19 stat types from the database
 - Leverages entity type and aggression type data
 
+### Resource Tagging System
+The behavior system uses a comprehensive tagging system for resource identification:
+- **"Food"** - Food resources with subtags for collection requirements:
+  - Foraging (no tools required)
+  - Harvesting (tools/skills required)
+- **"Water"** - Water sources with quality indicators:
+  - Clean water (immediate consumption)
+  - Dirty water (requires processing). Potential debuff of getting sick if consuming. 
+- **"Gatherable"** - General resources (wood, stone, etc.)
+- **"Crafting"** - Crafting materials with "crafting_component" subtags for recipe requirements
+
 ## Stat-Based Decision Making
 
 The system uses entity stats to drive intelligent behavior:
 
 ```csharp
 // Example: Entity decides to rest when energy is low
-CheckEntityStat: Energy < 20 → RestEntity
+CheckEntityStat: Energy < 20 → RestEntity (TODO: Decide if rest is different then sleep?)
 CheckEntityStat: Hunger < 30 → FindFood → GatherResource
 CheckEntityStat: Thirst < 25 → FindWater → DrinkWater
 ```
+
+## Blackboard Variable Configuration
+
+Each behavior graph utilizes these essential variables:
+
+### Core Variables:
+- **Self** (GameObject) - Reference to the entity
+- **CriticalHungerThreshold** (float) - When to prioritize food seeking either from settlement storage or from gathering nearby.
+- **CriticalThirstThreshold** (float) - When to prioritize water seeking  
+- **CriticalEnergyThreshold** (float) - When to initiate rest behavior
+- **SearchRadius** (float) - Maximum distance for resource detection
+- **WanderRadius** (float) - Exploration boundary limits
+
+### Target Variables:
+- **FoundResource** (GameObject) - Current resource target
+- **SocialTarget** (GameObject) - Current social interaction target  
+- **WanderPosition** (Vector3) - Current exploration destination
 
 ## Customization Examples
 
@@ -146,6 +181,18 @@ CheckEntityStat: Thirst < 25 → FindWater → DrinkWater
    - Extended wandering radius
    - Resource discovery focus
    - Map exploration patterns
+
+4. **Gatherer Entity Behavior**:
+   - High priority on resource collection
+   - Efficient path planning between resource nodes
+   - Energy management for sustained gatheringPriority
+
+5. **Hunter Entity Behavior**:
+   - High priority on tracking and hunting animal entities either tagged by the player or generalized.
+   - Energy-efficient stalking patterns to conserve stamina
+   - Tool/weapon requirements for successful hunts
+   - Return to settlement with hunted resources
+   - Avoid dangerous monsters while hunting weaker prey
 
 ## Performance Considerations
 

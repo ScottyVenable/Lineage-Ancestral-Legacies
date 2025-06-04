@@ -12,7 +12,7 @@ namespace Lineage.Ancestral.Legacies.Behavior
     {
         protected override Status OnStart()
         {
-            UnityEngine.Debug.Log("Test Action Started");
+            Debug.Log.Debug("Test Action Started");
             return Status.Success;
         }
 
@@ -23,7 +23,7 @@ namespace Lineage.Ancestral.Legacies.Behavior
 
         protected override void OnEnd()
         {
-            Debug.Log("Test Action Ended");
+            Debug.Log.Debug("Test Action Ended");
         }
     }
 }

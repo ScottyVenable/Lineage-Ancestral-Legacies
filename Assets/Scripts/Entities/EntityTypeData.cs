@@ -1,10 +1,76 @@
 using UnityEngine;
 using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Components;
 using System.Collections.Generic;
 
 namespace Lineage.Ancestral.Legacies.Entities
 {
+    /// <summary>
+    /// Blackboard variable for behavior trees with support for different data types
+    /// </summary>
+    [System.Serializable]
+    public class BlackboardVariable
+    {
+        [Header("Variable Configuration")]
+        public string key = "";
+        
+        [Header("Variable Type")]
+        public BlackboardVariableType type = BlackboardVariableType.Float;
+        
+        [Header("Values")]
+        public string stringValue = "";
+        public float floatValue = 0f;
+        public int intValue = 0;
+        public bool boolValue = false;
+        
+        /// <summary>
+        /// Gets the value as the appropriate type
+        /// </summary>
+        public object GetValue()
+        {
+            switch (type)
+            {
+                case BlackboardVariableType.String: return stringValue;
+                case BlackboardVariableType.Float: return floatValue;
+                case BlackboardVariableType.Int: return intValue;
+                case BlackboardVariableType.Bool: return boolValue;
+                default: return stringValue;
+            }
+        }
+        
+        /// <summary>
+        /// Sets the value from an object
+        /// </summary>
+        public void SetValue(object value)
+        {
+            switch (type)
+            {
+                case BlackboardVariableType.String:
+                    stringValue = value?.ToString() ?? "";
+                    break;
+                case BlackboardVariableType.Float:
+                    if (float.TryParse(value?.ToString(), out float f)) floatValue = f;
+                    break;
+                case BlackboardVariableType.Int:
+                    if (int.TryParse(value?.ToString(), out int i)) intValue = i;
+                    break;
+                case BlackboardVariableType.Bool:
+                    if (bool.TryParse(value?.ToString(), out bool b)) boolValue = b;
+                    break;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Types of blackboard variables supported
+    /// </summary>
+    public enum BlackboardVariableType
+    {
+        String,
+        Float,
+        Int,
+        Bool
+    }
+
     /// <summary>
     /// Universal EntityTypeData that handles all entity types through configuration
     /// instead of requiring separate inherited classes.
@@ -15,8 +81,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         [Header("Entity Type Configuration")]
         public EntityType entityType;
         public string entityTypeName;
-        
-        [Header("Behavior Configuration")]
+          [Header("Behavior Configuration")]
         public bool hasNeedsDecay = true;
         public bool hasAging = true;
         public bool canCraft = false;
@@ -25,6 +90,18 @@ namespace Lineage.Ancestral.Legacies.Entities
         public bool hasTerritory = false;
         public bool canHunt = false;
         public bool canFlee = true;
+        
+        [Header("Behavior Subtypes")]
+        [Tooltip("Add behavior subtags like 'carnivore', 'herbivore', 'wolf', 'bandit', etc.")]
+        public List<string> behaviorSubtags = new List<string>();
+        
+        [Header("Enhanced Resource Configuration")]
+        [Tooltip("Resource tags for behavior trees: 'Food', 'Water', 'Water.Clean', 'Water.Dirty', 'Gatherable', 'Crafting'")]
+        public List<string> entityResourceTags = new List<string>();
+        
+        [Header("Blackboard Configuration")]
+        [Tooltip("Custom blackboard variables for behavior trees")]
+        public List<BlackboardVariable> customBlackboardVariables = new List<BlackboardVariable>();
         
         [Header("Needs Decay Rates")]
         public float hungerDecayRate = 1f;
@@ -54,60 +131,148 @@ namespace Lineage.Ancestral.Legacies.Entities
         public float gatheringEfficiency = 1f;
         
         [Header("Crafting Configuration")]
-        public List<string> knownRecipes = new List<string>();
-        
-        /// <summary>
+        public List<string> knownRecipes = new List<string>();        /// <summary>
         /// Initialize entity with type-specific configuration
         /// </summary>
         public virtual void OnInitialize(Entity entity)
         {
-            var entityData = entity.GetComponent<EntityDataComponent>();
-            if (entityData == null) return;
+            if (entity == null) return;
             
-            // Configure based on entity type
+            // Apply entity resource tags
+            foreach (string tag in entityResourceTags)
+            {
+                entity.AddResourceTag(tag);
+            }
+            
+            // Apply behavior subtags
+            foreach (string subtag in behaviorSubtags)
+            {
+                entity.AddBehaviorSubtag(subtag);
+            }
+            
+            // Apply custom blackboard variables
+            foreach (var variable in customBlackboardVariables)
+            {
+                entity.SetBlackboardVariable(variable.key, variable.GetValue());
+            }
+              // Configure based on entity type
             switch (entityType)
             {
                 case EntityType.Pop:
-                    InitializePop(entity, entityData);
+                    InitializePop(entity);
                     break;
                 case EntityType.Animal:
-                    InitializeAnimal(entity, entityData);
+                    InitializeAnimal(entity);
                     break;
                 case EntityType.Monster:
-                    InitializeMonster(entity, entityData);
+                    InitializeMonster(entity);
                     break;
                 case EntityType.NPC:
-                    InitializeNPC(entity, entityData);
+                    InitializeNPC(entity);
                     break;
             }
             
             UnityEngine.Debug.Log($"Initialized {entityTypeName} entity with type: {entityType}");
         }
+          /// <summary>
+        /// Initialize Pop entity
+        /// </summary>
+        private void InitializePop(Entity entity)
+        {
+            // Pop-specific initialization
+            entity.AddBehaviorSubtag("social");
+            entity.AddBehaviorSubtag("crafting");
+            
+            // Pops can gather all basic resources
+            entity.AddResourceTag("Food");
+            entity.AddResourceTag("Water");
+            entity.AddResourceTag("Gatherable");
+            entity.AddResourceTag("Crafting");
+        }
         
         /// <summary>
+        /// Initialize Animal entity
+        /// </summary>
+        private void InitializeAnimal(Entity entity)
+        {
+            // Animal-specific initialization based on subtags
+            if (entity.HasBehaviorSubtag("carnivore"))
+            {
+                entity.AddBehaviorSubtag("hunter");
+                entity.AddResourceTag("Meat");
+            }
+            else if (entity.HasBehaviorSubtag("herbivore"))
+            {
+                entity.AddBehaviorSubtag("forager");
+                entity.AddResourceTag("Plants");
+                entity.AddResourceTag("Berries");
+            }
+            
+            // All animals need water
+            entity.AddResourceTag("Water");
+            
+            // Wolf-specific behavior
+            if (entity.HasBehaviorSubtag("wolf"))
+            {
+                entity.AddBehaviorSubtag("pack");
+                entity.AddBehaviorSubtag("territorial");
+            }
+        }
+        
+        /// <summary>
+        /// Initialize Monster entity
+        /// </summary>
+        private void InitializeMonster(Entity entity)
+        {
+            // Monster-specific initialization
+            entity.AddBehaviorSubtag("aggressive");
+            
+            // Bandit-specific behavior
+            if (entity.HasBehaviorSubtag("bandit"))
+            {
+                entity.AddBehaviorSubtag("raider");
+                entity.AddBehaviorSubtag("opportunistic");
+                entity.AddResourceTag("Loot");
+            }
+            
+            // Basic monster needs
+            entity.AddResourceTag("Food");
+            entity.AddResourceTag("Water");
+        }
+        
+        /// <summary>
+        /// Initialize NPC entity
+        /// </summary>
+        private void InitializeNPC(Entity entity)
+        {
+            // NPC-specific initialization
+            entity.AddBehaviorSubtag("social");
+            entity.AddBehaviorSubtag("trader");
+            
+            // NPCs typically have specialized resources
+            entity.AddResourceTag("Trade");
+        }
+          /// <summary>
         /// Update entity behavior based on type configuration
         /// </summary>
         public virtual void OnUpdate(Entities.Entity entity)
         {
             if (!entity || !entity.isActiveAndEnabled) return;
             
-            var entityData = entity.GetComponent<EntityDataComponent>();
-            if (entityData == null) return;
-            
             // Apply needs decay if enabled
             if (hasNeedsDecay)
             {
-                ApplyNeedsDecay(entityData);
+                ApplyNeedsDecay(entity);
             }
             
             // Apply aging if enabled
             if (hasAging)
             {
-                ApplyAging(entity, entityData);
+                ApplyAging(entity);
             }
             
             // Check flee conditions
-            if (canFlee && ShouldFlee(entityData))
+            if (canFlee && ShouldFlee(entity))
             {
                 TriggerFleeState(entity);
             }
@@ -142,26 +307,24 @@ namespace Lineage.Ancestral.Legacies.Entities
         {
             switch (newState)
             {
-                case State.ID.Aggressive when hasTerritory:
+                case State.ID.Defending when hasTerritory:
                     DefendTerritory(entity);
                     break;
-                case State.ID.Social when canSocialize:
+                case State.ID.Socializing when canSocialize:
                     EngageInSocialBehavior(entity);
                     break;
                 case State.ID.Crafting when canCraft:
                     StartCrafting(entity);
                     break;
             }
-        }
-
-        #region Type-Specific Initialization
+        }        #region Type-Specific Initialization
         
         
         // Changed this to be for general entities instead of specific types.
-        private void InitializeEntity(Entities.Entity entity, EntityDataComponent entityData)
+        private void InitializeEntity(Entities.Entity entity)
         {
             // General entity initialization
-            entity.name = entityData.Entity.entityName;
+            entity.name = entity.EntityName;
 
             // Set general capabilities
             hasNeedsDecay = true;
@@ -175,18 +338,18 @@ namespace Lineage.Ancestral.Legacies.Entities
 
         #region Behavior Implementation
 
-        private void ApplyNeedsDecay(EntityDataComponent entityData)
+        private void ApplyNeedsDecay(Entity entity)
         {
             //todo: make this not apply to any entity that is not controlled by the player. No need to have need decay for AI entities.
             if (Time.time % 1f < Time.deltaTime) // Every second
             {
-                entityData.ModifyStat(Stat.ID.Hunger, -hungerDecayRate * Time.deltaTime);
-                entityData.ModifyStat(Stat.ID.Thirst, -thirstDecayRate * Time.deltaTime);
-                entityData.ModifyStat(Stat.ID.Energy, -energyDecayRate * Time.deltaTime);
+                entity.ModifyStat(Stat.ID.Hunger, -hungerDecayRate * Time.deltaTime);
+                entity.ModifyStat(Stat.ID.Thirst, -thirstDecayRate * Time.deltaTime);
+                entity.ModifyStat(Stat.ID.Energy, -energyDecayRate * Time.deltaTime);
             }
         }
         
-        private void ApplyAging(Entity entity, EntityDataComponent entityData)
+        private void ApplyAging(Entity entity)
         {
             //todo: Maybe make this not apply to any entity that is not controlled by the player. No need to have need decay for AI entities.
             // Age slowly over time
@@ -202,10 +365,9 @@ namespace Lineage.Ancestral.Legacies.Entities
             }
         }
         
-        private bool ShouldFlee(EntityDataComponent entityData)
+        private bool ShouldFlee(Entity entity)
         {
-            float healthPercent = (entityData.GetStat(Stat.ID.Health).currentValue / 
-                                  entityData.GetStat(Stat.ID.Health).maxValue) * 100f;
+            float healthPercent = (entity.Health / entity.MaxHealth) * 100f;
             return healthPercent <= fleeHealthThreshold;
         }
         
@@ -256,8 +418,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         {
             UnityEngine.Debug.Log($"{entity.name} is crafting!");
             // Implementation would handle crafting behavior
-        }
-        
+        }        
         #endregion
     }
     

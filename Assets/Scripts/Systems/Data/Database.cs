@@ -4,7 +4,7 @@ using System;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
-    #region Global Enums
+#region Global Enums
 
     /// <summary>
     /// Defines the rarity levels for various game elements.
@@ -32,12 +32,18 @@ namespace Lineage.Ancestral.Legacies.Database
 
     #endregion
 
-    #region Utility Structs
+#region Utility Structs
+    
+    #region Description
+    /// <summary>
+    /// Contains utility structs for various gameplay elements.
+    /// </summary>
+    #endregion
 
     /// <summary>
     /// Represents health data with utility methods for managing current and maximum health.
     /// </summary>
-    public struct Health
+    public struct Health  // todo: find a way to implement this into the Stat struct to become a Stat<Health>?
     {
         /// <summary>
         /// The current health value.
@@ -62,26 +68,26 @@ namespace Lineage.Ancestral.Legacies.Database
         /// <summary>
         /// Gets the health percentage (current / max).
         /// </summary>
-        public float Percentage => max > 0 ? current / max : 0f;
+        public readonly float Percentage => max > 0 ? current / max : 0f;
         /// <summary>
         /// Gets a value indicating whether the entity is alive (current health > 0).
         /// </summary>
-        public bool IsAlive => current > 0f;
+        public readonly bool IsAlive => current > 0f;
         /// <summary>
         /// Gets a value indicating whether the health is above 50%.
         /// </summary>
-        public bool IsHealthy => Percentage > 0.5f;
+        public readonly bool IsHealthy => Percentage > 0.5f;
         /// <summary>
         /// Gets a value indicating whether the health is below 25% (critical).
         /// </summary>
-        public bool IsCritical => Percentage < 0.25f;
+        public readonly bool IsCritical => Percentage < 0.25f;
 
         /// <summary>
         /// Reduces health by the specified damage amount.
         /// </summary>
         /// <param name="damage">The amount of damage to take.</param>
         /// <returns>A new Health struct with the updated health.</returns>
-        public Health TakeDamage(float damage)
+        public readonly Health TakeDamage(float damage)
         {
             return new Health(max, Mathf.Max(0f, current - damage));
         }
@@ -91,11 +97,13 @@ namespace Lineage.Ancestral.Legacies.Database
         /// </summary>
         /// <param name="amount">The amount of health to restore.</param>
         /// <returns>A new Health struct with the updated health.</returns>
-        public Health Heal(float amount)
+        public readonly Health Heal(float amount)
         {
             return new Health(max, Mathf.Min(max, current + amount));
         }
     }
+
+
     public struct Age
     {
         /// <summary>
@@ -124,6 +132,8 @@ namespace Lineage.Ancestral.Legacies.Database
     /// <summary>
     /// Represents entity size with predefined values for different size categories.
     /// </summary>
+
+
     public struct EntitySize
     {
         /// <summary>
@@ -242,6 +252,16 @@ namespace Lineage.Ancestral.Legacies.Database
         }
     }
 
+    //todo: add an idea list for other utility structs like:
+    // - Position (x, y, z coordinates)
+    // - Rotation (pitch, yaw, roll)
+    // - Scale (uniform or non-uniform scaling)
+    // - Color (RGBA values)
+    // - Design (visual and thematic elements)
+    // - Label (Visual textual representation in game, toggleable.)
+    // - Tooltip (Information display on hover or click.)
+    // - StatBar (UI representation for stats like health, mana, etc.) using a sprite with a fill setting
+    // - ProgressBar (UI representation for tasks or loading screens) using a sprite with a fill setting
     #endregion
 
     #region Game Data Structures
@@ -368,8 +388,8 @@ namespace Lineage.Ancestral.Legacies.Database
         public Stat criticalHitDamage;
         public Stat luck;
         public Stat charisma;        /// <summary>
-        /// Needs system stats - manage survival requirements.
-        /// </summary>
+                                     /// Needs system stats - manage survival requirements.
+                                     /// </summary>
         public Stat hunger;
         public Stat thirst;
         public Stat energy;
@@ -580,18 +600,18 @@ namespace Lineage.Ancestral.Legacies.Database
             this.isAlive = isAlive;
             this.valueModifier = valueModifier;
             this.experienceModifier = experienceModifier;
-            
+
             // Initialize entity type
             entityType = new List<EntityType>();
-            
+
             // Initialize collections
             activeBuffs = new List<Buff>();
             availableStates = new List<State>();
             tags = new List<string>();
-            
+
             // Initialize default state
             currentState = new State(State.ID.Idle, "Idle", "Entity is idle and not performing any specific action");
-            
+
             mana = new Stat(Stat.ID.Mana, "Mana", 0f);
             attack = new Stat(Stat.ID.Attack, "Attack", 0f);
             defense = new Stat(Stat.ID.Defense, "Defense", 0f);

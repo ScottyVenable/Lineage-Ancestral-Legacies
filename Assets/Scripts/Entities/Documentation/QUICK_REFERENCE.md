@@ -53,6 +53,13 @@ canSocialize = false
 hasNeedsDecay = true
 canReproduce = true
 canAge = true
+// Consider adding tags: "carnivore" for hunting behavior
+// Flee threshold may be configurable in Database
+```
+canSocialize = false
+hasNeedsDecay = true
+canReproduce = true
+canAge = true
 ```
 
 ### NPC Entity
@@ -71,6 +78,12 @@ canAge = false
 - ✅ **Database-driven** entity data
 - ✅ **Designer-friendly** workflow
 - ✅ **Modular and extensible**
+
+## Behavior Integration Notes
+- **Animals**: Use subtags ("carnivore", "herbivore") for specialized behavior
+- **Monsters**: Different AI types (wolf vs bandit) require unique attack patterns
+- **Resources**: Tag with "Food", "Water", "Gatherable", "Crafting" for AI recognition
+- **Water Quality**: Clean vs dirty water affects consumption behavior and health
 
 ## File Locations
 - **Scripts**: `Assets/Scripts/Entities/`

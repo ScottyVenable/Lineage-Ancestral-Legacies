@@ -8,6 +8,8 @@ namespace Lineage.Ancestral.Legacies.Examples
     /// Demonstration script showing how to use the new generic Entity system.
     /// This script creates different types of entities and shows their capabilities.
     /// </summary>
+    /// 
+    /// todo: update this to use the new system we have.
     public class EntitySystemDemo : MonoBehaviour
     {
         [Header("Entity Type Data Assets")]
