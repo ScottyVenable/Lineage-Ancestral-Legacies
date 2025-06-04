@@ -42,11 +42,11 @@ namespace Lineage.Ancestral.Legacies.Database
         /// <summary>
         /// The current health value.
         /// </summary>
-        public readonly float current;
+        public float current;
         /// <summary>
         /// The maximum possible health value.
         /// </summary>
-        public readonly float max;
+        public float max;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Health"/> struct.
@@ -367,9 +367,7 @@ namespace Lineage.Ancestral.Legacies.Database
         public Stat criticalHitChance;
         public Stat criticalHitDamage;
         public Stat luck;
-        public Stat charisma;
-
-        /// <summary>
+        public Stat charisma;        /// <summary>
         /// Needs system stats - manage survival requirements.
         /// </summary>
         public Stat hunger;
@@ -377,11 +375,17 @@ namespace Lineage.Ancestral.Legacies.Database
         public Stat energy;
         public Stat rest;
 
-        /// <summary>List of currently active buffs on this entity.</summary>
-        public List<Buff> activeBuffs;
+        /// <summary>
+        /// Experience and leveling stats.
+        /// </summary>
+        public Stat experience;
+        public Stat levelStat;
 
-        /// <summary>Current state of the entity for state machine behavior.</summary>
+        /// <summary>List of currently active buffs on this entity.</summary>
+        public List<Buff> activeBuffs;        /// <summary>Current state of the entity for state machine behavior.</summary>
         public State currentState;
+        public bool isInCombat => currentState.stateID == (int)State.ID.Attacking || currentState.stateID == (int)State.ID.Defending;
+        public bool canCraft => tags.Contains("CanCraft");
 
         /// <summary>List of available states this entity can transition to.</summary>
         public List<State> availableStates;
@@ -601,13 +605,15 @@ namespace Lineage.Ancestral.Legacies.Database
             criticalHitChance = new Stat(Stat.ID.CriticalHitChance, "Critical Hit Chance", 0.05f);
             criticalHitDamage = new Stat(Stat.ID.CriticalHitDamage, "Critical Hit Damage", 1.5f);
             luck = new Stat(Stat.ID.Luck, "Luck", 10f);
-            charisma = new Stat(Stat.ID.Charisma, "Charisma", 10f);
-
-            // Initialize needs stats with appropriate defaults
+            charisma = new Stat(Stat.ID.Charisma, "Charisma", 10f);            // Initialize needs stats with appropriate defaults
             hunger = new Stat(Stat.ID.Hunger, "Hunger", 100f, 0f, 100f);
             thirst = new Stat(Stat.ID.Thirst, "Thirst", 100f, 0f, 100f);
             energy = new Stat(Stat.ID.Energy, "Energy", 100f, 0f, 100f);
             rest = new Stat(Stat.ID.Rest, "Rest", 100f, 0f, 100f);
+
+            // Initialize experience and level stats
+            experience = new Stat(Stat.ID.Experience, "Experience", 0f, 0f, float.MaxValue);
+            levelStat = new Stat(Stat.ID.Level, "Level", level, 1f, float.MaxValue);
         }
 
         //Todo: Implement advanced entity behavior systems such as:
@@ -2134,7 +2140,11 @@ namespace Lineage.Ancestral.Legacies.Database
                 speed = new Stat(Stat.ID.Speed, "Speed", 8f, 0f, float.MaxValue),
                 entitySize = EntitySize.Medium,
                 aggressionType = Entity.AggressionType.Neutral,
-                tags = new List<string> { "Humanoid", "Playable" }
+                tags = new List<string> { "Humanoid", "Playable", "CanCraft"},
+                thirst = new Stat(Stat.ID.Thirst, "Thirst", 100f, 0f, 100f),
+                hunger = new Stat(Stat.ID.Hunger, "Hunger", 100f, 0f, 100f),
+                energy = new Stat(Stat.ID.Energy, "Energy", 100f, 0f, 100f),
+
             });
 
             entityDatabase.Add(new Entity("Wolf", Entity.ID.Wolf)

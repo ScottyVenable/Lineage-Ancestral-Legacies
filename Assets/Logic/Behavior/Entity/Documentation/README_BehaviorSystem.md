@@ -2,14 +2,14 @@
 
 ## Overview
 
-This comprehensive behavior tree system leverages Unity's Behavior package to create intelligent AI for your entity system. It fully integrates with your existing `EntityDataComponent`, `Pop` entities, and GameData database system.
+This comprehensive behavior tree system leverages Unity's Behavior package to create intelligent AI for your entity system. It fully integrates with your existing `Entity` component system and Database.Entity data structures.
 
 ## Architecture
 
 ### Core Components
 
 1. **State Management**: Extended `StateEnums.cs` to include all 22 states from your database
-2. **Data Integration**: Actions that directly interact with `EntityDataComponent`
+2. **Data Integration**: Actions that directly interact with `Entity` component
 3. **Modular Behaviors**: Reusable behavior components for different AI patterns
 4. **Stat-Driven AI**: Conditions based on entity stats (health, hunger, thirst, energy, etc.)
 
@@ -47,7 +47,7 @@ This comprehensive behavior tree system leverages Unity's Behavior package to cr
 
 ## Behavior Tree Templates
 
-### Basic Pop Behavior Structure
+### Basic Entity Behavior Structure
 ```
 Start
 └── Selector (Main Decision Tree)
@@ -101,15 +101,15 @@ Start
 
 ## Integration Points
 
-### EntityDataComponent Integration
+### Entity Component Integration
 All behavior actions automatically:
-- Access entity stats through `EntityDataComponent.GetStat()`
-- Modify stats through `EntityDataComponent.ModifyStat()`
-- Change states through `EntityDataComponent.ChangeState()`
-- Listen to state changes via `OnStateChanged` event
+- Access entity stats through `Entity.GetStat()`
+- Modify stats through `Entity.ModifyStat()`
+- Change states through `Entity.ChangeState()` 
+- Listen to state changes via entity events
 
-### PopController Integration
-- Movement actions use `PopController.Agent` for NavMesh access
+### NavMesh Integration
+- Movement actions use NavMesh components for pathfinding
 - Maintains compatibility with existing selection and UI systems
 
 ### Database System Integration
@@ -132,24 +132,24 @@ CheckEntityStat: Thirst < 25 → FindWater → DrinkWater
 
 ### Creating Custom Behavior Patterns
 
-1. **Craftsman Pop Behavior**:
+1. **Craftsman Entity Behavior**:
    - High priority on finding crafting materials
    - Prefers crafting when materials available
    - Social interaction during breaks
 
-2. **Guard Pop Behavior**:
+2. **Guard Entity Behavior**:
    - Patrol specific areas
    - React to threats
    - Alert other entities
 
-3. **Explorer Pop Behavior**:
+3. **Explorer Entity Behavior**:
    - Extended wandering radius
    - Resource discovery focus
    - Map exploration patterns
 
 ## Performance Considerations
 
-- **Stat Checking**: Efficient direct access to EntityDataComponent
+- **Stat Checking**: Efficient direct access to Entity component
 - **NavMesh Integration**: Leverages Unity's optimized pathfinding
 - **Event-Driven**: Uses events for stat changes to minimize polling
 - **Modular Design**: Reusable components reduce memory overhead

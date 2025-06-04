@@ -8,7 +8,7 @@ Follow these steps to implement the comprehensive behavior tree system in your L
 
 Ensure you have:
 - Unity Behavior package installed
-- Your existing `EntityDataComponent` and `Pop` systems working
+- Your existing `Entity` component system working
 - NavMesh baked in your scenes
 - Entity GameObjects with `NavMeshAgent` components
 
@@ -22,16 +22,14 @@ For each entity that needs AI behavior:
    BehaviorAuthoring
    EntityBehaviorConfigurator
    BehaviorTreeDebugger (optional, for testing)
-   
-   // Ensure these exist
-   EntityDataComponent
+     // Ensure these exist
+   Entity
    NavMeshAgent
-   PopController (for Pop entities)
    ```
 
 2. **Configure EntityBehaviorConfigurator**:
-   - Set `Behavior Type` (Pop, Animal, Monster, Guard)
-   - Assign appropriate `Behavior Graph` asset
+   - Set `Behavior Type` (Pop, Animal, Monster, NPC)
+   - Assign appropriate `Behavior Graph` asset (if using Behavior Graphs)
    - Adjust threshold values based on entity type
    - Set search/wander radius values
 
@@ -39,28 +37,30 @@ For each entity that needs AI behavior:
 
 Create behavior graph assets for different entity types:
 
-1. **Pop Basic Behavior** (provided template):
+1. **Entity Basic Behavior** (provided template):
    - Focuses on needs management (hunger, thirst, energy)
-   - Includes resource gathering and social interactions
-   - Default exploration and idle behaviors
+   - Includes interactions based on the type of entity. (Animals dont need to craft, Pops don't need to graze, etc.)
+   - Default exploration, idle, and common behaviors universal to all entities
 
 2. **Animal Behavior** (create new):
-   - Hunting and patrolling patterns
-   - Flee behavior when threatened
+   - Get its tags ("carnivore", "herbivore", etc. and assign it)
+   - Hunting and patrolling patterns based on subtype (Carnivores may hunt when hungry)
+   - Flee behavior when threatened (maybe adding what the flee threshold is for an entity in the Database data at some point.)
    - Territory-based movement
 
 3. **Monster Behavior** (create new):
    - Aggressive hunting patterns
    - Attack nearest targets
    - Patrol designated areas
+   - Behaviors for AI types (how does a wolf attack/behave vs a bandit?)
 
 ### 4. Resource Tagging
 
 For resource gathering to work, tag your resource objects:
-- "Food" - for food resources
-- "Water" - for water sources
-- "Gatherable" - for general resources
-- "Crafting" - for crafting materials
+- "Food" - for food resources, maybe with a subtag of if it can be Foraged or needs to be Harvested with certain tools or skills.
+- "Water" - for water sources, and what is required to collect it. Is the water dirty or clean?
+- "Gatherable" - for general resources like wood or stone.
+- "Crafting" - for crafting materials, may still be for Gatherable items but the item itself might have "crafting_component" tag if it is needed for crafting.
 
 ### 5. Testing Setup
 
@@ -197,7 +197,7 @@ Selector (Main)
 1. **Entities Not Moving**:
    - Check NavMeshAgent is enabled
    - Verify NavMesh is baked in scene
-   - Ensure PopController.Agent is accessible
+   - Ensure Entity component is accessible
 
 2. **Behaviors Not Triggering**:
    - Verify EntityDataComponent is initialized
@@ -213,12 +213,12 @@ Selector (Main)
 
 1. **Use BehaviorTreeDebugger** for real-time monitoring
 2. **Check Unity Behavior Debugger** window for graph execution
-3. **Enable EntityDataComponent event logging** for stat changes
+3. **Enable Entity component event logging** for stat changes
 4. **Use Scene view gizmos** to visualize entity states and ranges
 
 ## Next Steps
 
-1. **Test Basic Setup**: Start with simple Pop behaviors
+1. **Test Basic Setup**: Start with simple Entity behaviors
 2. **Expand Gradually**: Add more complex behaviors as needed
 3. **Performance Testing**: Monitor with multiple entities
 4. **Customize for Game**: Adapt behaviors to your specific gameplay needs

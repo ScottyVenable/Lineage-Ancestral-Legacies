@@ -10,8 +10,25 @@ using UnityEngine.AI;
 namespace Lineage.Ancestral.Legacies.Entities
 {    /// <summary>
     /// Core Pop entity representing a population unit with needs, inventory, and AI.
-    /// This version has been migrated to use EntityDataComponent exclusively, eliminating
-    /// the synchronization overhead with the old NeedsComponent system.
+    /// 
+    /// ARCHITECTURE CHANGE (v2.0):
+    /// This class has been refactored to use EntityDataComponent as the primary data store.
+    /// All stat management, needs tracking, and entity data is now handled by EntityDataComponent.
+    /// 
+    /// Pop class responsibilities:
+    /// - Unity component orchestration (NavMeshAgent, SpriteRenderer, Animator, etc.)
+    /// - Visual systems (health bars, selection highlighting, animations)
+    /// - Navigation and movement logic
+    /// - Population management integration
+    /// - Game lifecycle events (death, spawning, etc.)
+    /// - PopData ScriptableObject integration
+    /// 
+    /// EntityDataComponent responsibilities:
+    /// - All stat storage and management (health, hunger, thirst, etc.)
+    /// - Needs system logic and decay
+    /// - Entity data structures (Entity struct from Database)
+    /// - Buff/debuff management
+    /// - State management
     /// </summary>
     [RequireComponent(typeof(EntityDataComponent))]
     [RequireComponent(typeof(InventoryComponent))]
@@ -21,22 +38,37 @@ namespace Lineage.Ancestral.Legacies.Entities
         [Header("Pop Identity")]
         public string popName = "Unnamed Pop";
         public int age = 0;
-
-        [Header("Health & Stats")]
-        public float health = 100f;
-        public float maxHealth = 100f;
+        [Header("Health & Stats - Use EntityDataComponent")]
+        // These properties delegate to EntityDataComponent for consistency
+        // The actual stat values are stored in EntityDataComponent.EntityData
+        // This provides backward compatibility while using EntityDataComponent as the source of truth
+        
+        // Getter properties that delegate to EntityDataComponent
+        public float health => entityDataComponent.GetStat(Stat.ID.Health).currentValue;
+        public float thirst => entityDataComponent.GetThirst();
+        public float hunger => entityDataComponent.GetHunger();
+        public float maxHealth => entityDataComponent.GetStat(Stat.ID.Health).maxValue;
+        public float maxThirst => entityDataComponent.GetStat(Stat.ID.Thirst).maxValue;
+        public float maxHunger => entityDataComponent.GetStat(Stat.ID.Hunger).maxValue;
 
         [Header("Pop Data Reference")]
-        [SerializeField] public PopData popData;        public EntityDataComponent entityDataComponent;
+        public PopData popData;
+        public EntityDataComponent entityDataComponent;
         public InventoryComponent inventoryComponent;
 
         [Header("Navigation")]
-        public NavMeshAgent agent;[Header("Visuals")]
+        public NavMeshAgent agent;
+        public bool isMoving => agent != null && agent.hasPath && agent.remainingDistance > agent.stoppingDistance;
+
+        public float movementSpeed => agent != null ? agent.speed : 0f;
+
+        [Header("Visuals")]
         public SpriteRenderer spriteRenderer;
         public Image healthBar;
         public Animator animator;
         public bool lockRotation = true; // Whether to lock rotation to movement direction
 
+        public bool showHealthBar = true; // Toggle for health bar visibility
         // Property for PopController animation access (capital A for compatibility)
         public Animator Animator => animator;
 
@@ -58,7 +90,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             {
                 agent.speed = 3.5f;
                 agent.acceleration = 8f;
-                agent.angularSpeed = 120f;
+                agent.angularSpeed = 0f;
                 agent.stoppingDistance = 0.5f;
                 agent.autoBraking = true;
                 agent.autoRepath = true;
@@ -100,6 +132,15 @@ namespace Lineage.Ancestral.Legacies.Entities
                 entityDataComponent.UpdateNeeds(Time.deltaTime);
             }
 
+            if (showHealthBar && healthBar != null)
+            {
+                healthBar.gameObject.SetActive(true);
+            }
+            else if (healthBar != null)
+            {
+                healthBar.gameObject.SetActive(false);
+            }
+
             // Check for death conditions
             CheckDeathConditions();
 
@@ -120,35 +161,29 @@ namespace Lineage.Ancestral.Legacies.Entities
             if (entityDataComponent == null) return;
 
             // Create default entity data if not set
-            var entityData = new Entity(
+            var entityData = new Database.Entity(
                 name: popName,
-                id: Entity.ID.Pop,
-                faction: "Player",
+                id: Database.Entity.ID.Pop,
+                faction: "Player", //todo: change this to the Settlement name from the lore.
                 description: "A member of your ancestral lineage",
                 level: 1,
-                healthValue: new Health(maxHealth, health)
+                healthValue: new Health(maxHealth, health),
+                usesMana: false // Pops do not use mana by default
             );
 
             entityDataComponent.EntityData = entityData;
-        }
-
-        /// <summary>
+            
+        }        /// <summary>
         /// Applies PopData configuration to this Pop instance.
         /// </summary>
         private void ApplyPopData()
         {
             if (popData == null) return;
 
-            maxHealth = popData.maxHealth;
-            health = maxHealth;
-            age = popData.startingAge;
+            // Apply age
+            age = Random.Range(8, 64); // Random age between 8 and 64 for diversity
 
-            // Apply needs configuration to EntityDataComponent
-            if (entityDataComponent != null && entityDataComponent.isInitialized)
-            {
-                entityDataComponent.ModifyStat(Stat.ID.Hunger, popData.maxHunger);
-                entityDataComponent.ModifyStat(Stat.ID.Thirst, popData.maxThirst);
-            }            // Apply starting items to inventory
+            // Apply starting items to inventory
             if (inventoryComponent != null && popData.startingItems != null)
             {
                 foreach (var item in popData.startingItems)
@@ -257,11 +292,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         public void Sleep(float amount)
         {
             entityDataComponent?.Sleep(amount);
-        }
-
-        // Convenience properties for backward compatibility
-        public float hunger => GetHunger();
-        public float thirst => GetThirst();
+        }        // Convenience properties for backward compatibility - these delegate to EntityDataComponent
         public float stamina => GetEnergy(); // Map energy to stamina for backward compatibility
 
         public bool IsHungry => GetHunger() < 50f;

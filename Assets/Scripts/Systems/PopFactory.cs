@@ -23,10 +23,10 @@ namespace Lineage.Ancestral.Legacies.Systems
         /// <param name="popPrefab">The Pop prefab to instantiate</param>
         /// <param name="spawnPosition">Where to spawn the Pop</param>
         /// <returns>The created Pop GameObject</returns>
-        public static GameObject CreatePop(Entity? parentA = null, Entity? parentB = null, GameObject popPrefab = null, Vector3 spawnPosition = default)
+        public static GameObject CreatePop(Database.Entity? parentA = null, Database.Entity? parentB = null, GameObject popPrefab = null, Vector3 spawnPosition = default)
         {
             // Create base entity data from GameData
-            Entity popEntity = GeneratePopEntity(parentA, parentB);
+            Database.Entity popEntity = GeneratePopEntity(parentA, parentB); //todo: have a default parentA and parentB for first gen
             
             // Instantiate the Pop GameObject
             GameObject popObject = Object.Instantiate(popPrefab, spawnPosition, Quaternion.identity);
@@ -42,7 +42,7 @@ namespace Lineage.Ancestral.Legacies.Systems
         }        /// <summary>
         /// Generates a Pop Entity using GameData system with genetic inheritance and random traits.
         /// </summary>
-        private static Entity GeneratePopEntity(Entity? parentA = null, Entity? parentB = null)
+        private static Entities.Entity GeneratePopEntity(Entities.Entity? parentA = null, Entity? parentB = null)
         {            // Start with a base human entity from GameData
             Entity baseEntity = GameData.GetEntityByID(Entity.ID.Kaari); // Using Kaari entity type for human-like beings
               // Create a new entity based on the base
@@ -203,9 +203,7 @@ namespace Lineage.Ancestral.Legacies.Systems
         {
             // Basic information
             popComponent.popName = entityData.entityName;
-            popComponent.health = entityData.health.current;
-            popComponent.maxHealth = entityData.health.max;
-            
+
             // Create PopData from Entity if needed for backward compatibility
             if (popComponent.popData == null)
             {
@@ -214,7 +212,7 @@ namespace Lineage.Ancestral.Legacies.Systems
             
             popComponent.popData.maxHealth = entityData.health.max;
             // Map other stats as needed for your existing systems
-            
+
             // Store the full entity data for advanced features
             // You might want to add an EntityData component to Pop for this
             StoreEntityDataInPop(popComponent, entityData);

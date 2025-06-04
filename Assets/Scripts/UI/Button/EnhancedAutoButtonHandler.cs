@@ -616,12 +616,12 @@ namespace Lineage.Ancestral.Legacies.UI
         private void ToggleInspectorMenu()
         {
             Log.Info("Inspector menu toggle action triggered - implement inspector UI logic", Log.LogCategory.UI);
-            // Hide the UI_bone object inside of the Inspector GameObject
+            // Hide the UI_Bone object inside of the Inspector GameObject
             var inspector = GameObject.Find("Inspector_Menu");
             if (inspector != null)
             {
-                //Find the UI_bone child
-                var uiBone = inspector.transform.Find("UI_bone");
+                //Find the UI_Bone child
+                var uiBone = inspector.transform.Find("UI_Bone");
                 if (uiBone != null)
                 {
                     uiBone.gameObject.SetActive(!uiBone.gameObject.activeSelf);
@@ -632,12 +632,12 @@ namespace Lineage.Ancestral.Legacies.UI
         private void ToggleAnnouncementsMenu()
         {
             Log.Info("Announcements menu toggle action triggered - implement announcements UI logic", Log.LogCategory.UI);
-            // Hide the UI_bone object inside of the Announcements GameObject
+            // Hide the UI_Bone object inside of the Announcements GameObject
             var announcements = GameObject.Find("Announcements_Menu");
             if (announcements != null)
             {
-                //Find the UI_bone child
-                var uiBone = announcements.transform.Find("UI_bone");
+                //Find the UI_Bone child
+                var uiBone = announcements.transform.Find("UI_Bone");
                 if (uiBone != null)
                 {
                     uiBone.gameObject.SetActive(!uiBone.gameObject.activeSelf);
@@ -648,12 +648,12 @@ namespace Lineage.Ancestral.Legacies.UI
         private void ToggleCommandsMenu()
         {
             Log.Info("Commands menu toggle action triggered - implement commands UI logic", Log.LogCategory.UI);
-            // Hide the UI_bone object inside of the Commands GameObject
+            // Hide the UI_Bone object inside of the Commands GameObject
             var commands = GameObject.Find("Commands_Menu");
             if (commands != null)
             {
-                //Find the UI_bone child
-                var uiBone = commands.transform.Find("UI_bone");
+                //Find the UI_Bone child
+                var uiBone = commands.transform.Find("UI_Bone");
                 if (uiBone != null)
                 {
                     uiBone.gameObject.SetActive(!uiBone.gameObject.activeSelf);

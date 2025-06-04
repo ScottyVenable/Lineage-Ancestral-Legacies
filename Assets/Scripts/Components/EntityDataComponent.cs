@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Lineage.Ancestral.Legacies.Database;
+using UnityEditor.EditorTools;
 
 namespace Lineage.Ancestral.Legacies.Components
 {
@@ -12,7 +13,51 @@ namespace Lineage.Ancestral.Legacies.Components
     {
         [Header("Entity Data")]
         [SerializeField] private Entity _entityData;
+
+        [Header("Identity")]
+        [SerializeField] private string _entityName = "Unknown Entity";
+        [SerializeField] private int _entityID = 0;
+        [SerializeField] private int _entityAge = 0; // Placeholder for age tracking
+
+        [Header("Base Stats")]
+        [SerializeField] private float _entityHunger = 50f; // Default starting hunger
+        [SerializeField] private float _entityThirst = 50f; // Default starting thirst
+        [SerializeField] private float _entityEnergy = 50f; // Default starting energy
+        [SerializeField] private float _entitySpeed = 5f; // Default speed
+        [SerializeField] private float _entityHealth = 100f; // Default health
+        [SerializeField] private float _entityMana = 50f; // Default mana
+
+        [Header("Max Stat Values")]
+        [SerializeField] private float _entityMaxHunger = 100f; // Default max hunger
+        [SerializeField] private float _entityMaxThirst = 100f; // Default max thirst
+        [SerializeField] private float _entityMaxEnergy = 100f; // Default max energy
+        [SerializeField] private float _entityMaxSpeed = 10f; // Default max speed
+        [SerializeField] private float _entityMaxHealth = 100f; // Default max health
+        [SerializeField] private float _entityMaxMana = 100f; // Default max mana
+
+        [Header("Ability Stats")]
+        [SerializeField] private float _entityStrength = 10f; // Default strength
+        [SerializeField] private float _entityAgility = 10f; // Default agility
+        [SerializeField] private float _entityIntelligence = 10f; // Default intelligence
+        [SerializeField] private float _entityDefense = 10f; // Default defense
+        [SerializeField] private float _entityLuck = 5f; // Default luck
+        [SerializeField] private float _entityCharisma = 5f; // Default charisma
+
+        [Header("Combat Stats")]
+        [Tooltip("These stats are used for combat calculations and can be modified by buffs or equipment. Found in EntityData.")]
         
+        [SerializeField] private float _entityAttack = 10f; // Default attack
+        [SerializeField] private float _entityMagicPower = 10f; // Default magic power
+        [SerializeField] private float _entityMagicDefense = 10f; // Default magic defense
+        [SerializeField] private float _entityCriticalHitChance = 5f; // Default critical hit chance
+        [SerializeField] private float _entityCriticalHitDamage = 150f; // Default critical hit damage
+
+        [Header("Traits")]
+        [SerializeField] private List<string> _entityTraits = new List<string>(); // Traits that modify stats or abilities
+        
+        [Header("Crafting")]
+        [SerializeField] private bool _entitycanCraft = false; // Can this entity craft items?
+        [SerializeField] private List<string> _craftingRecipes = new List<string>(); // List of available crafting recipes
         [Header("Runtime State")]
         public bool isInitialized = false;
         
@@ -40,8 +85,10 @@ namespace Lineage.Ancestral.Legacies.Components
             }
         }
         
-        #region Stat Management
         
+        
+        #region Stat Management
+
         /// <summary>
         /// Gets a stat by ID from the entity data.
         /// </summary>
@@ -49,6 +96,8 @@ namespace Lineage.Ancestral.Legacies.Components
         {
             switch (statID)
             {
+                // Get all the stats from EntityData and return them.
+
                 case Stat.ID.Health: return new Stat(Stat.ID.Health, "Health", _entityData.health.current);
                 case Stat.ID.Mana: return _entityData.mana;
                 case Stat.ID.Stamina: return _entityData.stamina;
@@ -69,6 +118,11 @@ namespace Lineage.Ancestral.Legacies.Components
                 case Stat.ID.Thirst: return _entityData.thirst;
                 case Stat.ID.Energy: return _entityData.energy;
                 case Stat.ID.Rest: return _entityData.rest;
+                // Experience and Level stats
+                case Stat.ID.Experience: return _entityData.experience;
+                case Stat.ID.Level: return _entityData.levelStat;
+
+
                 default:
                     UnityEngine.Debug.LogWarning($"Stat {statID} not found in EntityData");
                     return new Stat(statID, statID.ToString(), 0f);
@@ -100,13 +154,19 @@ namespace Lineage.Ancestral.Legacies.Components
                 case Stat.ID.MagicDefense: entityData.magicDefense.ModifyStat(amount); break;
                 case Stat.ID.CriticalHitChance: entityData.criticalHitChance.ModifyStat(amount); break;
                 case Stat.ID.CriticalHitDamage: entityData.criticalHitDamage.ModifyStat(amount); break;
-                case Stat.ID.Luck: entityData.luck.ModifyStat(amount); break;
-                case Stat.ID.Charisma: entityData.charisma.ModifyStat(amount); break;
+                case Stat.ID.Luck: entityData.luck.ModifyStat(amount); break;                case Stat.ID.Charisma: entityData.charisma.ModifyStat(amount); break;
                 // Needs system stats
                 case Stat.ID.Hunger: entityData.hunger.ModifyStat(amount); break;
                 case Stat.ID.Thirst: entityData.thirst.ModifyStat(amount); break;
                 case Stat.ID.Energy: entityData.energy.ModifyStat(amount); break;
                 case Stat.ID.Rest: entityData.rest.ModifyStat(amount); break;
+                // Experience and Level stats
+                case Stat.ID.Experience: entityData.experience.ModifyStat(amount); break;
+                case Stat.ID.Level: 
+                    entityData.levelStat.ModifyStat(amount); 
+                    // Also update the int level field to keep them in sync
+                    entityData.level = Mathf.RoundToInt(entityData.levelStat.currentValue);
+                    break;
                 default:
                     UnityEngine.Debug.LogWarning($"Cannot modify unknown stat: {statID}");
                     break;

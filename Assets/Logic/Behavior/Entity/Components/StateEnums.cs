@@ -29,5 +29,6 @@ public enum BehaviorState
 	Farming = 18,
 	Dead = 19,
 	Unconscious = 20,
-	Sleeping = 21
+	Sleeping = 21,
+	Wandering = 22
 }

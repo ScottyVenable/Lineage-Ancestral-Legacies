@@ -12,12 +12,12 @@
 
 ### ✅ Core System Components (100% Complete)
 - [x] **Unity Behavior Actions & Conditions** - 15+ custom behavior nodes
-- [x] **PopBehaviorIntegrator** - Main integration with Pop entity system
+- [x] **EntityIntegrator** - Main integration with Entity component system
 - [x] **BehaviorPerformanceManager** - LOD and optimization system
 - [x] **BehaviorVisualFeedback** - Debug visualization and monitoring
 - [x] **BehaviorPersistenceManager** - Save/load functionality
 - [x] **BehaviorSystemSetup** - Deployment and configuration helper
-- [x] **PopBehaviorAutoSetup** - One-click setup for existing Pop entities
+- [x] **EntityBehaviorAutoSetup** - One-click setup for existing entities
 
 ### ✅ Behavior Tree Templates (100% Complete)
 - [x] **SurvivalistBehavior.asset** - Basic needs management (health, hunger, energy)
@@ -27,8 +27,8 @@
 - [x] **SocialiteBehavior.asset** - Social interactions and group activities
 
 ### ✅ Integration Framework (100% Complete)
-- [x] **EntityDataComponent Integration** - Direct stat access and modification
-- [x] **Pop Entity Integration** - Seamless integration with existing Pop system
+- [x] **Entity Component Integration** - Direct stat access and modification
+- [x] **Entity System Integration** - Seamless integration with existing Entity system
 - [x] **NavMesh Integration** - Optimized pathfinding and movement
 - [x] **Blackboard Variables** - Dynamic stat and state synchronization
 - [x] **Event-Driven Updates** - Efficient stat change detection
@@ -102,7 +102,7 @@
 
 ### Seamless Integration with Existing Systems
 - **Pop Entity System** ✅ Fully integrated
-- **EntityDataComponent** ✅ Direct stat access  
+- **Entity Component** ✅ Direct stat access  
 - **Database System** ✅ All 22 states and 19 stats supported
 - **NavMesh System** ✅ Optimized pathfinding
 - **Inventory System** ✅ Ready for future integration
