@@ -366,3 +366,4 @@ switch ($Action.ToLower()) {
     "metrics" { Get-CodeMetrics }
     default { Show-Help }
 }
+Pop-Location

@@ -79,3 +79,6 @@ Thumbs.db
 # User specific files - You can add your own here!
 # For example:
 # MyPersonalNotes.txt
+# Package management
+packages-microsoft-prod.deb
+
