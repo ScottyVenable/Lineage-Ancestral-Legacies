@@ -119,7 +119,7 @@ function Show-Branches {
     git branch -r -v
 }
 
-function Quick-Commit {
+function Invoke-QuickCommit {
     param([string]$CommitMessage)
     
     if (-not $CommitMessage) {
@@ -178,7 +178,7 @@ function Checkpoint-Save {
     Write-Host "✅ Checkpoint created!" -ForegroundColor Green
 }
 
-function Create-FeatureBranch {
+function New-FeatureBranch {
     param([string]$BranchName)
     
     if (-not $BranchName) {
@@ -205,7 +205,7 @@ function Switch-Branch {
     git checkout $BranchName
 }
 
-function Clean-Branches {
+function Remove-MergedBranches {
     Write-Host "🧹 Cleaning merged branches..." -ForegroundColor Yellow
     
     # Show branches that will be deleted
@@ -225,7 +225,7 @@ function Clean-Branches {
     }
 }
 
-function Setup-UnityIgnore {
+function Use-UnityIgnore {
     Write-Host "🛡️ Setting up Unity .gitignore..." -ForegroundColor Green
     
     $gitignoreLines = @(
@@ -281,14 +281,14 @@ function Setup-UnityIgnore {
     Write-Host "✅ Unity .gitignore created!" -ForegroundColor Green
 }
 
-function Stash-Changes {
+function Save-StashedChanges {
     $message = "WIP: Stashed at $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
     Write-Host "📦 Stashing changes..." -ForegroundColor Yellow
     git stash push -m $message
     Write-Host "✅ Changes stashed!" -ForegroundColor Green
 }
 
-function Unstash-Changes {
+function Restore-StashedChanges {
     Write-Host "📦 Restoring stashed changes..." -ForegroundColor Yellow
     git stash pop
     Write-Host "✅ Changes restored!" -ForegroundColor Green
@@ -316,16 +316,16 @@ switch ($Action.ToLower()) {
     "log" { Show-Log }
     "diff" { Show-Diff }
     "branches" { Show-Branches }
-    "quick" { Quick-Commit $Message }
+    "quick" { Invoke-QuickCommit $Message }
     "save" { Save-Changes $Message }
     "backup" { Backup-Commit }
     "checkpoint" { Checkpoint-Save }
-    "feature" { Create-FeatureBranch $Branch }
+    "feature" { New-FeatureBranch $Branch }
     "switch" { Switch-Branch $Branch }
-    "clean-branches" { Clean-Branches }
-    "unity-ignore" { Setup-UnityIgnore }
-    "stash" { Stash-Changes }
-    "unstash" { Unstash-Changes }
+    "clean-branches" { Remove-MergedBranches }
+    "unity-ignore" { Use-UnityIgnore }
+    "stash" { Save-StashedChanges }
+    "unstash" { Restore-StashedChanges }
     "reset-soft" { Reset-SoftCommit }
     default { Show-Help }
 }
