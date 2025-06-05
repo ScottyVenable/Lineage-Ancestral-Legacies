@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Lineage.Ancestral.Legacies.Database;
 using Lineage.Ancestral.Legacies.Database.GameData;
+using Lineage.Ancestral.Legacies.Editor.StudioTools.Core;
+using Lineage.Ancestral.Legacies.Systems.Inventory;
 
 namespace Lineage.Ancestral.Legacies.Editor.StudioTools
 {
@@ -11,7 +13,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
     /// Item Creator & Editor window for designing and managing items in the Lineage game.
     /// Provides comprehensive tools for creating, editing, and configuring all item properties.
     /// </summary>
-    public class ItemCreatorWindow : EditorWindow
+    public class ItemCreatorWindow : BaseStudioEditorWindow
     {
         private static ItemCreatorWindow window;
         private Vector2 scrollPosition;
@@ -42,6 +44,9 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         private bool isEquippable = false;
         private bool isConsumable = false;
         private bool isQuestItem = false;
+
+        // ScriptableObject persistence demo
+        private ItemSO itemAsset;
         
         // Equipment Properties (if equippable)
         private float attackBonus = 0f;
@@ -74,11 +79,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         private bool isCraftable = false;
         private List<CraftingIngredient> craftingIngredients = new List<CraftingIngredient>();
         
-        // Styles
-        private GUIStyle headerStyle;
-        private GUIStyle subHeaderStyle;
-        private GUIStyle errorStyle;
-        private bool stylesInitialized = false;
+        // Styles handled by BaseStudioEditorWindow
 
         [System.Serializable]
         public class CraftingIngredient
@@ -127,30 +128,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             }
         }
 
-        private void InitializeStyles()
-        {
-            if (stylesInitialized) return;
-            
-            headerStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 16,
-                normal = { textColor = Color.white }
-            };
-            
-            subHeaderStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 12,
-                normal = { textColor = new Color(0.8f, 0.8f, 0.8f) }
-            };
-            
-            errorStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = Color.red },
-                fontStyle = FontStyle.Bold
-            };
-            
-            stylesInitialized = true;
-        }
+
 
         private void ResetToDefaults()
         {
@@ -269,6 +247,19 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         {
             InitializeStyles();
             DrawHeader();
+            DrawStatusBar();
+
+            itemAsset = (ItemSO)EditorGUILayout.ObjectField("Item Asset", itemAsset, typeof(ItemSO), false);
+            if (itemAsset != null)
+            {
+                EditorGUILayout.Space(5);
+                GenericEditorUIDrawer.DrawObjectFields(itemAsset);
+                if (GUI.changed)
+                {
+                    EditorUtility.SetDirty(itemAsset);
+                }
+                EditorGUILayout.Space(10);
+            }
             DrawTabs();
             DrawContent();
             DrawButtons();
@@ -752,6 +743,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             
             Debug.Log.Info($"Item '{item.itemName}' created successfully with ID {item.itemID}!", Debug.Log.LogCategory.Systems);
             EditorUtility.DisplayDialog("Success", $"Item '{item.itemName}' created successfully!", "OK");
+            ShowStatus($"Item '{item.itemName}' created.", MessageType.Info);
             
             ResetToDefaults();
         }
@@ -768,6 +760,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             
             Debug.Log.Info($"Item '{item.itemName}' updated successfully!", Debug.Log.LogCategory.Systems);
             EditorUtility.DisplayDialog("Success", $"Item '{item.itemName}' updated successfully!", "OK");
+            ShowStatus($"Item '{item.itemName}' updated.", MessageType.Info);
             
             Close();
         }
