@@ -163,10 +163,25 @@ namespace Lineage.Ancestral.Legacies.Database
         /// <summary>
         /// Gets a predefined Gargantuan entity size.
         /// </summary>
-        public static EntitySize Gargantuan => new EntitySize(Size.Gargantuan, 3f, 6f, 1600f);
+    public static EntitySize Gargantuan => new EntitySize(Size.Gargantuan, 3f, 6f, 1600f);
     }
 
     #endregion
+
+    /// <summary>
+    /// Defines how many items an entity can equip in a given slot.
+    /// </summary>
+    public struct EquipSlotCapacity
+    {
+        public EquipSlot slot;
+        public int capacity;
+
+        public EquipSlotCapacity(EquipSlot slot, int capacity)
+        {
+            this.slot = slot;
+            this.capacity = capacity;
+        }
+    }
 
     #region Entity Data Structures
 
@@ -309,6 +324,11 @@ namespace Lineage.Ancestral.Legacies.Database
 
         /// <summary>List of available states this entity can transition to.</summary>
         public List<State> availableStates;
+
+        /// <summary>
+        /// Equipment slot configuration for this entity.
+        /// </summary>
+        public List<EquipSlotCapacity> equipmentSlots;
 
         /// <summary>
         /// Applies a buff to this entity.

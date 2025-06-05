@@ -10,12 +10,12 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
     {
         [Header("Inventory Settings")]
         public int capacity = 10;
-        private Dictionary<string, int> items = new Dictionary<string, int>();
+        private Dictionary<Database.Item.ID, int> items = new Dictionary<Database.Item.ID, int>();
 
         /// <summary>
         /// Adds an item to the inventory. Returns true if successful.
         /// </summary>
-        public bool AddItem(string itemId, int count = 1)
+        public bool AddItem(Database.Item.ID itemId, int count = 1)
         {
             if (GetTotalItemCount() + count > capacity)
                 return false;
@@ -27,10 +27,17 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
             return true;
         }
 
+        public bool AddItem(string itemId, int count = 1)
+        {
+            if (System.Enum.TryParse(itemId, out Database.Item.ID id))
+                return AddItem(id, count);
+            return false;
+        }
+
         /// <summary>
         /// Removes an item from the inventory. Returns true if successful.
         /// </summary>
-        public bool RemoveItem(string itemId, int count = 1)
+        public bool RemoveItem(Database.Item.ID itemId, int count = 1)
         {
             if (!items.ContainsKey(itemId) || items[itemId] < count)
                 return false;
@@ -43,10 +50,17 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
             return true;
         }
 
+        public bool RemoveItem(string itemId, int count = 1)
+        {
+            if (System.Enum.TryParse(itemId, out Database.Item.ID id))
+                return RemoveItem(id, count);
+            return false;
+        }
+
         /// <summary>
         /// Gets quantity of a specific item.
         /// </summary>
-        public int GetItemCount(string itemId)
+        public int GetItemCount(Database.Item.ID itemId)
         {
             if (items.ContainsKey(itemId))
                 return items[itemId];
@@ -54,12 +68,17 @@ namespace Lineage.Ancestral.Legacies.Systems.Inventory
             return 0;
         }
 
+        public int GetItemCount(string itemId)
+        {
+            return System.Enum.TryParse(itemId, out Database.Item.ID id) ? GetItemCount(id) : 0;
+        }
+
         /// <summary>
         /// Gets all items in the inventory.
         /// </summary>
-        public Dictionary<string, int> GetAllItems()
+        public Dictionary<Database.Item.ID, int> GetAllItems()
         {
-            return new Dictionary<string, int>(items);
+            return new Dictionary<Database.Item.ID, int>(items);
         }
 
         /// <summary>
