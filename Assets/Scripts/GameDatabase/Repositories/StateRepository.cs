@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
@@ -74,7 +75,7 @@ namespace Lineage.Ancestral.Legacies.Database
             // Initialize basic states
             InitializeBasicStates();
             
-            Debug.Log("StateRepository: Database initialized successfully.");
+            Log.Info("StateRepository: Database initialized successfully.", Log.LogCategory.Systems);
         }
 
         private static void InitializeBasicStates()

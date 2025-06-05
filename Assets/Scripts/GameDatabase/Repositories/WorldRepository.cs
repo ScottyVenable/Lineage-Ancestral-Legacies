@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
@@ -100,8 +101,8 @@ namespace Lineage.Ancestral.Legacies.Database
         {
             InitializeLocations();
             InitializeChunks();
-            
-            Debug.Log("WorldRepository: Database initialized successfully.");
+
+            Log.Info("WorldRepository: Database initialized successfully.", Log.LogCategory.Systems);
         }
 
         private static void InitializeLocations()

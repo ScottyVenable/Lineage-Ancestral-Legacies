@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
@@ -111,8 +112,8 @@ namespace Lineage.Ancestral.Legacies.Database
             InitializeSettlements();
             InitializeNPCs();
             InitializePopulations();
-            
-            Debug.Log("EntityRepository: Database initialized successfully.");
+
+            Log.Info("EntityRepository: Database initialized successfully.", Log.LogCategory.Systems);
         }
 
         private static void InitializeEntities()

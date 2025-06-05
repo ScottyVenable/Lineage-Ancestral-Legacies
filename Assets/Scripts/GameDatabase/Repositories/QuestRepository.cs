@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
@@ -104,8 +105,8 @@ namespace Lineage.Ancestral.Legacies.Database
         {
             InitializeQuests();
             InitializeObjectives();
-            
-            Debug.Log("QuestRepository: Database initialized successfully.");
+
+            Log.Info("QuestRepository: Database initialized successfully.", Log.LogCategory.Systems);
         }
 
         private static void InitializeQuests()

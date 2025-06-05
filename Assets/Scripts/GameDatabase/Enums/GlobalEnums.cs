@@ -64,6 +64,7 @@ namespace Lineage.Ancestral.Legacies.Database
         Material,
         Accessory,
         Quest,
+        Currency,
         Misc
     }
 

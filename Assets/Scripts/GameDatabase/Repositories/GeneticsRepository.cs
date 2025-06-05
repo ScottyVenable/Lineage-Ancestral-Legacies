@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
@@ -51,8 +52,8 @@ namespace Lineage.Ancestral.Legacies.Database
         {
             AllGenetics.Clear();
             // TODO: Add default genetics data initialization
-            
-            Debug.Log("GeneticsRepository: Database initialized successfully.");
+
+            Log.Info("GeneticsRepository: Database initialized successfully.", Log.LogCategory.Systems);
         }
         #endregion
     }

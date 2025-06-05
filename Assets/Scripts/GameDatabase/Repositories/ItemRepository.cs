@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Lineage.Ancestral.Legacies.Debug;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
@@ -89,8 +90,8 @@ namespace Lineage.Ancestral.Legacies.Database
             };
             
             AllItems.Add(defaultItem);
-            
-            Debug.Log("ItemRepository: Database initialized successfully.");
+
+            Log.Info("ItemRepository: Database initialized successfully.", Log.LogCategory.Systems);
         }
         #endregion
     }
