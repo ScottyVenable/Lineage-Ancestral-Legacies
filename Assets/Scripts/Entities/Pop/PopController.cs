@@ -3,6 +3,7 @@ using UnityEngine.AI; // REQUIRED for NavMeshAgent
 using Lineage.Ancestral.Legacies.Entities; // For Pop
 using Lineage.Ancestral.Legacies.Managers; // For SelectionManager in ForceSelect (optional)
 using Lineage.Ancestral.Legacies.Debug; // For DebugConsoleManager / AdvancedLogger (optional)
+using Lineage.Ancestral.Legacies.Database;
 
 namespace Lineage.Ancestral.Legacies.Entities
 {
@@ -61,9 +62,9 @@ namespace Lineage.Ancestral.Legacies.Entities
             {
                 //              initialSpeed = pop.needsComponent.; // Use PopData's move speed if available
             }
-            else if (pop.entityDataComponent != null)
+            else if (pop.entity != null)
             {
-                initialSpeed = pop.entityDataComponent.EntityData.speed.baseValue; // Fallback if popData isn't loaded yet
+                initialSpeed = pop.entity.GetStat(Stat.ID.Speed).baseValue;
             }
             else
             {

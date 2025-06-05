@@ -136,6 +136,20 @@ namespace Lineage.Ancestral.Legacies.Database
         Artistic
     }
 
+    public enum EquipSlot
+    {
+        Head,
+        Chest,
+        Legs,
+        Feet,
+        Hands,
+        Ring,
+        Back,
+        Weapon,
+        Shield,
+        Accessory
+    }
+
     /// <summary>
     /// Defines genetic trait types.
     /// </summary>

@@ -91,7 +91,7 @@ namespace Lineage.Ancestral.Legacies.Database
         public ID statID;
         public string statName;
         public string statDescription;
-        public StatType statType;
+        public StatType statType; //Example: Primary, Secondary, Tertiary
         public float baseValue;
         public float currentValue;
         public float minValue;

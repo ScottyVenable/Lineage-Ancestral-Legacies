@@ -3,7 +3,8 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Database.GameData;
+using Lineage.Ancestral.Legacies.Editor.StudioTools.Core;
+using Lineage.Ancestral.Legacies.Systems.Inventory;
 
 namespace Lineage.Ancestral.Legacies.Editor.StudioTools
 {
@@ -11,7 +12,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
     /// Item Creator & Editor window for designing and managing items in the Lineage game.
     /// Provides comprehensive tools for creating, editing, and configuring all item properties.
     /// </summary>
-    public class ItemCreatorWindow : EditorWindow
+    public class ItemCreatorWindow : BaseStudioEditorWindow
     {
         private static ItemCreatorWindow window;
         private Vector2 scrollPosition;
@@ -29,9 +30,9 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         // Temporary editing variables
         private string itemName = "New Item";
         private Item.ID selectedItemID = Item.ID.IronSword;
-        private Item.ItemType selectedItemType = Item.ItemType.Miscellaneous;
-        private Item.ItemRarity selectedRarity = Item.ItemRarity.Common;
-        private Item.ItemQuality selectedQuality = Item.ItemQuality.Fair;
+        private ItemType selectedItemType = ItemType.;
+        private ItemRarity selectedRarity = Item.ItemRarity.Common;
+        private ItemQuality selectedQuality = Item.ItemQuality.Fair;
         private Item.ItemSlot selectedSlot = Item.ItemSlot.Weapon;
         
         // Properties
@@ -42,6 +43,9 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         private bool isEquippable = false;
         private bool isConsumable = false;
         private bool isQuestItem = false;
+
+        // ScriptableObject persistence demo
+        private ItemSO itemAsset;
         
         // Equipment Properties (if equippable)
         private float attackBonus = 0f;
@@ -74,11 +78,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         private bool isCraftable = false;
         private List<CraftingIngredient> craftingIngredients = new List<CraftingIngredient>();
         
-        // Styles
-        private GUIStyle headerStyle;
-        private GUIStyle subHeaderStyle;
-        private GUIStyle errorStyle;
-        private bool stylesInitialized = false;
+        // Styles handled by BaseStudioEditorWindow
 
         [System.Serializable]
         public class CraftingIngredient
@@ -127,30 +127,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             }
         }
 
-        private void InitializeStyles()
-        {
-            if (stylesInitialized) return;
-            
-            headerStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 16,
-                normal = { textColor = Color.white }
-            };
-            
-            subHeaderStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 12,
-                normal = { textColor = new Color(0.8f, 0.8f, 0.8f) }
-            };
-            
-            errorStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = Color.red },
-                fontStyle = FontStyle.Bold
-            };
-            
-            stylesInitialized = true;
-        }
+
 
         private void ResetToDefaults()
         {
@@ -221,9 +198,9 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
                 
                 // Determine item properties based on type and tags
                 isStackable = item.quantity > 1;
-                isEquippable = item.itemType == Item.ItemType.Weapon || item.itemType == Item.ItemType.Armor;
-                isConsumable = item.itemType == Item.ItemType.Consumable;
-                isQuestItem = item.itemType == Item.ItemType.QuestItem;
+                isEquippable = item.itemType == ItemType.Weapon || item.itemType == ItemType.Armor;
+                isConsumable = item.itemType == ItemType.Consumable;
+                isQuestItem = item.itemType == ItemType.QuestItem;
                 
                 // Load tags
                 itemTags = item.tags != null ? new List<string>(item.tags) : new List<string>();
@@ -269,6 +246,19 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         {
             InitializeStyles();
             DrawHeader();
+            DrawStatusBar();
+
+            itemAsset = (ItemSO)EditorGUILayout.ObjectField("Item Asset", itemAsset, typeof(ItemSO), false);
+            if (itemAsset != null)
+            {
+                EditorGUILayout.Space(5);
+                GenericEditorUIDrawer.DrawObjectFields(itemAsset);
+                if (GUI.changed)
+                {
+                    EditorUtility.SetDirty(itemAsset);
+                }
+                EditorGUILayout.Space(10);
+            }
             DrawTabs();
             DrawContent();
             DrawButtons();
@@ -322,11 +312,11 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             // Classification
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Classification", EditorStyles.boldLabel);
-            selectedItemType = (Item.ItemType)EditorGUILayout.EnumPopup("Item Type", selectedItemType);
+            selectedItemType = (ItemType)EditorGUILayout.EnumPopup("Item Type", selectedItemType);
             selectedRarity = (Item.ItemRarity)EditorGUILayout.EnumPopup("Rarity", selectedRarity);
             selectedQuality = (Item.ItemQuality)EditorGUILayout.EnumPopup("Quality", selectedQuality);
             
-            if (selectedItemType == Item.ItemType.Weapon || selectedItemType == Item.ItemType.Armor)
+            if (selectedItemType == ItemType.Weapon || selectedItemType == ItemType.Armor)
             {
                 selectedSlot = (Item.ItemSlot)EditorGUILayout.EnumPopup("Equipment Slot", selectedSlot);
             }
@@ -497,7 +487,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Quick Tag Presets", EditorStyles.boldLabel);
             
-            if (selectedItemType == Item.ItemType.Weapon)
+            if (selectedItemType == ItemType.Weapon)
             {
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Melee")) AddTagIfNotExists("Melee");
@@ -513,7 +503,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
                 if (GUILayout.Button("Staff")) AddTagIfNotExists("Staff");
                 EditorGUILayout.EndHorizontal();
             }
-            else if (selectedItemType == Item.ItemType.Armor)
+            else if (selectedItemType == ItemType.Armor)
             {
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Light")) AddTagIfNotExists("Light");
@@ -522,7 +512,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
                 if (GUILayout.Button("Magical")) AddTagIfNotExists("Magical");
                 EditorGUILayout.EndHorizontal();
             }
-            else if (selectedItemType == Item.ItemType.Consumable)
+            else if (selectedItemType == ItemType.Consumable)
             {
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Potion")) AddTagIfNotExists("Potion");
@@ -752,6 +742,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             
             Debug.Log.Info($"Item '{item.itemName}' created successfully with ID {item.itemID}!", Debug.Log.LogCategory.Systems);
             EditorUtility.DisplayDialog("Success", $"Item '{item.itemName}' created successfully!", "OK");
+            ShowStatus($"Item '{item.itemName}' created.", MessageType.Info);
             
             ResetToDefaults();
         }
@@ -768,6 +759,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             
             Debug.Log.Info($"Item '{item.itemName}' updated successfully!", Debug.Log.LogCategory.Systems);
             EditorUtility.DisplayDialog("Success", $"Item '{item.itemName}' updated successfully!", "OK");
+            ShowStatus($"Item '{item.itemName}' updated.", MessageType.Info);
             
             Close();
         }

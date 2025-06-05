@@ -23,9 +23,9 @@
 ExportedObj/
 .vs/
 .vscode/
-*.csproj
+# *.csproj  # Commented out to include custom assembly .csproj files
 *.unityproj
-*.sln
+# *.sln     # Commented out to include solution files
 *.suo
 *.tmp
 *.user
@@ -79,3 +79,6 @@ Thumbs.db
 # User specific files - You can add your own here!
 # For example:
 # MyPersonalNotes.txt
+# Package management
+packages-microsoft-prod.deb
+

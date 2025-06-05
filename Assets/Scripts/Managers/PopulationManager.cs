@@ -4,7 +4,6 @@ using System.Linq;
 using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Debug;
 using Lineage.Ancestral.Legacies.Systems;
-using Lineage.Ancestral.Legacies.Components;
 using Lineage.Ancestral.Legacies.Database;
 
 namespace Lineage.Ancestral.Legacies.Managers
@@ -107,7 +106,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 }
 
                 // Check if pop should die from starvation or critical needs
-                if (pop.entityDataComponent != null && pop.entityDataComponent.HasCriticalNeeds())
+                if (pop != null && pop.HasCriticalNeeds())
                 {
                     Log.Warning($"Pop {pop.name} died from critical needs!", Log.LogCategory.Population);
                     KillPop(pop);

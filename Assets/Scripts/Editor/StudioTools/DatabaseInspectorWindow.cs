@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Lineage.Ancestral.Legacies.Database;
+using Lineage.Core.Editor.StudioTools; // base window
 
 namespace Lineage.Core.Editor.Studio
 {
@@ -12,7 +13,7 @@ namespace Lineage.Core.Editor.Studio
     /// Database Inspector window for detailed analysis and inspection of game database contents.
     /// Provides advanced search, filtering, relationship visualization, and data integrity checks.
     /// </summary>
-    public class DatabaseInspectorWindow : EditorWindow
+    public class DatabaseInspectorWindow : BaseStudioEditorWindow
     {
         #region Window Management
 
