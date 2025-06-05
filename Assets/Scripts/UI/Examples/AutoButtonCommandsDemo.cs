@@ -277,21 +277,22 @@ namespace Lineage.Ancestral.Legacies.UI.Examples
                 ClearExistingButtons();
                 CreateAllDemoButtons();
             }
-        }
-
-        private void ClearExistingButtons()
+        }        private void ClearExistingButtons()
         {
             if (buttonContainer == null) return;
 
             for (int i = buttonContainer.childCount - 1; i >= 0; i--)
             {
+                GameObject childObject = buttonContainer.GetChild(i).gameObject;
                 if (Application.isPlaying)
                 {
-                    Destroy(buttonContainer.GetChild(i).gameObject);
+                    // Disable the object first to prevent raycasting issues before destruction
+                    childObject.SetActive(false);
+                    Destroy(childObject);
                 }
                 else
                 {
-                    DestroyImmediate(buttonContainer.GetChild(i).gameObject);
+                    DestroyImmediate(childObject);
                 }
             }
         }

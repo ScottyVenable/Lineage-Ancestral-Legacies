@@ -2,10 +2,30 @@
 # Run this script to continuously monitor Unity Editor performance
 
 param(
+    [string]$Action = "start",
     [int]$IntervalSeconds = 5,
     [switch]$LogToFile,
     [string]$LogPath = "unity-performance.log"
 )
+
+# Handle help command
+if ($Action -eq "help") {
+    Write-Host "🚀 Unity Performance Monitor" -ForegroundColor Cyan
+    Write-Host "=============================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "USAGE: .\unity-performance-monitor.ps1 [options]" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "OPTIONS:" -ForegroundColor Yellow
+    Write-Host "  -IntervalSeconds [num]  - Monitoring interval (default: 5)"
+    Write-Host "  -LogToFile             - Save output to log file"
+    Write-Host "  -LogPath [path]        - Log file path (default: unity-performance.log)"
+    Write-Host ""
+    Write-Host "EXAMPLES:" -ForegroundColor Yellow
+    Write-Host "  .\unity-performance-monitor.ps1" -ForegroundColor Gray
+    Write-Host "  .\unity-performance-monitor.ps1 -IntervalSeconds 10" -ForegroundColor Gray
+    Write-Host "  .\unity-performance-monitor.ps1 -LogToFile" -ForegroundColor Gray
+    exit
+}
 
 function Write-Output-Message {
     param($Message, $Color = "White")

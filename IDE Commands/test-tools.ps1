@@ -1,9 +1,8 @@
-# Testing and Validation Tools - Automated testing and code validation
+# Testing and Validation Tools - Code quality and validation
 # Run: .\test-tools.ps1 [action]
 
 param(
-    [string]$Action = "help",
-    [string]$Target = ""
+    [string]$Action = "help"
 )
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
@@ -13,87 +12,68 @@ function Show-Help {
     Write-Host "🧪 Testing and Validation Tools" -ForegroundColor Cyan
     Write-Host "===============================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "USAGE: .\test-tools.ps1 [action] [target]" -ForegroundColor Green
+    Write-Host "USAGE: .\test-tools.ps1 [action]" -ForegroundColor Green
     Write-Host ""
-    Write-Host "🔍 VALIDATION COMMANDS:" -ForegroundColor Yellow
-    Write-Host "  compile          - Check compilation status"
+    Write-Host "🔍 COMPILATION:" -ForegroundColor Yellow
+    Write-Host "  compile          - Check compilation"
     Write-Host "  syntax           - Basic syntax validation"
     Write-Host "  missing-refs     - Find missing references"
-    Write-Host "  unused           - Find unused using statements"
+    Write-Host "  unused           - Find unused variables/methods"
     Write-Host ""
-    Write-Host "🎯 ENTITY TESTING:" -ForegroundColor Yellow
+    Write-Host "🎯 ENTITY SYSTEM:" -ForegroundColor Yellow
     Write-Host "  entity-validate  - Validate Entity system"
-    Write-Host "  entity-stats     - Test stat system"
-    Write-Host "  behavior-check   - Check behavior tree setup"
+    Write-Host "  entity-stats     - Entity system statistics"
+    Write-Host "  behavior-check   - Check behavior trees"
     Write-Host ""
-    Write-Host "📊 CODE ANALYSIS:" -ForegroundColor Yellow
+    Write-Host "📊 ANALYSIS:" -ForegroundColor Yellow
     Write-Host "  complexity       - Analyze code complexity"
-    Write-Host "  dependencies     - Check dependencies"
-    Write-Host "  metrics          - Code metrics report"
-    Write-Host ""
-    Write-Host "🛠️ UNITY SPECIFIC:" -ForegroundColor Yellow
-    Write-Host "  meta-check       - Validate .meta files"
-    Write-Host "  prefab-check     - Check prefab integrity"
-    Write-Host "  scene-validate   - Validate scene files"
+    Write-Host "  meta-check       - Check Unity meta files"
+    Write-Host "  metrics          - Generate code metrics"
     Write-Host ""
 }
 
-function Check-Compilation {
-    Write-Host "🔨 Checking compilation status..." -ForegroundColor Cyan
-    Write-Host "==================================" -ForegroundColor Cyan
+function Test-Compilation {
+    Write-Host "🔨 Testing compilation..." -ForegroundColor Green
     
-    # Check if Unity is running
-    $unityProcess = Get-Process -Name "Unity" -ErrorAction SilentlyContinue
-    if ($unityProcess) {
-        Write-Host "🎮 Unity Editor: Running" -ForegroundColor Green
-    } else {
-        Write-Host "🎮 Unity Editor: Not running" -ForegroundColor Yellow
-    }
+    # Build each project separately to catch specific issues
+    $projects = @("Assembly-CSharp.csproj", "Lineage.Logic.csproj")
+    $success = $true
     
-    # Try to compile C# projects
-    Write-Host "`n📄 Assembly-CSharp.csproj:" -ForegroundColor Yellow
-    if (Test-Path "Assembly-CSharp.csproj") {
-        $result = dotnet build "Assembly-CSharp.csproj" --verbosity quiet --nologo 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  ✅ Compilation successful" -ForegroundColor Green
-        } else {
-            Write-Host "  ❌ Compilation failed" -ForegroundColor Red
-            Write-Host "  Errors:" -ForegroundColor Red
-            $result | Select-Object -First 10 | ForEach-Object {
-                Write-Host "    $_" -ForegroundColor Yellow
+    foreach ($project in $projects) {
+        if (Test-Path $project) {
+            Write-Host "`n📁 Building $project..." -ForegroundColor Cyan
+            $result = dotnet build $project --verbosity minimal --no-restore 2>&1
+            
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ $project built successfully" -ForegroundColor Green
+            } else {
+                Write-Host "❌ $project build failed" -ForegroundColor Red
+                $result | Where-Object { $_ -match "error|Error|ERROR" } | ForEach-Object {
+                    Write-Host "  $_" -ForegroundColor Red
+                }
+                $success = $false
             }
         }
-    } else {
-        Write-Host "  ⚠️ Project file not found" -ForegroundColor Yellow
     }
     
-    # Check recent error logs
-    Write-Host "`n📝 Recent Unity logs:" -ForegroundColor Yellow
-    $logPath = "$env:USERPROFILE\AppData\Local\Unity\Editor\Editor.log"
-    if (Test-Path $logPath) {
-        $recentErrors = Get-Content $logPath | Select-String -Pattern "(error|Error|ERROR)" | Select-Object -Last 5
-        if ($recentErrors) {
-            Write-Host "  ⚠️ Recent errors found:" -ForegroundColor Red
-            $recentErrors | ForEach-Object { Write-Host "    $($_.Line)" -ForegroundColor Yellow }
-        } else {
-            Write-Host "  ✅ No recent errors in Unity log" -ForegroundColor Green
-        }
+    if ($success) {
+        Write-Host "`n✅ All projects compiled successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "`n❌ Compilation errors found!" -ForegroundColor Red
     }
 }
 
-function Check-Syntax {
-    Write-Host "📝 Basic syntax validation..." -ForegroundColor Cyan
-    Write-Host "=============================" -ForegroundColor Cyan
+function Test-Syntax {
+    Write-Host "📝 Checking basic syntax..." -ForegroundColor Cyan
     
     $issues = @()
-    
     Get-ChildItem -Recurse -Include "*.cs" | ForEach-Object {
         $content = Get-Content $_.FullName -Raw
         $fileName = $_.Name
         
         # Check for common syntax issues
         if ($content -match ";\s*;") {
-            $issues += "$fileName`: Double semicolons found"
+            $issues += "$fileName - Double semicolons found"
         }
         
         if ($content -match "\{\s*\}") {
@@ -103,186 +83,182 @@ function Check-Syntax {
         # Check for unmatched braces (basic check)
         $openBraces = ($content.ToCharArray() | Where-Object { $_ -eq '{' }).Count
         $closeBraces = ($content.ToCharArray() | Where-Object { $_ -eq '}' }).Count
-        if ($openBraces -ne $closeBraces) {
-            $issues += "$fileName`: Mismatched braces (Open: $openBraces, Close: $closeBraces)"
-        }
         
-        # Check for TODO/FIXME comments
-        if ($content -match "//\s*(TODO|FIXME|HACK)") {
-            $todoCount = ([regex]::Matches($content, "//\s*(TODO|FIXME|HACK)")).Count
-            $issues += "$fileName`: $todoCount TODO/FIXME comments"
+        if ($openBraces -ne $closeBraces) {
+            $issues += "$fileName - Unmatched braces: $openBraces open, $closeBraces close"
         }
     }
     
-    if ($issues) {
-        Write-Host "⚠️ Issues found:" -ForegroundColor Yellow
-        $issues | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
+    if ($issues.Count -eq 0) {
+        Write-Host "✅ No syntax issues found!" -ForegroundColor Green
     } else {
-        Write-Host "✅ No obvious syntax issues found" -ForegroundColor Green
+        Write-Host "⚠️ Found $($issues.Count) potential issues:" -ForegroundColor Yellow
+        $issues | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     }
 }
 
 function Find-MissingReferences {
-    Write-Host "🔗 Checking for missing references..." -ForegroundColor Cyan
-    Write-Host "=====================================" -ForegroundColor Cyan
+    Write-Host "🔍 Checking for missing references..." -ForegroundColor Cyan
     
-    $missingRefs = @()
-    
+    $issues = @()
     Get-ChildItem -Recurse -Include "*.cs" | ForEach-Object {
-        $content = Get-Content $_.FullName
-        $fileName = $_.Name
-        
-        # Look for using statements that might not exist
-        $usingStatements = $content | Select-String -Pattern "using\s+[\w\.]+;" | ForEach-Object { $_.Line.Trim() }
-        
-        foreach ($using in $usingStatements) {
-            # Check for common typos or missing namespaces
-            if ($using -match "using\s+UnityEngine\.UI;" -and -not (Test-Path "Packages\com.unity.ugui")) {
-                $missingRefs += "$fileName`: UI namespace used but package may not be installed"
-            }
-        }
-        
-        # Check for common Unity component references
-        $unityRefs = $content | Select-String -Pattern "\b(Rigidbody|Collider|Renderer|Camera|Light|AudioSource)\b"
-        if ($unityRefs -and -not ($content | Select-String -Pattern "using UnityEngine")) {
-            $missingRefs += "$fileName`: Unity components used without UnityEngine using statement"
-        }
-    }
-    
-    if ($missingRefs) {
-        Write-Host "⚠️ Potential missing references:" -ForegroundColor Yellow
-        $missingRefs | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
-    } else {
-        Write-Host "✅ No obvious missing references found" -ForegroundColor Green
-    }
-}
-
-function Find-UnusedUsings {
-    Write-Host "🗑️ Finding unused using statements..." -ForegroundColor Cyan
-    Write-Host "=====================================" -ForegroundColor Cyan
-    
-    $unusedUsings = @()
-    
-    Get-ChildItem -Recurse -Include "*.cs" | Select-Object -First 10 | ForEach-Object {
         $content = Get-Content $_.FullName -Raw
         $fileName = $_.Name
         
-        $usingStatements = Get-Content $_.FullName | Select-String -Pattern "^using\s+[\w\.]+;" | ForEach-Object { $_.Line.Trim() }
+        # Look for common Unity types that might be missing references
+        $unityTypes = @("GameObject", "Transform", "MonoBehaviour", "ScriptableObject")
         
-        foreach ($using in $usingStatements) {
-            if ($using -match "using\s+([\w\.]+);") {
-                $namespace = $matches[1]
-                $shortName = $namespace.Split('.')[-1]
-                
-                # Simple check - if namespace isn't referenced in code
-                if ($content -notmatch "\b$shortName\b" -and $namespace -ne "System") {
-                    $unusedUsings += "$fileName`: $using (possibly unused)"
+        foreach ($type in $unityTypes) {
+            if ($content -match "\b$type\b" -and $content -notmatch "using UnityEngine") {
+                $issues += "$fileName - Uses $type but missing 'using UnityEngine'"
+                break
+            }
+        }
+    }
+    
+    if ($issues.Count -eq 0) {
+        Write-Host "✅ No obvious missing references found!" -ForegroundColor Green
+    } else {
+        Write-Host "⚠️ Found $($issues.Count) potential missing references:" -ForegroundColor Yellow
+        $issues | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    }
+}
+
+function Find-UnusedCode {
+    Write-Host "🗑️ Looking for potentially unused code..." -ForegroundColor Cyan
+    
+    # This is a basic check - a full analysis would require more sophisticated tools
+    $privateFields = @()
+    $publicMethods = @()
+    
+    Get-ChildItem -Recurse -Include "*.cs" | ForEach-Object {
+        $content = Get-Content $_.FullName -Raw
+        $fileName = $_.Name
+        
+        # Find private fields
+        $privateMatches = [regex]::Matches($content, "private\s+\w+\s+(\w+)\s*;")
+        foreach ($match in $privateMatches) {
+            $fieldName = $match.Groups[1].Value
+            if ($content.Split("`n").Count -gt 0) {
+                $usageCount = ([regex]::Matches($content, "\b$fieldName\b")).Count
+                if ($usageCount -le 1) {  # Only declared, never used
+                    $privateFields += "$fileName - Potentially unused field: $fieldName"
                 }
             }
         }
     }
     
-    if ($unusedUsings) {
-        Write-Host "⚠️ Potentially unused using statements:" -ForegroundColor Yellow
-        $unusedUsings | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
-        if ($unusedUsings.Count -gt 15) {
-            Write-Host "  ... and $($unusedUsings.Count - 15) more" -ForegroundColor Gray
-        }
+    if ($privateFields.Count -eq 0) {
+        Write-Host "✅ No obviously unused private fields found!" -ForegroundColor Green
     } else {
-        Write-Host "✅ No obviously unused using statements found" -ForegroundColor Green
+        Write-Host "⚠️ Found $($privateFields.Count) potentially unused items:" -ForegroundColor Yellow
+        $privateFields | Select-Object -First 10 | ForEach-Object { 
+            Write-Host "  $_" -ForegroundColor Yellow 
+        }
+        if ($privateFields.Count -gt 10) {
+            Write-Host "  ... and $($privateFields.Count - 10) more" -ForegroundColor Gray
+        }
     }
 }
 
-function Validate-EntitySystem {
+function Test-EntitySystem {
     Write-Host "🎯 Validating Entity system..." -ForegroundColor Cyan
-    Write-Host "==============================" -ForegroundColor Cyan
     
-    $entityFile = "Assets\Scripts\Entities\Entity.cs"
-    $entityDataFile = "Assets\Scripts\Entities\EntityTypeData.cs"
+    $entityFiles = @(
+        "Assets\Scripts\Entities\Entity.cs",
+        "Assets\Scripts\Entities\EntityTypeData.cs"
+    )
     
-    # Check if core files exist
-    if (Test-Path $entityFile) {
-        Write-Host "✅ Entity.cs found" -ForegroundColor Green
-        
-        $entityContent = Get-Content $entityFile -Raw
-        
-        # Check for key methods
-        $keyMethods = @("GetStat", "ModifyStat", "Initialize", "UpdateNeeds")
-        foreach ($method in $keyMethods) {
-            if ($entityContent -match "\b$method\b") {
-                Write-Host "  ✅ $method method found" -ForegroundColor Green
-            } else {
-                Write-Host "  ❌ $method method missing" -ForegroundColor Red
+    $issues = @()
+    
+    foreach ($file in $entityFiles) {
+        if (-not (Test-Path $file)) {
+            $issues += "Missing core file: $file"
+        } else {
+            Write-Host "✅ Found $file" -ForegroundColor Green
+            
+            # Basic validation of Entity.cs
+            if ($file -like "*Entity.cs") {
+                $content = Get-Content $file -Raw
+                
+                $requiredMethods = @("Start", "Update", "OnDestroy")
+                foreach ($method in $requiredMethods) {
+                    if ($content -notmatch "\s+$method\s*\(") {
+                        $issues += "Entity.cs may be missing $method method"
+                    }
+                }
+                
+                if ($content -match "public class Entity") {
+                    Write-Host "✅ Entity class structure looks good" -ForegroundColor Green
+                }
             }
         }
+    }
+    
+    # Check for Entity references
+    $entityRefs = Get-ChildItem -Recurse -Include "*.cs" | Select-String -Pattern "\bEntity\b" | Measure-Object
+    Write-Host "📊 Found $($entityRefs.Count) references to Entity in codebase" -ForegroundColor Cyan
+    
+    if ($issues.Count -eq 0) {
+        Write-Host "✅ Entity system validation passed!" -ForegroundColor Green
     } else {
-        Write-Host "❌ Entity.cs not found!" -ForegroundColor Red
+        Write-Host "⚠️ Entity system issues found:" -ForegroundColor Yellow
+        $issues | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     }
+}
+
+function Get-EntityStats {
+    Write-Host "📊 Entity system statistics..." -ForegroundColor Cyan
     
-    if (Test-Path $entityDataFile) {
-        Write-Host "✅ EntityTypeData.cs found" -ForegroundColor Green
+    # Count entity-related files
+    $entityFiles = Get-ChildItem -Recurse -Include "*.cs" | Where-Object { $_.Name -match "Entity|Health|Stat" }
+    Write-Host "📁 Entity-related files: $($entityFiles.Count)" -ForegroundColor White
+    
+    # Count prefabs
+    $prefabs = Get-ChildItem -Recurse -Include "*.prefab" | Measure-Object
+    Write-Host "🎮 Prefabs: $($prefabs.Count)" -ForegroundColor White
+    
+    # Count scenes
+    $scenes = Get-ChildItem -Recurse -Include "*.unity" | Measure-Object
+    Write-Host "🌍 Scenes: $($scenes.Count)" -ForegroundColor White
+    
+    # Analyze Entity usage
+    $entityUsage = Get-ChildItem -Recurse -Include "*.cs" | Select-String -Pattern "\bEntity\b"
+    Write-Host "🔗 Entity references: $($entityUsage.Count)" -ForegroundColor White
+    
+    if ($entityFiles.Count -gt 0) {
+        Write-Host "`n📋 Entity-related files:" -ForegroundColor Yellow
+        $entityFiles | Select-Object -First 10 | ForEach-Object {
+            $relPath = $_.FullName.Replace($ProjectRoot, "").TrimStart("\")
+            Write-Host "  $relPath" -ForegroundColor White
+        }
+    }
+}
+
+function Test-BehaviorTrees {
+    Write-Host "🌳 Checking behavior trees..." -ForegroundColor Cyan
+    
+    $behaviorFiles = Get-ChildItem -Recurse -Include "*Behavior*.cs", "*Tree*.cs"
+    
+    if ($behaviorFiles.Count -eq 0) {
+        Write-Host "ℹ️ No behavior tree files found" -ForegroundColor Gray
     } else {
-        Write-Host "❌ EntityTypeData.cs not found!" -ForegroundColor Red
-    }
-    
-    # Check for ScriptableObject assets
-    $entityAssets = Get-ChildItem -Recurse -Include "*.asset" | Where-Object { 
-        $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
-        $content -and $content -match "EntityTypeData"
-    }
-    
-    Write-Host "📊 EntityTypeData assets found: $($entityAssets.Count)" -ForegroundColor Cyan
-}
-
-function Test-StatSystem {
-    Write-Host "📊 Testing stat system..." -ForegroundColor Cyan
-    Write-Host "==========================" -ForegroundColor Cyan
-    
-    # Find stat-related code
-    $statFiles = Get-ChildItem -Recurse -Include "*.cs" | Where-Object {
-        (Get-Content $_.FullName -Raw) -match "\b(Stat|Health|StatType)\b"
-    }
-    
-    Write-Host "📄 Files with stat system code: $($statFiles.Count)" -ForegroundColor White
-    $statFiles | Select-Object -First 5 | ForEach-Object {
-        $relPath = $_.FullName.Replace($ProjectRoot, "").TrimStart("\")
-        Write-Host "  $relPath" -ForegroundColor Gray
-    }
-    
-    # Check for stat types
-    $statTypes = @("Health", "Hunger", "Thirst", "Stamina", "Energy")
-    foreach ($statType in $statTypes) {
-        $references = Get-ChildItem -Recurse -Include "*.cs" | Select-String -Pattern "\b$statType\b" | Measure-Object
-        Write-Host "🔍 $statType references: $($references.Count)" -ForegroundColor White
+        Write-Host "📁 Found $($behaviorFiles.Count) behavior-related files:" -ForegroundColor Green
+        $behaviorFiles | ForEach-Object {
+            $relPath = $_.FullName.Replace($ProjectRoot, "").TrimStart("\")
+            Write-Host "  $relPath" -ForegroundColor White
+        }
+        
+        # Check for behavior tree assets
+        $behaviorAssets = Get-ChildItem -Recurse -Include "*.asset" | Where-Object { $_.Name -match "Behavior|Tree" }
+        if ($behaviorAssets.Count -gt 0) {
+            Write-Host "`n🎯 Behavior assets found: $($behaviorAssets.Count)" -ForegroundColor Green
+        }
     }
 }
 
-function Check-BehaviorTrees {
-    Write-Host "🌳 Checking behavior tree setup..." -ForegroundColor Cyan
-    Write-Host "===================================" -ForegroundColor Cyan
-    
-    # Look for Behavior Designer assets
-    $behaviorAssets = Get-ChildItem -Recurse -Include "*.asset" | Where-Object {
-        $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
-        $content -and $content -match "BehaviorTree|Behavior Designer"
-    }
-    
-    Write-Host "🌳 Behavior tree assets: $($behaviorAssets.Count)" -ForegroundColor White
-    
-    # Check for blackboard variables
-    $blackboardRefs = Get-ChildItem -Recurse -Include "*.cs" | Select-String -Pattern "\bBlackboard\b" | Measure-Object
-    Write-Host "🖤 Blackboard references: $($blackboardRefs.Count)" -ForegroundColor White
-    
-    # Check for behavior scripts
-    $behaviorScripts = Get-ChildItem -Recurse -Include "*.cs" | Where-Object {
-        (Get-Content $_.FullName -Raw) -match "BehaviorDesigner|Action|Conditional"
-    }
-    Write-Host "📜 Behavior scripts: $($behaviorScripts.Count)" -ForegroundColor White
-}
-
-function Analyze-Complexity {
-    Write-Host "📊 Analyzing code complexity..." -ForegroundColor Cyan
-    Write-Host "===============================" -ForegroundColor Cyan
+function Get-CodeComplexity {
+    Write-Host "📈 Analyzing code complexity..." -ForegroundColor Cyan
     
     $complexFiles = @()
     
@@ -290,7 +266,7 @@ function Analyze-Complexity {
         $content = Get-Content $_.FullName -Raw
         $lines = $content.Split("`n").Count
         $methods = ([regex]::Matches($content, "\s+(public|private|protected|internal)\s+\w+\s+\w+\s*\(")).Count
-        $classes = ([regex]::Matches($content, "\bclass\s+\w+")).Count
+        $classes = ([regex]::Matches($content, "\\bclass\\s+\\w+")).Count
         
         if ($lines -gt 500 -or $methods -gt 20) {
             $complexFiles += [PSCustomObject]@{
@@ -302,99 +278,91 @@ function Analyze-Complexity {
         }
     }
     
-    if ($complexFiles) {
-        Write-Host "⚠️ Complex files (>500 lines or >20 methods):" -ForegroundColor Yellow
-        $complexFiles | Sort-Object Lines -Descending | ForEach-Object {
-            Write-Host "  $($_.File): $($_.Lines) lines, $($_.Methods) methods" -ForegroundColor White
-        }
+    if ($complexFiles.Count -eq 0) {
+        Write-Host "✅ No overly complex files found!" -ForegroundColor Green
     } else {
-        Write-Host "✅ No overly complex files found" -ForegroundColor Green
+        Write-Host "⚠️ Complex files found:" -ForegroundColor Yellow
+        $complexFiles | Sort-Object Lines -Descending | ForEach-Object {
+            Write-Host "  $($_.File): $($_.Lines) lines, $($_.Methods) methods, $($_.Classes) classes" -ForegroundColor Red
+        }
     }
 }
 
-function Check-MetaFiles {
-    Write-Host "📄 Validating .meta files..." -ForegroundColor Cyan
-    Write-Host "=============================" -ForegroundColor Cyan
+function Test-MetaFiles {
+    Write-Host "🔍 Checking Unity meta files..." -ForegroundColor Cyan
     
-    $assetsWithoutMeta = @()
-    $metaWithoutAssets = @()
+    $csharpFiles = Get-ChildItem -Recurse -Include "*.cs"
+    $metaFiles = Get-ChildItem -Recurse -Include "*.meta"
+    $missingMeta = @()
     
-    # Find assets without .meta files
-    Get-ChildItem -Recurse -Path "Assets" | Where-Object { 
-        $_.Name -notlike "*.meta" -and -not (Test-Path "$($_.FullName).meta")
-    } | ForEach-Object {
-        $assetsWithoutMeta += $_.FullName.Replace($ProjectRoot, "").TrimStart("\")
-    }
-    
-    # Find .meta files without corresponding assets
-    Get-ChildItem -Recurse -Path "Assets" -Include "*.meta" | Where-Object {
-        $assetPath = $_.FullName.Replace(".meta", "")
-        -not (Test-Path $assetPath)
-    } | ForEach-Object {
-        $metaWithoutAssets += $_.FullName.Replace($ProjectRoot, "").TrimStart("\")
-    }
-    
-    if ($assetsWithoutMeta) {
-        Write-Host "⚠️ Assets without .meta files:" -ForegroundColor Yellow
-        $assetsWithoutMeta | Select-Object -First 10 | ForEach-Object {
-            Write-Host "  $_" -ForegroundColor White
+    foreach ($file in $csharpFiles) {
+        $expectedMeta = "$($file.FullName).meta"
+        if (-not (Test-Path $expectedMeta)) {
+            $missingMeta += $file.FullName.Replace($ProjectRoot, "").TrimStart("\")
         }
     }
     
-    if ($metaWithoutAssets) {
-        Write-Host "⚠️ Orphaned .meta files:" -ForegroundColor Yellow
-        $metaWithoutAssets | Select-Object -First 10 | ForEach-Object {
-            Write-Host "  $_" -ForegroundColor White
-        }
-    }
+    Write-Host "📊 Total .cs files: $($csharpFiles.Count)" -ForegroundColor White
+    Write-Host "📊 Total .meta files: $($metaFiles.Count)" -ForegroundColor White
     
-    if (-not $assetsWithoutMeta -and -not $metaWithoutAssets) {
-        Write-Host "✅ All .meta files are properly paired" -ForegroundColor Green
+    if ($missingMeta.Count -eq 0) {
+        Write-Host "✅ All C# files have corresponding .meta files!" -ForegroundColor Green
+    } else {
+        Write-Host "⚠️ Missing .meta files for $($missingMeta.Count) files:" -ForegroundColor Yellow
+        $missingMeta | Select-Object -First 10 | ForEach-Object {
+            Write-Host "  $_" -ForegroundColor Red
+        }
+        if ($missingMeta.Count -gt 10) {
+            Write-Host "  ... and $($missingMeta.Count - 10) more" -ForegroundColor Gray
+        }
     }
 }
 
-function Generate-Metrics {
-    Write-Host "📈 Code metrics report..." -ForegroundColor Cyan
-    Write-Host "=========================" -ForegroundColor Cyan
+function Get-CodeMetrics {
+    Write-Host "📊 Generating code metrics..." -ForegroundColor Cyan
     
-    $allFiles = Get-ChildItem -Recurse -Include "*.cs"
+    $csharpFiles = Get-ChildItem -Recurse -Include "*.cs"
     $totalLines = 0
     $totalMethods = 0
     $totalClasses = 0
     
-    $allFiles | ForEach-Object {
-        $content = Get-Content $_.FullName -Raw
-        $totalLines += $content.Split("`n").Count
-        $totalMethods += ([regex]::Matches($content, "\s+(public|private|protected|internal)\s+\w+\s+\w+\s*\(")).Count
-        $totalClasses += ([regex]::Matches($content, "\bclass\s+\w+")).Count
+    foreach ($file in $csharpFiles) {
+        $content = Get-Content $file.FullName -Raw
+        $lines = $content.Split("`n").Count
+        $methods = ([regex]::Matches($content, "\s+(public|private|protected|internal)\s+\w+\s+\w+\s*\(")).Count
+        $classes = ([regex]::Matches($content, "\\bclass\\s+\\w+")).Count
+        
+        $totalLines += $lines
+        $totalMethods += $methods
+        $totalClasses += $classes
     }
     
-    Write-Host "📄 Total C# files: $($allFiles.Count)" -ForegroundColor White
-    Write-Host "📝 Total lines of code: $totalLines" -ForegroundColor White
-    Write-Host "🔧 Total methods: $totalMethods" -ForegroundColor White
-    Write-Host "🏗️ Total classes: $totalClasses" -ForegroundColor White
+    Write-Host "📈 Code Metrics Summary:" -ForegroundColor Green
+    Write-Host "  📄 Total C# files: $($csharpFiles.Count)" -ForegroundColor White
+    Write-Host "  📝 Total lines of code: $totalLines" -ForegroundColor White
+    Write-Host "  🔧 Total methods: $totalMethods" -ForegroundColor White
+    Write-Host "  🏗️ Total classes: $totalClasses" -ForegroundColor White
     
-    $avgLinesPerFile = [math]::Round($totalLines / $allFiles.Count, 1)
-    $avgMethodsPerFile = [math]::Round($totalMethods / $allFiles.Count, 1)
-    
-    Write-Host "`n📊 Averages:" -ForegroundColor Cyan
-    Write-Host "  Lines per file: $avgLinesPerFile" -ForegroundColor White
-    Write-Host "  Methods per file: $avgMethodsPerFile" -ForegroundColor White
+    if ($csharpFiles.Count -gt 0) {
+        $avgLines = [math]::Round($totalLines / $csharpFiles.Count, 1)
+        $avgMethods = [math]::Round($totalMethods / $csharpFiles.Count, 1)
+        
+        Write-Host "  📊 Average lines per file: $avgLines" -ForegroundColor White
+        Write-Host "  📊 Average methods per file: $avgMethods" -ForegroundColor White
+    }
 }
 
 # Main command dispatcher
 switch ($Action.ToLower()) {
-    "compile" { Check-Compilation }
-    "syntax" { Check-Syntax }
+    "compile" { Test-Compilation }
+    "syntax" { Test-Syntax }
     "missing-refs" { Find-MissingReferences }
-    "unused" { Find-UnusedUsings }
-    "entity-validate" { Validate-EntitySystem }
-    "entity-stats" { Test-StatSystem }
-    "behavior-check" { Check-BehaviorTrees }
-    "complexity" { Analyze-Complexity }
-    "meta-check" { Check-MetaFiles }
-    "metrics" { Generate-Metrics }
+    "unused" { Find-UnusedCode }
+    "entity-validate" { Test-EntitySystem }
+    "entity-stats" { Get-EntityStats }
+    "behavior-check" { Test-BehaviorTrees }
+    "complexity" { Get-CodeComplexity }
+    "meta-check" { Test-MetaFiles }
+    "metrics" { Get-CodeMetrics }
     default { Show-Help }
 }
-
-Pop-Location

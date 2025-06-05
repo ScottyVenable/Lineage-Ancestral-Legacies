@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System;
 using Lineage.Ancestral.Legacies.Database;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
+using UnityEngine.Animations;
 
 namespace Lineage.Ancestral.Legacies.Entities
 {
@@ -16,14 +17,14 @@ namespace Lineage.Ancestral.Legacies.Entities
         [Header("Entity Configuration")]
         [SerializeField] private int entityID = 0;
         [SerializeField] private EntityTypeData entityTypeData;
-        
+
         [Header("Entity Data")]
         [SerializeField] private Database.Entity _entityData;
-        
+
         [Header("Identity")]
         [SerializeField] private string _entityName = "Unknown Entity";
         [SerializeField] private int _entityAge = 0;
-        
+
         [Header("Base Stats")]
         [SerializeField] private float _entityHunger = 50f;
         [SerializeField] private float _entityThirst = 50f;
@@ -31,7 +32,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         [SerializeField] private float _entitySpeed = 5f;
         [SerializeField] private float _entityHealth = 100f;
         [SerializeField] private float _entityMana = 50f;
-        
+
         [Header("Max Stat Values")]
         [SerializeField] private float _entityMaxHunger = 100f;
         [SerializeField] private float _entityMaxThirst = 100f;
@@ -39,7 +40,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         [SerializeField] private float _entityMaxSpeed = 10f;
         [SerializeField] private float _entityMaxHealth = 100f;
         [SerializeField] private float _entityMaxMana = 100f;
-        
+
         [Header("Ability Stats")]
         [SerializeField] private float _entityStrength = 10f;
         [SerializeField] private float _entityAgility = 10f;
@@ -47,97 +48,97 @@ namespace Lineage.Ancestral.Legacies.Entities
         [SerializeField] private float _entityDefense = 10f;
         [SerializeField] private float _entityLuck = 5f;
         [SerializeField] private float _entityCharisma = 5f;
-        
+
         [Header("Combat Stats")]
         [SerializeField] private float _entityAttack = 10f;
         [SerializeField] private float _entityMagicPower = 10f;
         [SerializeField] private float _entityMagicDefense = 10f;
         [SerializeField] private float _entityCriticalHitChance = 5f;
         [SerializeField] private float _entityCriticalHitDamage = 150f;
-        
+
         [Header("Traits")]
         [SerializeField] private List<string> _entityTraits = new List<string>();
-        
+
         [Header("Crafting")]
         [SerializeField] private bool _entityCanCraft = false;
         [SerializeField] private List<string> _craftingRecipes = new List<string>();
-          [Header("Needs System Configuration")]
+        [Header("Needs System Configuration")]
         [SerializeField] private bool enableNeedsDecay = true;
         [SerializeField] private float hungerDecayRate = 1f;
         [SerializeField] private float thirstDecayRate = 1.5f;
         [SerializeField] private float energyDecayRate = 0.8f;
         [SerializeField] private float restDecayRate = 0.5f;
-        
+
         [Header("Behavior Tree Integration")]
         [SerializeField] private bool enableBehaviorTrees = true;
         [SerializeField] private string currentBehaviorState = "Idle";
-        
+
         [Header("Blackboard Variables")]
         [SerializeField] private Dictionary<string, object> blackboardVariables = new Dictionary<string, object>();
-        
+
         [Header("Enhanced Resource Tagging")]
         [SerializeField] private List<string> resourceTags = new List<string>();
         [SerializeField] private List<string> behaviorSubtags = new List<string>();
-        
+
         [Header("Runtime State")]
         public bool isInitialized = false;
-          // Enhanced Events
+        // Enhanced Events
         public System.Action<Database.Entity> OnEntityDataChanged;
         public System.Action<Stat.ID, float> OnStatChanged;
         public System.Action<State.ID> OnStateChanged;
         public System.Action<string> OnBehaviorStateChanged;
         public System.Action<string, object> OnBlackboardVariableChanged;
         public System.Action<List<string>> OnResourceTagsChanged;
-        
+
         // Component references
         private NavMeshAgent navAgent;
         private SpriteRenderer spriteRenderer;
         private Animator animator;
         private InventoryComponent inventoryComponent;
-        
+
         // Behavior tree component reference (if available)
         private Component behaviorTreeComponent;
-        
+
         // Properties
-        public int EntityID 
-        { 
-            get => entityID; 
-            set => entityID = value; 
+        public int EntityID
+        {
+            get => entityID;
+            set => entityID = value;
         }
-        
-        public string EntityName 
-        { 
-            get => _entityName; 
-            set => _entityName = value; 
+
+        public string EntityName
+        {
+            get => _entityName;
+            set => _entityName = value;
         }
-        
-        public int Age 
-        { 
-            get => _entityAge; 
-            set => _entityAge = value; 
+
+        public int Age
+        {
+            get => _entityAge;
+            set => _entityAge = value;
         }
-        
-        public Database.Entity EntityData 
-        { 
-            get => _entityData; 
-            set 
+
+        public Database.Entity EntityData
+        {
+            get => _entityData;
+            set
             {
                 _entityData = value;
                 OnEntityDataChanged?.Invoke(_entityData);
                 isInitialized = true;
-            } 
+            }
         }
-          public EntityTypeData TypeData 
-        { 
-            get => entityTypeData; 
-            set => entityTypeData = value; 
+        public EntityTypeData TypeData
+        {
+            get => entityTypeData;
+            set => entityTypeData = value;
         }
-        
+
         // Enhanced Properties for Behavior System
-        public string CurrentBehaviorState 
-        { 
-            get => currentBehaviorState; 
-            set 
+        public string CurrentBehaviorState
+        {
+            get => currentBehaviorState;
+            set
             {
                 string oldState = currentBehaviorState;
                 currentBehaviorState = value;
@@ -147,11 +148,11 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         public Dictionary<string, object> BlackboardVariables => blackboardVariables;
         public List<string> ResourceTags => resourceTags;
         public List<string> BehaviorSubtags => behaviorSubtags;
-        
+
         // Stat properties (read-only, use ModifyStat to change)
         public float Health => GetStat(Stat.ID.Health).currentValue;
         public float MaxHealth => GetStat(Stat.ID.Health).maxValue;
@@ -161,48 +162,48 @@ namespace Lineage.Ancestral.Legacies.Entities
         public float Thirst => GetStat(Stat.ID.Thirst).currentValue;
         public float Energy => GetStat(Stat.ID.Energy).currentValue;
         public float Stamina => GetStat(Stat.ID.Stamina).currentValue;
-        
+
         #region Unity Lifecycle
-          private void Awake()
+        private void Awake()
         {
             InitializeComponents();
             InitializeEntityData();
             InitializeBehaviorSystem();
         }
-          private void Start()
+        private void Start()
         {
             if (entityTypeData != null)
             {
                 entityTypeData.OnInitialize(this);
             }
-            
+
             LoadFromDatabase();
             UpdateVisuals();
             SetupBlackboardVariables();
         }
-          private void Update()
+        private void Update()
         {
             if (!isInitialized) return;
-            
+
             // Update type-specific behavior
             if (entityTypeData != null)
             {
                 entityTypeData.OnUpdate(this);
             }
-            
+
             // Update needs decay if enabled
             if (enableNeedsDecay)
             {
                 UpdateNeedsDecay();
             }
-            
+
             // Update behavior system
             if (enableBehaviorTrees)
             {
                 UpdateBehaviorSystem();
             }
         }
-        
+
         private void OnDestroy()
         {
             if (entityTypeData != null)
@@ -210,11 +211,11 @@ namespace Lineage.Ancestral.Legacies.Entities
                 // entityTypeData.OnEntityDestroy(this); // If needed
             }
         }
-        
+
         #endregion
-        
+
         #region Initialization
-        
+
         private void InitializeComponents()
         {
             navAgent = GetComponent<NavMeshAgent>();
@@ -222,18 +223,18 @@ namespace Lineage.Ancestral.Legacies.Entities
             animator = GetComponent<Animator>();
             inventoryComponent = GetComponent<InventoryComponent>();
         }
-        
+
         private void InitializeEntityData()
         {
-            if (_entityData.entityID == 0 && entityID != 0)
+            if (entityID == 0) return;
+
+            if (_entityData.entityID == 0)
             {
                 LoadFromDatabase();
             }
         }
-          private void LoadFromDatabase()
+        private void LoadFromDatabase()
         {
-            if (entityID == 0) return;
-            
             var entityFromDB = GameData.GetEntityByID(entityID);
             if (entityFromDB.entityID != 0)
             {
@@ -246,26 +247,26 @@ namespace Lineage.Ancestral.Legacies.Entities
                 UnityEngine.Debug.LogWarning($"Entity with ID {entityID} not found in database");
             }
         }
-          private void SyncSerializedFields()
+        private void SyncSerializedFields()
         {
             // Sync serialized fields with entity data
             _entityName = _entityData.entityName;
             _entityAge = _entityData.level; // Assuming level represents age
-            
+
             // Sync stats
             _entityHealth = _entityData.health.current;
             _entityMana = _entityData.mana.currentValue;
             _entityHunger = _entityData.hunger.currentValue;
             _entityThirst = _entityData.thirst.currentValue;
             _entityEnergy = _entityData.energy.currentValue;
-            
+
             // Sync max values
             _entityMaxHealth = _entityData.health.max;
             _entityMaxMana = _entityData.mana.maxValue;
             _entityMaxHunger = _entityData.hunger.maxValue;
             _entityMaxThirst = _entityData.thirst.maxValue;
             _entityMaxEnergy = _entityData.energy.maxValue;
-            
+
             // Sync ability stats
             _entityStrength = _entityData.strength.currentValue;
             _entityAgility = _entityData.agility.currentValue;
@@ -273,7 +274,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             _entityDefense = _entityData.defense.currentValue;
             _entityLuck = _entityData.luck.currentValue;
             _entityCharisma = _entityData.charisma.currentValue;
-            
+
             // Sync combat stats
             _entityAttack = _entityData.attack.currentValue;
             _entityMagicPower = _entityData.magicPower.currentValue;
@@ -281,20 +282,20 @@ namespace Lineage.Ancestral.Legacies.Entities
             _entityCriticalHitChance = _entityData.criticalHitChance.currentValue;
             _entityCriticalHitDamage = _entityData.criticalHitDamage.currentValue;
         }
-        
+
         #endregion
-        
+
         #region Stat Management
-          /// <summary>
+        /// <summary>
         /// Gets a stat by ID from the entity data.
         /// </summary>
         public Stat GetStat(Stat.ID statID)
         {
             switch (statID)
-            {                case Stat.ID.Health: 
+            { case Stat.ID.Health:
                     // Convert Health struct to Stat struct
                     return new Stat(Stat.ID.Health, "Health", _entityData.health.current, 0f, _entityData.health.max, Stat.StatType.Primary, "Entity health points");
-                
+
                 case Stat.ID.Mana: return _entityData.mana;
                 case Stat.ID.Stamina: return _entityData.stamina;
                 case Stat.ID.Strength: return _entityData.strength;
@@ -321,7 +322,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                     return new Stat(); // Return default stat
             }
         }
-        
+
         /// <summary>
         /// Modifies a stat by the given amount.
         /// </summary>
@@ -330,15 +331,15 @@ namespace Lineage.Ancestral.Legacies.Entities
             var currentStat = GetStat(statID);
             float oldValue = currentStat.currentValue;
             float newValue = Mathf.Clamp(oldValue + amount, 0f, currentStat.maxValue);
-            
+
             switch (statID)
-            {                case Stat.ID.Health:
+            { case Stat.ID.Health:
                     if (amount > 0)
                         _entityData.health = _entityData.health.Heal(amount);
                     else
                         _entityData.health = _entityData.health.TakeDamage(-amount);
                     break;
-                    
+
                 case Stat.ID.Mana:
                     _entityData.mana.currentValue = newValue;
                     break;
@@ -400,61 +401,67 @@ namespace Lineage.Ancestral.Legacies.Entities
                     _entityData.levelStat.currentValue = newValue;
                     _entityData.level = (int)newValue; // Sync with int level field
                     break;
-                    
+
                 default:
                     UnityEngine.Debug.LogWarning($"Cannot modify stat {statID} - not implemented");
                     return;
             }
-            
+
             // Sync serialized fields
             SyncSerializedFields();
-            
+
             // Fire events
             OnStatChanged?.Invoke(statID, newValue);
-            
+
             // Notify type data
             if (entityTypeData != null)
             {
                 entityTypeData.OnStatChanged(this, statID, newValue);
             }
         }
-        
+
         #endregion
-        
+
         #region State Management
-        
+
         public void ChangeState(State.ID newState)
         {
             // Implementation for state changes
             OnStateChanged?.Invoke(newState);
-            
+
             if (entityTypeData != null)
             {
                 entityTypeData.OnStateChanged(this, newState);
             }
         }
-        
+
         #endregion
-        
+
         #region Needs Management
-        
+
+        private float needsUpdateTimer = 0f;
+
         private void UpdateNeedsDecay()
         {
             //todo: Implement a boolean to check if needs decay is enabled for this entity
             // Example: if (!enableNeedsDecay) return;
-            if (Time.time % 1f < Time.deltaTime) // Every second
+            needsUpdateTimer += Time.deltaTime;
+            if (needsUpdateTimer >= 1f) // Every second
             {
-                ModifyStat(Stat.ID.Hunger, -hungerDecayRate * Time.deltaTime);
-                ModifyStat(Stat.ID.Thirst, -thirstDecayRate * Time.deltaTime);
-                ModifyStat(Stat.ID.Energy, -energyDecayRate * Time.deltaTime);
-                ModifyStat(Stat.ID.Rest, -restDecayRate * Time.deltaTime);
+                needsUpdateTimer = 0f;
+                {
+                    ModifyStat(Stat.ID.Hunger, -hungerDecayRate * Time.deltaTime);
+                    ModifyStat(Stat.ID.Thirst, -thirstDecayRate * Time.deltaTime);
+                    ModifyStat(Stat.ID.Energy, -energyDecayRate * Time.deltaTime);
+                    ModifyStat(Stat.ID.Rest, -restDecayRate * Time.deltaTime);
+                }
             }
         }
-        
+
         #endregion
-        
-        #region Visual Updates
-        
+
+            #region Visual Updates
+
         private void UpdateVisuals()
         {
             if (spriteRenderer != null)
@@ -462,18 +469,18 @@ namespace Lineage.Ancestral.Legacies.Entities
                 // Update sprite based on entity data
                 // Implementation depends on your sprite system
             }
-            
+
             if (animator != null)
             {
                 // Update animator parameters
                 // Implementation depends on your animation system
             }
         }
-        
+
         #endregion
-        
+
         #region Configuration Methods
-        
+
         /// <summary>
         /// Configure this entity with the given ID and type data
         /// </summary>
@@ -483,7 +490,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             TypeData = typeData;
             LoadFromDatabase();
         }
-        
+
         /// <summary>
         /// Change the entity type data (for dynamic type changes)
         /// </summary>
@@ -493,19 +500,19 @@ namespace Lineage.Ancestral.Legacies.Entities
             {
                 // Clean up old type data if needed
             }
-            
+
             entityTypeData = newTypeData;
-            
+
             if (newTypeData != null)
             {
                 newTypeData.OnInitialize(this);
             }
         }
-        
+
         #endregion
-        
+
         #region Movement (NavMesh Integration)
-        
+
         public void MoveTo(Vector3 destination)
         {
             if (navAgent != null && navAgent.isActiveAndEnabled)
@@ -513,7 +520,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 navAgent.SetDestination(destination);
             }
         }
-        
+
         public void StopMovement()
         {
             if (navAgent != null && navAgent.isActiveAndEnabled)
@@ -521,12 +528,12 @@ namespace Lineage.Ancestral.Legacies.Entities
                 navAgent.ResetPath();
             }
         }
-          public bool IsMoving => navAgent != null && navAgent.hasPath && navAgent.remainingDistance > 0.1f;
-        
+        public bool IsMoving => navAgent != null && navAgent.hasPath && navAgent.remainingDistance > 0.1f;
+
         #endregion
-        
+
         #region Behavior Tree Integration
-        
+
         /// <summary>
         /// Initialize behavior system components
         /// </summary>
@@ -539,7 +546,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 behaviorTreeComponent = behaviorAuthoring;
             }
         }
-        
+
         /// <summary>
         /// Update behavior tree system
         /// </summary>
@@ -551,7 +558,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 UpdateBlackboardVariables();
             }
         }
-        
+
         /// <summary>
         /// Set a blackboard variable for behavior tree integration
         /// </summary>
@@ -565,10 +572,10 @@ namespace Lineage.Ancestral.Legacies.Entities
             {
                 blackboardVariables.Add(key, value);
             }
-            
+
             OnBlackboardVariableChanged?.Invoke(key, value);
         }
-        
+
         /// <summary>
         /// Get a blackboard variable
         /// </summary>
@@ -580,7 +587,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             }
             return defaultValue;
         }
-        
+
         /// <summary>
         /// Update blackboard variables with current entity state
         /// </summary>
@@ -594,7 +601,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 SetBlackboardVariable("Energy", Energy);
                 SetBlackboardVariable("CurrentState", currentBehaviorState);
                 SetBlackboardVariable("IsMoving", IsMoving);
-                
+
                 if (navAgent != null)
                 {
                     SetBlackboardVariable("AgentPosition", transform.position);
@@ -602,7 +609,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         /// <summary>
         /// Setup initial blackboard variables
         /// </summary>
@@ -616,24 +623,24 @@ namespace Lineage.Ancestral.Legacies.Entities
                 SetBlackboardVariable("EntityName", EntityName);
                 SetBlackboardVariable("MaxHealth", MaxHealth);
                 SetBlackboardVariable("MaxMana", MaxMana);
-                
+
                 // Add behavior subtags to blackboard
                 if (behaviorSubtags.Count > 0)
                 {
                     SetBlackboardVariable("BehaviorSubtags", behaviorSubtags);
-                    
+
                     // Set individual subtype flags for behavior trees
                     SetBlackboardVariable("IsCarnivore", behaviorSubtags.Contains("carnivore"));
                     SetBlackboardVariable("IsHerbivore", behaviorSubtags.Contains("herbivore"));
                     SetBlackboardVariable("IsWolf", behaviorSubtags.Contains("wolf"));
                     SetBlackboardVariable("IsBandit", behaviorSubtags.Contains("bandit"));
                 }
-                
+
                 // Add resource tags to blackboard
                 if (resourceTags.Count > 0)
                 {
                     SetBlackboardVariable("ResourceTags", resourceTags);
-                    
+
                     // Set individual resource flags for behavior trees
                     SetBlackboardVariable("HasFood", resourceTags.Contains("Food"));
                     SetBlackboardVariable("HasWater", resourceTags.Contains("Water"));
@@ -643,21 +650,26 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         #endregion
-        
+
         #region Enhanced Resource Management
-        
+
         /// <summary>
         /// Add a resource tag to this entity
         /// </summary>
+        /// <summary>
+        /// Adds a resource tag to this entity. If the tag is not already present, it is added to the list.
+        /// Updates blackboard variables only if behavior trees are enabled (controlled by the `enableBehaviorTrees` flag).
+        /// </summary>
+        /// <param name="tag">The resource tag to add.</param>
         public void AddResourceTag(string tag)
         {
             if (!resourceTags.Contains(tag))
             {
                 resourceTags.Add(tag);
                 OnResourceTagsChanged?.Invoke(resourceTags);
-                
+
                 // Update blackboard if behavior trees are enabled
                 if (enableBehaviorTrees)
                 {
@@ -666,7 +678,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         /// <summary>
         /// Remove a resource tag from this entity
         /// </summary>
@@ -675,7 +687,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             if (resourceTags.Remove(tag))
             {
                 OnResourceTagsChanged?.Invoke(resourceTags);
-                
+
                 // Update blackboard if behavior trees are enabled
                 if (enableBehaviorTrees)
                 {
@@ -684,7 +696,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         /// <summary>
         /// Check if entity has a specific resource tag
         /// </summary>
@@ -692,7 +704,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         {
             return resourceTags.Contains(tag);
         }
-        
+
         /// <summary>
         /// Add a behavior subtag to this entity
         /// </summary>
@@ -701,7 +713,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             if (!behaviorSubtags.Contains(subtag))
             {
                 behaviorSubtags.Add(subtag);
-                
+
                 // Update blackboard if behavior trees are enabled
                 if (enableBehaviorTrees)
                 {
@@ -710,7 +722,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         /// <summary>
         /// Remove a behavior subtag from this entity
         /// </summary>
@@ -726,7 +738,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 }
             }
         }
-        
+
         /// <summary>
         /// Check if entity has a specific behavior subtag
         /// </summary>
@@ -734,7 +746,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         {
             return behaviorSubtags.Contains(subtag);
         }
-        
+
         /// <summary>
         /// Update resource-related flags in blackboard
         /// </summary>
@@ -747,7 +759,7 @@ namespace Lineage.Ancestral.Legacies.Entities
             SetBlackboardVariable("IsGatherable", resourceTags.Contains("Gatherable"));
             SetBlackboardVariable("IsCraftingResource", resourceTags.Contains("Crafting"));
         }
-        
+
         /// <summary>
         /// Update behavior-related flags in blackboard
         /// </summary>
@@ -760,11 +772,11 @@ namespace Lineage.Ancestral.Legacies.Entities
             SetBlackboardVariable("IsAggressiveType", behaviorSubtags.Contains("aggressive"));
             SetBlackboardVariable("IsPassiveType", behaviorSubtags.Contains("passive"));
         }
-        
+
         #endregion
-        
+
         #region Enhanced State Management
-        
+
         /// <summary>
         /// Change behavior state with enhanced tracking
         /// </summary>
@@ -772,40 +784,45 @@ namespace Lineage.Ancestral.Legacies.Entities
         {
             string oldState = currentBehaviorState;
             CurrentBehaviorState = newState;
-            
+
             // Update blackboard
             if (enableBehaviorTrees)
             {
                 SetBlackboardVariable("CurrentState", newState);
                 SetBlackboardVariable("PreviousState", oldState);
             }
-            
+
             UnityEngine.Debug.Log($"{EntityName} behavior state changed from {oldState} to {newState}");
         }
-        
+
         /// <summary>
-        /// Enhanced stat modification with behavior tree integration
+        /// Enhanced stat modification with behavior tree integration.
+        /// Logs the reason for the modification if provided.
         /// </summary>
+        /// <param name="statID">The ID of the stat to modify.</param>
+        /// <param name="amount">The amount to modify the stat by.</param>
+        /// <param name="reason">The reason for the modification. 
+        /// Expected format: A brief description of the cause or context, e.g., "Consumed health potion" or "Took damage from enemy attack".</param>
         public void ModifyStatEnhanced(Stat.ID statID, float amount, string reason = "")
         {
             ModifyStat(statID, amount);
-            
+
             // Log the reason if provided
             if (!string.IsNullOrEmpty(reason))
             {
                 UnityEngine.Debug.Log($"{EntityName} {statID} modified by {amount} - Reason: {reason}");
             }
-            
+
             // Update blackboard variables for behavior trees
             if (enableBehaviorTrees)
             {
                 UpdateBlackboardVariables();
-                
+
                 // Check for critical stat levels
                 CheckCriticalStatLevels(statID);
             }
         }
-        
+
         /// <summary>
         /// Check for critical stat levels and update blackboard flags
         /// </summary>
@@ -819,30 +836,30 @@ namespace Lineage.Ancestral.Legacies.Entities
                     SetBlackboardVariable("IsLowHealth", healthPercent <= 25f);
                     SetBlackboardVariable("IsCriticalHealth", healthPercent <= 10f);
                     break;
-                    
+
                 case Stat.ID.Hunger:
-                    float hungerPercent = (Hunger / 100f) * 100f; // Assuming max hunger is 100
+                    float hungerPercent = (Hunger / _entityMaxHunger) * 100f; // Using dynamic max hunger value
                     SetBlackboardVariable("HungerPercent", hungerPercent);
                     SetBlackboardVariable("IsHungry", hungerPercent <= 30f);
                     SetBlackboardVariable("IsStarving", hungerPercent <= 10f);
                     break;
-                    
+
                 case Stat.ID.Thirst:
-                    float thirstPercent = (Thirst / 100f) * 100f; // Assuming max thirst is 100
+                    float thirstPercent = _entityMaxThirst > 0 ? (Thirst / _entityMaxThirst) * 100f : 0f; // Using dynamic max thirst
                     SetBlackboardVariable("ThirstPercent", thirstPercent);
                     SetBlackboardVariable("IsThirsty", thirstPercent <= 30f);
                     SetBlackboardVariable("IsDehydrated", thirstPercent <= 10f);
                     break;
-                    
+
                 case Stat.ID.Energy:
-                    float energyPercent = (Energy / 100f) * 100f; // Assuming max energy is 100
+                    float energyPercent = (Energy / _entityMaxEnergy) * 100f; // Using dynamic max energy value
                     SetBlackboardVariable("EnergyPercent", energyPercent);
                     SetBlackboardVariable("IsTired", energyPercent <= 30f);
                     SetBlackboardVariable("IsExhausted", energyPercent <= 10f);
                     break;
             }
+
+            #endregion
         }
-        
-        #endregion
     }
-}
+} // End of Entity class

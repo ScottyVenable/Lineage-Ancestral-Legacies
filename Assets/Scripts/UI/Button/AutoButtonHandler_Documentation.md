@@ -112,7 +112,7 @@ bool hasAction = autoButtonHandler.HasAction("save game");
 
 ### Custom Action Implementation
 You can extend the functionality by adding custom actions at runtime:
-
+(TODO: Explain where you would add this code, e.g., in a MonoBehaviour script that initializes the button)
 ```csharp
 public class CustomButtonSetup : MonoBehaviour
 {

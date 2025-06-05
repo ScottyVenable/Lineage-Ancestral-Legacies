@@ -134,71 +134,73 @@ namespace Lineage.Ancestral.Legacies.Managers
                 targetZoom = minZoom;
             #endif
         }
-    }    private void OnEnable()
-    {
-        Log.Info("Camera: OnEnable called", Log.LogCategory.Systems);
-        
-        if (inputActions != null)
+    }
+    private void OnEnable()
         {
-            Log.Info($"Camera: InputActions asset found: {inputActions.name}", Log.LogCategory.Systems);
-            
-            // Enable the action maps first
-            inputActions.Enable();
-            Log.Info("Camera: InputActions enabled", Log.LogCategory.Systems);
-            
-            // Find and configure input actions
-            moveAction = inputActions.FindAction("Player/Move");
-            zoomAction = inputActions.FindAction("UI/ScrollWheel");
-            middleClickAction = inputActions.FindAction("UI/MiddleClick");
-            mousePositionAction = inputActions.FindAction("UI/Point");
+        //    Log.Info("Camera: OnEnable called", Log.LogCategory.Systems);
 
-            Log.Info($"Camera: Action mapping results - Move: {(moveAction != null ? "Found" : "NOT FOUND")}, " +
-                     $"Zoom: {(zoomAction != null ? "Found" : "NOT FOUND")}, " +
-                     $"MiddleClick: {(middleClickAction != null ? "Found" : "NOT FOUND")}, " +
-                     $"MousePosition: {(mousePositionAction != null ? "Found" : "NOT FOUND")}", Log.LogCategory.Systems);
-
-            // Subscribe to mouse events
-            if (middleClickAction != null) 
-            {
-                middleClickAction.performed += OnMiddleMousePressed;
-                middleClickAction.canceled += OnMiddleMouseReleased;
-                Log.Info("Camera: Middle click action bound successfully", Log.LogCategory.Systems);
-            }
-            else
-            {
-                Log.Error("Camera: Could not find UI/MiddleClick action", Log.LogCategory.Systems);
-            }
-            
-            if (mousePositionAction == null)
-            {
-                Log.Error("Camera: Could not find UI/Point action", Log.LogCategory.Systems);
-            }
-            else
-            {
-                Log.Info("Camera: Mouse position action found successfully", Log.LogCategory.Systems);
-            }
-        }
-        else
-        {
-            Log.Error("Camera: InputActions asset is null - attempting to reload from Resources", Log.LogCategory.Systems);
-            inputActions = Resources.Load<InputActionAsset>("InputSystem_Actions");
             if (inputActions != null)
             {
-                Log.Info("Camera: Successfully reloaded InputActions from Resources", Log.LogCategory.Systems);
-                // Retry the setup
-                OnEnable();
-                return;
+        //        Log.Info($"Camera: InputActions asset found: {inputActions.name}", Log.LogCategory.Systems);
+
+                // Enable the action maps first
+                inputActions.Enable();
+      //          Log.Info("Camera: InputActions enabled", Log.LogCategory.Systems);
+
+                // Find and configure input actions
+                moveAction = inputActions.FindAction("Player/Move");
+                zoomAction = inputActions.FindAction("UI/ScrollWheel");
+                middleClickAction = inputActions.FindAction("UI/MiddleClick");
+                mousePositionAction = inputActions.FindAction("UI/Point");
+
+        //        Log.Info($"Camera: Action mapping results - Move: {(moveAction != null ? "Found" : "NOT FOUND")}, " +
+        //                 $"Zoom: {(zoomAction != null ? "Found" : "NOT FOUND")}, " +
+        //                 $"MiddleClick: {(middleClickAction != null ? "Found" : "NOT FOUND")}, " +
+        //                 $"MousePosition: {(mousePositionAction != null ? "Found" : "NOT FOUND")}", Log.LogCategory.Systems);
+
+                // Subscribe to mouse events
+                if (middleClickAction != null)
+                {
+                    middleClickAction.performed += OnMiddleMousePressed;
+                    middleClickAction.canceled += OnMiddleMouseReleased;
+       //             Log.Info("Camera: Middle click action bound successfully", Log.LogCategory.Systems);
+                }
+                else
+                {
+       //             Log.Error("Camera: Could not find UI/MiddleClick action", Log.LogCategory.Systems);
+                }
+
+                if (mousePositionAction == null)
+                {
+     //               Log.Error("Camera: Could not find UI/Point action", Log.LogCategory.Systems);
+                }
+                else
+                {
+        //            Log.Info("Camera: Mouse position action found successfully", Log.LogCategory.Systems);
+                }
             }
             else
             {
-                Log.Error("Camera: Failed to load InputActions from Resources", Log.LogCategory.Systems);
+       //         Log.Error("Camera: InputActions asset is null - attempting to reload from Resources", Log.LogCategory.Systems);
+                inputActions = Resources.Load<InputActionAsset>("InputSystem_Actions");
+                if (inputActions != null)
+                {
+     //               Log.Info("Camera: Successfully reloaded InputActions from Resources", Log.LogCategory.Systems);
+                    // Retry the setup
+                    OnEnable();
+                    return;
+                }
+                else
+                {
+        //            Log.Error("Camera: Failed to load InputActions from Resources", Log.LogCategory.Systems);
+                }
             }
+
+            // Test camera access immediately after setup
+            Camera testCam = GetActiveCamera();
+       //     Log.Info($"Camera: Active camera test after OnEnable: {(testCam != null ? testCam.name : "NONE FOUND")}", Log.LogCategory.Systems);
         }
-        
-        // Test camera access immediately after setup
-        Camera testCam = GetActiveCamera();
-        Log.Info($"Camera: Active camera test after OnEnable: {(testCam != null ? testCam.name : "NONE FOUND")}", Log.LogCategory.Systems);
-    }private void OnDisable()
+    private void OnDisable()
     {
         // Unsubscribe from events
         if (middleClickAction != null) 
@@ -306,7 +308,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         // Debug: Log the state every few frames when mouse button should be released
         if (!isMiddleMousePressed && Time.frameCount % 30 == 0)
         {
-            Log.Debug($"Camera: Mouse panning state check - isPressed: {isMiddleMousePressed}, middleClickAction active: {(middleClickAction != null && middleClickAction.IsPressed())}", Log.LogCategory.Systems);
+    //        Log.Debug($"Camera: Mouse panning state check - isPressed: {isMiddleMousePressed}, middleClickAction active: {(middleClickAction != null && middleClickAction.IsPressed())}", Log.LogCategory.Systems);
         }
         
         if (isMiddleMousePressed && mousePositionAction != null)
@@ -314,7 +316,7 @@ namespace Lineage.Ancestral.Legacies.Managers
             // Additional safety check: verify the middle click action is actually still pressed
             if (middleClickAction != null && !middleClickAction.IsPressed())
             {
-                Log.Warning("Camera: Middle click action reports not pressed but isMiddleMousePressed is true - forcing release", Log.LogCategory.Systems);
+    //            Log.Warning("Camera: Middle click action reports not pressed but isMiddleMousePressed is true - forcing release", Log.LogCategory.Systems);
                 OnMiddleMouseReleased(new InputAction.CallbackContext());
                 return;
             }
@@ -325,7 +327,7 @@ namespace Lineage.Ancestral.Legacies.Managers
             Camera cam = GetActiveCamera();
             if (cam == null) 
             {
-                Log.Warning("Camera: Cannot handle mouse panning - no active camera", Log.LogCategory.Systems);
+    //            Log.Warning("Camera: Cannot handle mouse panning - no active camera", Log.LogCategory.Systems);
                 return;
             }
             
@@ -350,7 +352,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                 targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
                 targetPosition.y = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
                 
-                Log.Debug($"Camera: Mouse panning active - Delta applied: ({deltaX:F3}, {deltaY:F3})", Log.LogCategory.Systems);
+     //           Log.Debug($"Camera: Mouse panning active - Delta applied: ({deltaX:F3}, {deltaY:F3})", Log.LogCategory.Systems);
             }
             
             lastMousePosition = currentMouseWorldPos;

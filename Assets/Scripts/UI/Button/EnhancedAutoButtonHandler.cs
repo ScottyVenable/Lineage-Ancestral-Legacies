@@ -22,6 +22,8 @@ namespace Lineage.Ancestral.Legacies.UI
         [SerializeField] private bool useRegexPatterns = false;
         [SerializeField] private bool enableVisualFeedback = true;
 
+        [SerializeField] private GameObject panelToClose;
+
         [Header("Visual Feedback")]
         [SerializeField] private Color successColor = Color.green;
         [SerializeField] private Color errorColor = Color.red;
@@ -32,10 +34,13 @@ namespace Lineage.Ancestral.Legacies.UI
         private string currentButtonText;
         private Color originalTextColor;
 
+        
+
         // Dictionary to map button text to actions
         private Dictionary<string, System.Action> buttonActions;
         private Dictionary<string, System.Action<string[]>> parameterizedActions;
         private List<(Regex pattern, System.Action<Match> action)> regexActions;
+
 
         private void Awake()
         {
@@ -69,7 +74,8 @@ namespace Lineage.Ancestral.Legacies.UI
             InitializeBasicActions();
             InitializeParameterizedActions();
             InitializeRegexActions();
-        }        private void InitializeBasicActions()
+        }
+        private void InitializeBasicActions()
         {
             // Game Management Actions
             buttonActions["quit"] = QuitGame;
@@ -92,11 +98,11 @@ namespace Lineage.Ancestral.Legacies.UI
             buttonActions["back"] = GoBack;
             buttonActions["return"] = GoBack;
             buttonActions["cancel"] = GoBack;
-            buttonActions["close"] = CloseUI;
+            buttonActions["close"] = () => CloseUI(panelToClose);
+            buttonActions["resume"] = () => ResumeAndClose(panelToClose);
 
             // Game State Actions
             buttonActions["pause"] = PauseGame;
-            buttonActions["resume"] = ResumeGame;
             buttonActions["unpause"] = ResumeGame;
             buttonActions["restart"] = RestartGame;
             buttonActions["new game"] = NewGame;
@@ -124,14 +130,16 @@ namespace Lineage.Ancestral.Legacies.UI
             buttonActions["add faith"] = AddFaith;
 
             // Debug Actions
-            buttonActions["debug"] = ToggleDebug;
-            buttonActions["console"] = ToggleDebug;
-            buttonActions["debug menu"] = ToggleDebug;
+            buttonActions["debug"] = ToggleDebugConsole;
+            buttonActions["console"] = ToggleDebugConsole;
+            buttonActions["debug menu"] = ToggleDebugConsole;
+            buttonActions["debug console"] = ToggleDebugConsole;
 
             // Toggle Menu Actions
-            buttonActions["inspector"] = ToggleInspectorMenu;
-            buttonActions["announcements"] = ToggleAnnouncementsMenu;
-            buttonActions["commands"] = ToggleCommandsMenu;
+            // TODO: Find a way to make this more efficient.
+            buttonActions["inspector"] = () => ToggleMenu("Inspector");
+            buttonActions["announcements"] = () => ToggleMenu("Announcements");
+            buttonActions["commands"] = () => ToggleMenu("Commands");
         }
 
         private void InitializeParameterizedActions()
@@ -206,9 +214,11 @@ namespace Lineage.Ancestral.Legacies.UI
 
             bool actionExecuted = false;
 
+
             try
             {
-                // Try basic actions first
+
+                // Try basic actions
                 if (buttonActions.TryGetValue(currentButtonText, out System.Action action))
                 {
                     action.Invoke();
@@ -238,6 +248,7 @@ namespace Lineage.Ancestral.Legacies.UI
                     ShowFeedback(false);
                     Log.Warning($"EnhancedAutoButtonHandler: No action found for button text '{currentButtonText}'", Log.LogCategory.UI);
                 }
+            
             }
             catch (System.Exception e)
             {
@@ -282,16 +293,25 @@ namespace Lineage.Ancestral.Legacies.UI
             if (!enableVisualFeedback || buttonText == null) return;
 
             Color feedbackColor = success ? successColor : errorColor;
-            
-            // Start coroutine to show visual feedback
+              // Start coroutine to show visual feedback
             StartCoroutine(ShowFeedbackCoroutine(feedbackColor));
         }
 
         private System.Collections.IEnumerator ShowFeedbackCoroutine(Color feedbackColor)
         {
-            buttonText.color = feedbackColor;
+            // Check if buttonText is still valid before changing color
+            if (buttonText != null && this != null)
+            {
+                buttonText.color = feedbackColor;
+            }
+            
             yield return new WaitForSeconds(feedbackDuration);
-            buttonText.color = originalTextColor;
+            
+            // Check again before restoring color, as the component might have been destroyed
+            if (buttonText != null && this != null)
+            {
+                buttonText.color = originalTextColor;
+            }
         }
 
         #region Parameterized Action Handlers
@@ -478,6 +498,10 @@ namespace Lineage.Ancestral.Legacies.UI
             UnityEngine.SceneManagement.SceneManager.LoadScene(0); // Assumes main menu is scene 0
         }
 
+        private void ResumeAndClose(GameObject panel) {
+            ResumeGame();
+            CloseUI(panel);
+        }
         private void GoBack()
         {
             // Try to find a parent canvas or UI manager to handle going back
@@ -492,17 +516,50 @@ namespace Lineage.Ancestral.Legacies.UI
             }
         }
 
-        private void CloseUI()
+        private void CloseUI(GameObject panel)
         {
-            // Close the current UI panel or window
-            var canvas = GetComponentInParent<Canvas>();
+            Canvas canvas = null;
+
+            if (panel == null)
+            {
+                Log.Error("Panel to close not set!", Log.LogCategory.UI);
+            }
+            else if (panel != null)
+                {
+                    panel.SetActive(false);
+                    Log.Info($"Closed UI panel: '{panel.name}'", Log.LogCategory.UI);
+                    return;
+                }
+            
+            // Fallback to original behavior: traverse up hierarchy to find a Canvas
+            Transform current = transform;
+            while (current != null && canvas == null)
+            {
+            canvas = current.GetComponent<Canvas>();
+            if (canvas == null)
+            {
+                current = current.parent;
+                Log.Info($"Current transform is: '{current?.name}'", Log.LogCategory.UI);
+            }
+            }
+
             if (canvas != null)
             {
-                canvas.gameObject.SetActive(false);
+            canvas.gameObject.SetActive(false);
+            Log.Info($"Closed UI canvas: {canvas.name}", Log.LogCategory.UI);
             }
             else
             {
-                transform.parent?.gameObject.SetActive(false);
+            // Fallback: try to deactivate the immediate parent if no Canvas is found
+            if (transform.parent != null)
+            {
+                transform.parent.gameObject.SetActive(false);
+                Log.Info($"Closed UI parent: {transform.parent.name}", Log.LogCategory.UI);
+            }
+            else
+            {
+                Log.Warning("CloseUI: No Canvas found in hierarchy and no parent to deactivate", Log.LogCategory.UI);
+            }
             }
         }
 
@@ -606,58 +663,41 @@ namespace Lineage.Ancestral.Legacies.UI
                 Log.Warning("ResourceManager instance not found!", Log.LogCategory.UI);
             }
         }
-
-        private void ToggleDebug()
+        public void ToggleDebugConsole()
         {
             Log.Info("Debug toggle action triggered", Log.LogCategory.UI);
-            // Implement debug menu toggle logic here
-        }
 
-        private void ToggleInspectorMenu()
-        {
-            Log.Info("Inspector menu toggle action triggered - implement inspector UI logic", Log.LogCategory.UI);
-            // Hide the UI_Bone object inside of the Inspector GameObject
-            var inspector = GameObject.Find("Inspector_Menu");
-            if (inspector != null)
+            if (DebugConsoleManager.Instance != null)
             {
-                //Find the UI_Bone child
-                var uiBone = inspector.transform.Find("UI_Bone");
-                if (uiBone != null)
-                {
-                    uiBone.gameObject.SetActive(!uiBone.gameObject.activeSelf);
-                }
+                DebugConsoleManager.Instance.ToggleConsoleVisibility();
+            }
+            else
+            {
+                Log.Warning("DebugConsoleManager.Instance is null - debug console not available", Log.LogCategory.UI);
             }
         }
 
-        private void ToggleAnnouncementsMenu()
+        private void ToggleMenu(string menuName)
         {
-            Log.Info("Announcements menu toggle action triggered - implement announcements UI logic", Log.LogCategory.UI);
-            // Hide the UI_Bone object inside of the Announcements GameObject
-            var announcements = GameObject.Find("Announcements_Menu");
-            if (announcements != null)
+            Log.Info($"{menuName.ToUpper()} MENU toggle action triggered - implement {menuName} UI logic", Log.LogCategory.UI);
+            // Hide the Panel object inside of the specified menu GameObject
+            var menu = GameObject.Find($"{menuName}_Menu");
+            if (menu != null)
             {
-                //Find the UI_Bone child
-                var uiBone = announcements.transform.Find("UI_Bone");
-                if (uiBone != null)
+                //Find the Panel child
+                var panel = menu.transform.Find("Panel");
+                if (panel != null)
                 {
-                    uiBone.gameObject.SetActive(!uiBone.gameObject.activeSelf);
+                    panel.gameObject.SetActive(!panel.gameObject.activeSelf);
+                }
+                else
+                {
+                    Debug.Log.Error($"Panel child not found in menu '{menuName}_Menu'. Check the hierarchy.", Log.LogCategory.UI);
                 }
             }
-        }
-
-        private void ToggleCommandsMenu()
-        {
-            Log.Info("Commands menu toggle action triggered - implement commands UI logic", Log.LogCategory.UI);
-            // Hide the UI_Bone object inside of the Commands GameObject
-            var commands = GameObject.Find("Commands_Menu");
-            if (commands != null)
+            else
             {
-                //Find the UI_Bone child
-                var uiBone = commands.transform.Find("UI_Bone");
-                if (uiBone != null)
-                {
-                    uiBone.gameObject.SetActive(!uiBone.gameObject.activeSelf);
-                }
+                Debug.Log.Error($"Menu '{menuName}_Menu' not found in the scene. Check the spelling matches the object name exactly.", Log.LogCategory.UI);
             }
         }
 
@@ -680,16 +720,12 @@ namespace Lineage.Ancestral.Legacies.UI
         public void AddRegexAction(string pattern, System.Action<Match> action)
         {
             regexActions.Add((new Regex(pattern, ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None), action));
-        }
-
-        private string ProcessButtonText(string text)
+        }        private string ProcessButtonText(string text)
         {
             if (trimWhitespace) text = text.Trim();
             if (ignoreCase) text = text.ToLower();
             return text;
         }
-
-
 
         #endregion
 
@@ -699,6 +735,9 @@ namespace Lineage.Ancestral.Legacies.UI
             {
                 button.onClick.RemoveListener(HandleButtonClick);
             }
+            
+            // Stop all coroutines to prevent access to destroyed components
+            StopAllCoroutines();
         }
     }
 }

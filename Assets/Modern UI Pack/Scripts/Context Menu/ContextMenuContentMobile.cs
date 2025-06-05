@@ -99,12 +99,13 @@ namespace Michsky.MUIP
             {
                 contextAnimator.Play("Menu Out");
                 contextManager.isOn = false;
-            }
-
-            else if (contextManager.isOn == false)
+            }            else if (contextManager.isOn == false)
             {
                 foreach (Transform child in itemParent)
+                {
+                    child.gameObject.SetActive(false);
                     Destroy(child.gameObject);
+                }
 
                 for (int i = 0; i < contexItems.Count; ++i)
                 {

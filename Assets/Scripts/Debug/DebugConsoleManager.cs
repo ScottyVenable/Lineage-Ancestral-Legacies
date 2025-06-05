@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -32,13 +33,11 @@ namespace Lineage.Ancestral.Legacies.Debug
     public class DebugConsoleManager : MonoBehaviour
     {
         [Header("Console Settings")]
-        [SerializeField] private bool enableConsole = true;
+        [SerializeField] public bool enableConsole = true;
         [SerializeField] private KeyCode legacyToggleKey = KeyCode.F2;
         [SerializeField] private KeyCode legacyToggleKeyAlt = KeyCode.BackQuote; // Tilde/backtick
         [SerializeField] private int maxHistoryCount = 50;
-        [SerializeField] private int maxLogCount = 100;
-
-        [Header("Log Filtering")]
+        [SerializeField] private int maxLogCount = 100;        [Header("Log Filtering")]
         [SerializeField] public bool showInfoLogs = true;
         [SerializeField] public bool showWarningLogs = true;
         [SerializeField] public bool showErrorLogs = true;
@@ -46,6 +45,14 @@ namespace Lineage.Ancestral.Legacies.Debug
         [SerializeField] public bool showCommandLogs = true;
         [SerializeField] public bool showSystemLogs = true;
         [SerializeField] public bool showTimestamps = true;
+
+        [Header("Log Throttling")]
+        [SerializeField] [Tooltip("Delay in seconds between repeated debug messages from Update methods")]
+        private float logRepeatDelay = 10f;
+        [SerializeField] [Tooltip("How often to clean up old throttling entries (in seconds)")]
+        private float cleanupInterval = 30f;
+        [SerializeField] [Tooltip("Remove throttling entries older than this time (in seconds)")]
+        private float cleanupThreshold = 60f;
 
         [Header("UI Settings")]
         [SerializeField] private Vector2 consoleSize = new Vector2(800, 400);
@@ -104,12 +111,15 @@ namespace Lineage.Ancestral.Legacies.Debug
         private bool isDragging = false;
         private bool isResizing = false;
         private Vector2 dragOffset;
-        private Vector2 resizeOffset;
-
-        // Manager references
-        private PopulationManager populationManager;
+        private Vector2 resizeOffset;        // Manager references
+        private SettlementManager settlementManager;
         private ResourceManager resourceManager;
         private SelectionManager selectionManager;
+
+        // Log throttling for Update methods
+        private Dictionary<string, float> _lastLogTimes = new Dictionary<string, float>();
+        private HashSet<string> _updateMethodNames = new HashSet<string> { "Update", "LateUpdate", "FixedUpdate" };
+        private float _lastCleanupTime = 0f;
 
         // Log entry types
         public enum LogType
@@ -182,14 +192,14 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
         }
 
-        void Start()
+        public void Start()
         {
             SetupInputActions();
             LoadAvailableCommands();
             windowRect = new Rect(consolePosition.x, consolePosition.y, consoleSize.x, consoleSize.y);
             
             // Get manager references
-            populationManager = FindFirstObjectByType<PopulationManager>();
+            settlementManager = FindFirstObjectByType<SettlementManager>();
             resourceManager = FindFirstObjectByType<ResourceManager>();
             selectionManager = FindFirstObjectByType<SelectionManager>();
             
@@ -203,6 +213,9 @@ namespace Lineage.Ancestral.Legacies.Debug
             if (!isConsoleVisible) return;
 
             UpdateSuggestions();
+            
+            // Periodic cleanup of throttling data
+            CleanupThrottlingData();
         }
 
         void OnGUI()
@@ -282,11 +295,10 @@ namespace Lineage.Ancestral.Legacies.Debug
             
             inputActions.Enable();
         }
-
         private void ToggleConsole()
         {
             isConsoleVisible = !isConsoleVisible;
-            
+
             if (isConsoleVisible)
             {
                 GUI.FocusControl("ConsoleInput");
@@ -298,6 +310,15 @@ namespace Lineage.Ancestral.Legacies.Debug
                 showSuggestions = false;
                 selectedSuggestionIndex = -1;
             }
+        }
+
+        /// <summary>
+        /// Public method to toggle the debug console visibility
+        /// </summary>
+        public void ToggleConsoleVisibility()
+        {
+            if (!enableConsole) return;
+            ToggleConsole();
         }
 
         private void InitializeStyles()
@@ -818,10 +839,14 @@ namespace Lineage.Ancestral.Legacies.Debug
                     default: return true;
                 }
             }).TakeLast(maxLogCount).ToList();
-        }
-
-        public void LogToConsole(string message, LogType type = LogType.Info, Color? color = null)
+        }        public void LogToConsole(string message, LogType type = LogType.Info, Color? color = null)
         {
+            // Check if this log should be throttled for Update methods
+            if (ShouldThrottleMessage(message, type))
+            {
+                return; // Skip this log message due to throttling
+            }
+
             Color logColor = color ?? GetDefaultColorForLogType(type);
             LogEntry entry = new LogEntry(message, type, logColor);
             
@@ -835,6 +860,111 @@ namespace Lineage.Ancestral.Legacies.Debug
             }
         }
 
+        /// <summary>
+        /// Determines if a log message should be throttled based on its type and origin.
+        /// Only throttles Debug log types that originate from Update, LateUpdate, or FixedUpdate methods.
+        /// </summary>
+        /// <param name="message">The log message to check</param>
+        /// <param name="type">The type of log message</param>
+        /// <returns>True if the message should be throttled (skipped), false otherwise</returns>
+        private bool ShouldThrottleMessage(string message, LogType type)
+        {
+            // Only throttle Debug log types
+            if (type != LogType.Debug)
+                return false;
+
+            // Check if the message originates from an Update method
+            if (!IsFromUpdateMethod())
+                return false;
+
+            // Create a unique key for this message to track throttling
+            string messageKey = $"{message}_{type}";
+            float currentTime = Time.time;
+
+            // Check if we've logged this message recently
+            if (_lastLogTimes.TryGetValue(messageKey, out float lastLogTime))
+            {
+                float timeSinceLastLog = currentTime - lastLogTime;
+                if (timeSinceLastLog < logRepeatDelay)
+                {
+                    // Still within throttle window, skip this message
+                    return true;
+                }
+            }
+
+            // Update the last log time for this message
+            _lastLogTimes[messageKey] = currentTime;
+            return false;
+        }
+
+        /// <summary>
+        /// Analyzes the current call stack to determine if the logging call originates from an Update method.
+        /// Checks for Update, LateUpdate, and FixedUpdate method names in the stack trace.
+        /// </summary>
+        /// <returns>True if the call originates from an Update method, false otherwise</returns>
+        private bool IsFromUpdateMethod()
+        {
+            try
+            {
+                StackTrace stackTrace = new StackTrace(true);
+                StackFrame[] frames = stackTrace.GetFrames();
+
+                if (frames == null) return false;
+
+                // Look through the stack frames to find Update method calls
+                for (int i = 0; i < frames.Length; i++)
+                {
+                    var method = frames[i].GetMethod();
+                    if (method != null && _updateMethodNames.Contains(method.Name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (System.Exception)
+            {
+                // If stack trace analysis fails, don't throttle
+                return false;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Periodically cleans up old entries from the throttling dictionary to prevent memory buildup
+        /// </summary>
+        private void CleanupThrottlingData()
+        {
+            float currentTime = Time.time;
+            
+            // Only run cleanup periodically
+            if (currentTime - _lastCleanupTime < cleanupInterval)
+                return;
+                
+            _lastCleanupTime = currentTime;
+            
+            // Remove entries older than the cleanup threshold
+            var keysToRemove = new List<string>();
+            foreach (var kvp in _lastLogTimes)
+            {
+                if (currentTime - kvp.Value > cleanupThreshold)
+                {
+                    keysToRemove.Add(kvp.Key);
+                }
+            }
+            
+            // Remove the old entries
+            foreach (var key in keysToRemove)
+            {
+                _lastLogTimes.Remove(key);
+            }
+            
+            // Log cleanup if any entries were removed (but don't create infinite recursion)
+            if (keysToRemove.Count > 0)
+            {
+                LogToConsole($"[Throttling] Cleaned up {keysToRemove.Count} old throttling entries", LogType.System, Color.gray);
+            }
+        }
         private Color GetDefaultColorForLogType(LogType type)
         {
             switch (type)
@@ -969,12 +1099,12 @@ namespace Lineage.Ancestral.Legacies.Debug
             float z = command.Arguments.Count > 2 && float.TryParse(command.Arguments[2], out float zVal) ? zVal : 0f;
             Vector3 position = new Vector3(x, y, z);
 
-            if (populationManager != null)
+            if (settlementManager != null)
             {
                 try
                 {
-                    populationManager.SpawnPop();
-                    
+                    SettlementManager.Instance.SpawnPop();
+
                     // Find the most recently spawned pop
                     var allPops = FindObjectsByType<Pop>(FindObjectsSortMode.None);
                     if (allPops.Length > 0)

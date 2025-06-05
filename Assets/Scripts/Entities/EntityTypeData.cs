@@ -317,9 +317,10 @@ namespace Lineage.Ancestral.Legacies.Entities
                     StartCrafting(entity);
                     break;
             }
-        }        #region Type-Specific Initialization
-        
-        
+        }
+        #region Type-Specific Initialization
+
+
         // Changed this to be for general entities instead of specific types.
         private void InitializeEntity(Entities.Entity entity)
         {

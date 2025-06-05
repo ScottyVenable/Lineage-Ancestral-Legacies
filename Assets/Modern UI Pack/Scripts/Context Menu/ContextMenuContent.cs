@@ -72,15 +72,18 @@ namespace Michsky.MUIP
                 }
 
                 catch { Debug.LogError("<b>[Context Menu]</b> Context Manager is missing.", this); return; }
-            }
-
-            foreach (Transform child in itemParent)
+            }            foreach (Transform child in itemParent)
+            {
+                child.gameObject.SetActive(false);
                 Destroy(child.gameObject);
-        }
-
-        public void ProcessContent()
+            }
+        }        public void ProcessContent()
         {
-            foreach (Transform child in itemParent) { Destroy(child.gameObject); }
+            foreach (Transform child in itemParent) 
+            { 
+                child.gameObject.SetActive(false);
+                Destroy(child.gameObject); 
+            }
             for (int i = 0; i < contexItems.Count; ++i)
             {
                 bool nulLVariable = false;

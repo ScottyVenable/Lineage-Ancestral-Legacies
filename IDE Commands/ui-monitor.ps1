@@ -88,10 +88,10 @@ function Clear-UICaches {
 
 function Show-UITips {
     Write-Status "UI Performance Tips:" "Cyan"
-    Write-Status "  • Avoid extreme 9-slice sprite scaling" "White"
-    Write-Status "  • Use separate canvases for static/dynamic UI" "White"
-    Write-Status "  • Disable raycastTarget on decorative UI elements" "White"
-    Write-Status "  • Group UI changes to minimize Canvas rebuilds" "White"
+    Write-Status "  - Avoid extreme 9-slice sprite scaling" "White"
+    Write-Status "  - Use separate canvases for static/dynamic UI" "White"
+    Write-Status "  - Disable raycastTarget on decorative UI elements" "White"
+    Write-Status "  - Group UI changes to minimize Canvas rebuilds" "White"
 }
 
 # Main execution

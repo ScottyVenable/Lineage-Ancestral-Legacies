@@ -8,7 +8,7 @@ param(
 )
 
 function Write-ColorLine {
-    param($Text, $Color = "White")
+    param($Text, $C        Write-ColorLine "❌ Error: $($_.Exception.Message)" "Red"lor = "White")
     Write-Host $Text -ForegroundColor $Color
 }
 

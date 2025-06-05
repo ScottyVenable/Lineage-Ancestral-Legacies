@@ -10,7 +10,8 @@ using Lineage.Ancestral.Legacies.Database;
 namespace Lineage.Ancestral.Legacies.Managers
 {
     /// <summary>
-    /// Manages the population of Kaari, spawning, death, and population cap.
+    /// Legacy PopulationManager that delegates to SettlementManager when available.
+    /// Maintains backward compatibility while transitioning to the new settlement system.
     /// </summary>
     public class PopulationManager : MonoBehaviour
     {
@@ -25,7 +26,6 @@ namespace Lineage.Ancestral.Legacies.Managers
         public Transform spawnPoint;
         public float spawnRadius = 2f;
 
-        
         private List<Pop> livingPops = new List<Pop>();
 
         // Events
@@ -46,11 +46,32 @@ namespace Lineage.Ancestral.Legacies.Managers
         }
 
         private void Start()
-        {
-            // Spawn initial population
-            for (int i = 0; i < Mathf.Min(3, populationCap); i++)
+        {        // If SettlementManager exists, use it; otherwise use legacy behavior
+        var settlementManager = FindFirstObjectByType<SettlementManager>();
+        if (settlementManager != null)
             {
-                SpawnPop();
+                // Subscribe to SettlementManager events
+                settlementManager.OnPopulationChanged += (pop) => {
+                    currentPopulation = pop;
+                    OnPopulationChanged?.Invoke(pop);
+                };
+                
+                settlementManager.OnPopulationCapChanged += (cap) => {
+                    populationCap = cap;
+                    OnPopulationCapChanged?.Invoke(cap);
+                };
+                
+                // Sync current values
+                currentPopulation = settlementManager.CurrentPopulation;
+                populationCap = settlementManager.PopulationCap;
+            }
+            else
+            {
+                // Legacy behavior - spawn initial population
+                for (int i = 0; i < Mathf.Min(3, populationCap); i++)
+                {
+                    SpawnPop();
+                }
             }
 
             OnPopulationChanged?.Invoke(currentPopulation);
@@ -58,9 +79,18 @@ namespace Lineage.Ancestral.Legacies.Managers
         }
 
         private void Update()
-        {
-            // Process population needs and death
-            ProcessPopulationNeeds();
+        {        // Only process if SettlementManager is not available
+        var settlementManager = FindFirstObjectByType<SettlementManager>();
+        if (settlementManager == null)
+            {
+                ProcessPopulationNeeds();
+            }
+            else
+            {
+                // Sync with SettlementManager
+                livingPops = settlementManager.GetAllPops();
+                currentPopulation = settlementManager.CurrentPopulation;
+            }
         }
 
         private void ProcessPopulationNeeds()
@@ -74,7 +104,9 @@ namespace Lineage.Ancestral.Legacies.Managers
                     currentPopulation--;
                     OnPopulationChanged?.Invoke(currentPopulation);
                     continue;
-                }                // Check if pop should die from starvation or critical needs
+                }
+
+                // Check if pop should die from starvation or critical needs
                 if (pop.entityDataComponent != null && pop.entityDataComponent.HasCriticalNeeds())
                 {
                     Log.Warning($"Pop {pop.name} died from critical needs!", Log.LogCategory.Population);
@@ -85,18 +117,28 @@ namespace Lineage.Ancestral.Legacies.Managers
                 // Generate faith if needs are met
                 if (pop.hunger > 30f && pop.thirst > 30f)
                 {
-                    ResourceManager.Instance.AddFaith(ResourceManager.Instance.faithGenerationRate * Time.deltaTime);
+                    if (ResourceManager.Instance != null)
+                        ResourceManager.Instance.AddFaith(ResourceManager.Instance.faithGenerationRate * Time.deltaTime);
                 }
 
                 // Generate food (basic gathering)
-                ResourceManager.Instance.AddFood(0.5f * Time.deltaTime);
+                if (ResourceManager.Instance != null)
+                    ResourceManager.Instance.AddFood(0.5f * Time.deltaTime);
             }
         }        public void SpawnPop()
         {
+            var settlementManager = FindFirstObjectByType<SettlementManager>();
+            if (settlementManager != null)
+            {
+                settlementManager.SpawnPop();
+                return;
+            }
+
+            // Legacy spawning behavior
             if (currentPopulation >= populationCap || popPrefab == null) return;
 
             Vector3 spawnPos = spawnPoint.position + Random.insideUnitSphere * spawnRadius;
-            spawnPos.y = spawnPoint.position.y; // Keep on ground level
+            spawnPos.y = spawnPoint.position.y;
 
             GameObject popObj = Instantiate(popPrefab, spawnPos, Quaternion.identity);
             Pop pop = popObj.GetComponent<Pop>();
@@ -104,16 +146,30 @@ namespace Lineage.Ancestral.Legacies.Managers
             if (pop != null)
             {
                 pop.name = GenerateRandomName();
-                pop.transform.localScale = Vector3.one * Random.Range(0.9f, 1.1f); // Randomize size slightly
+                pop.transform.localScale = Vector3.one * Random.Range(0.9f, 1.1f);
                 livingPops.Add(pop);
                 currentPopulation++;
                 OnPopulationChanged?.Invoke(currentPopulation);
                 Log.Info($"New pop spawned: {pop.name}", Log.LogCategory.Population);
             }
-        }
-
-        public Pop SpawnPopAt(Vector3 position)
+        }        public Pop SpawnPopAt(Vector3 position)
         {
+            var settlementManager = FindFirstObjectByType<SettlementManager>();
+            if (settlementManager != null)
+            {
+                // Use SettlementManager's spawning but return the new pop
+                var originalPos = spawnPoint.position;
+                spawnPoint.position = position;
+                
+                settlementManager.SpawnPop();
+                
+                spawnPoint.position = originalPos;
+                
+                var allPops = settlementManager.GetAllPops();
+                return allPops.Count > 0 ? allPops[allPops.Count - 1] : null;
+            }
+
+            // Legacy behavior
             if (currentPopulation >= populationCap || popPrefab == null) return null;
 
             GameObject popObj = Instantiate(popPrefab, position, Quaternion.identity);
@@ -129,10 +185,16 @@ namespace Lineage.Ancestral.Legacies.Managers
             }
             
             return pop;
-        }
-
-        public void KillPop(Pop pop)
+        }        public void KillPop(Pop pop)
         {
+            var settlementManager = FindFirstObjectByType<SettlementManager>();
+            if (settlementManager != null)
+            {
+                settlementManager.KillPop(pop);
+                return;
+            }
+
+            // Legacy behavior
             if (livingPops.Contains(pop))
             {
                 livingPops.Remove(pop);
@@ -154,11 +216,22 @@ namespace Lineage.Ancestral.Legacies.Managers
                 OnPopulationChanged?.Invoke(currentPopulation);
                 Log.Info($"Pop {pop.name} died naturally. Population: {currentPopulation}", Log.LogCategory.Population);
             }
-        }
-
-        public bool ImproveShelter(float faithCost = 10f)
+        }        public bool ImproveShelter(float faithCost = 10f)
         {
-            if (ResourceManager.Instance.ConsumeFaith(faithCost))
+            var settlementManager = FindFirstObjectByType<SettlementManager>();
+            if (settlementManager != null)
+            {
+                if (ResourceManager.Instance != null && ResourceManager.Instance.ConsumeFaith(faithCost))
+                {
+                    settlementManager.UpgradePopulationCap(1);
+                    Log.Info($"Shelter improved! Population cap increased to {settlementManager.PopulationCap}", Log.LogCategory.Population);
+                    return true;
+                }
+                return false;
+            }
+
+            // Legacy behavior
+            if (ResourceManager.Instance != null && ResourceManager.Instance.ConsumeFaith(faithCost))
             {
                 populationCap++;
                 OnPopulationCapChanged?.Invoke(populationCap);
@@ -172,10 +245,14 @@ namespace Lineage.Ancestral.Legacies.Managers
         {
             string[] names = { "Kael", "Mira", "Thane", "Zara", "Bren", "Lyra", "Dak", "Nira", "Vor", "Tessa" };
             return names[Random.Range(0, names.Length)];
-        }
-
-        public List<Pop> GetLivingPops()
+        }        public List<Pop> GetLivingPops()
         {
+            var settlementManager = FindFirstObjectByType<SettlementManager>();
+            if (settlementManager != null)
+            {
+                return settlementManager.GetAllPops();
+            }
+            
             return new List<Pop>(livingPops);
         }
     }

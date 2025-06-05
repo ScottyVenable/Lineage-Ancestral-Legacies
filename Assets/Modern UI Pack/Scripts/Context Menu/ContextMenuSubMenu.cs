@@ -47,12 +47,13 @@ namespace Michsky.MUIP
                     if (trigger != null) { trigger.SetActive(true); } 
                 }
             }
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
+        }        public void OnPointerEnter(PointerEventData eventData)
         {
             foreach (Transform child in itemParent)
+            {
+                child.gameObject.SetActive(false);
                 Destroy(child.gameObject);
+            }
 
             for (int i = 0; i < cmContent.contexItems[subMenuIndex].subMenuItems.Count; ++i)
             {

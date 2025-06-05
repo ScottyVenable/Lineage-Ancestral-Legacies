@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Lineage.Ancestral.Legacies.Database;
-using UnityEditor.EditorTools;
 
 namespace Lineage.Ancestral.Legacies.Components
 {
