@@ -24,7 +24,12 @@ namespace Lineage.Ancestral.Legacies.Database
             Interacting = 12,
             Trading = 13,
             Talking = 14,
-            Searching = 15
+            Searching = 15,
+            Gathering = 16,
+            Hunting = 17,
+            Fishing = 18,
+            Praying = 19,
+            Foraging = 20
         }
 
         public int stateID;

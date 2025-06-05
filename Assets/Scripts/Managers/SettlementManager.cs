@@ -208,7 +208,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                     entityData.ModifyStat(Stat.ID.Health, 1f * Time.deltaTime);
                     break;
                     
-                case State.ID.Socializing:
+                case State.ID.Praying:
                     AddResource("Faith", 0.2f * Time.deltaTime * _resourceGenerationMultiplier);
                     break;
             }

@@ -310,7 +310,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 case State.ID.Defending when hasTerritory:
                     DefendTerritory(entity);
                     break;
-                case State.ID.Socializing when canSocialize:
+                case State.ID.Talking when canSocialize:
                     EngageInSocialBehavior(entity);
                     break;
                 case State.ID.Crafting when canCraft:

@@ -294,7 +294,20 @@ namespace Lineage.Ancestral.Legacies.Entities
             switch (statID)
             { case Stat.ID.Health:
                     // Convert Health struct to Stat struct
-                    return new Stat(Stat.ID.Health, "Health", _entityData.health.current, 0f, _entityData.health.max, Stat.StatType.Primary, "Entity health points");
+                    return new Stat
+                    {
+                        statID = Stat.ID.Health,
+                        statName = "Health",
+                        statDescription = "Entity health points",
+                        statType = StatType.Core,
+                        baseValue = _entityData.health.current,
+                        currentValue = _entityData.health.current,
+                        minValue = 0f,
+                        maxValue = _entityData.health.max
+                        
+                    };
+
+                    
 
                 case Stat.ID.Mana: return _entityData.mana;
                 case Stat.ID.Stamina: return _entityData.stamina;
