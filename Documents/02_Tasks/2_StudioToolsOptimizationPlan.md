@@ -8,7 +8,7 @@ This plan details the steps to complete and optimize your StudioTools suite for 
 
 **Goal:** Establish solid data structures and efficient game data persistence.
 
-- [ ] **Finalize `Database.cs` Data Types**  
+- [x] **Finalize `Database.cs` Data Types**  
     - Review all structs/classes in `Database.cs`.  
     - Convert large/complex data holders (e.g., `Entity`, `Item`, `Quest`, `NPC`) to classes.  
     - Use structs only for small, value-like types (e.g., `Health`, `StatModifiers`, `EntitySize`).  
