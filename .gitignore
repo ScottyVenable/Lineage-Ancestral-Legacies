@@ -23,9 +23,9 @@
 ExportedObj/
 .vs/
 .vscode/
-*.csproj
+# *.csproj  # Commented out to include custom assembly .csproj files
 *.unityproj
-*.sln
+# *.sln     # Commented out to include solution files
 *.suo
 *.tmp
 *.user
