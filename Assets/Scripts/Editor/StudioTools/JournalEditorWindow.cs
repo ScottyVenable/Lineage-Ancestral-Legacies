@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using Lineage.Ancestral.Legacies.Database;
+using Lineage.Ancestral.Legacies.Debug;
+
 
 namespace Lineage.Core.Editor.Studio
 {
@@ -971,7 +973,7 @@ namespace Lineage.Core.Editor.Studio
             isCreatingNew = false;
             MarkDirty();
             
-            Debug.Log($"[Journal Editor] Created new entry: {currentEntry.title}");
+            Log.Info($"[Journal Editor] Created new entry: {currentEntry.title}", Log.LogCategory.Systems);
         }
 
         private void CancelNewEntry()
@@ -1082,7 +1084,7 @@ namespace Lineage.Core.Editor.Studio
             }
             
             MarkDirty();
-            Debug.Log($"[Journal Editor] Generated {timelineEvents.Count} timeline events from entries.");
+            Log.Info($"[Journal Editor] Generated {timelineEvents.Count} timeline events from entries.", Log.LogCategory.Systems);
         }
 
         private TimelineEventType ConvertToTimelineEventType(JournalEntryType entryType)
@@ -1167,12 +1169,12 @@ namespace Lineage.Core.Editor.Studio
                         templates = templates 
                     }, true);
                     System.IO.File.WriteAllText(path, json);
-                    Debug.Log($"[Journal Editor] Exported {allEntries.Count} entries to {path}");
+                    Log.Info($"[Journal Editor] Exported {allEntries.Count} entries to {path}", Log.LogCategory.Systems);
                     EditorUtility.DisplayDialog("Export Complete", $"Successfully exported {allEntries.Count} entries.", "OK");
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError($"[Journal Editor] Export failed: {e.Message}");
+                    Log.Error($"[Journal Editor] Export failed: {e.Message}", Log.LogCategory.Systems);
                     EditorUtility.DisplayDialog("Export Failed", $"Failed to export entries: {e.Message}", "OK");
                 }
             }
@@ -1195,13 +1197,13 @@ namespace Lineage.Core.Editor.Studio
                         templates.AddRange(data.templates ?? new List<JournalTemplate>());
                         
                         MarkDirty();
-                        Debug.Log($"[Journal Editor] Imported entries from {path}");
+                        Log.Info($"[Journal Editor] Imported entries from {path}", Log.LogCategory.Systems);
                         EditorUtility.DisplayDialog("Import Complete", "Successfully imported entries.", "OK");
                     }
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError($"[Journal Editor] Import failed: {e.Message}");
+                    Log.Error($"[Journal Editor] Import failed: {e.Message}",Log.LogCategory.Systems);
                     EditorUtility.DisplayDialog("Import Failed", $"Failed to import entries: {e.Message}", "OK");
                 }
             }
@@ -1215,7 +1217,7 @@ namespace Lineage.Core.Editor.Studio
         private void SaveData()
         {
             // Save to GameData or EditorPrefs
-            Debug.Log("[Journal Editor] Data saved successfully.");
+            Log.Info("[Journal Editor] Data saved successfully.", Log.LogCategory.Systems);
             isDirty = false;
         }
 
@@ -1227,8 +1229,8 @@ namespace Lineage.Core.Editor.Studio
                 CreateNewEntry();
                 SaveNewEntry();
             }
-            
-            Debug.Log("[Journal Editor] Data loaded successfully.");
+
+            Log.Info("[Journal Editor] Data loaded successfully.", Log.LogCategory.Systems);
         }
 
         #endregion

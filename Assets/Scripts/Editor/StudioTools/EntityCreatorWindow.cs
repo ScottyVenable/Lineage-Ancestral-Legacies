@@ -194,7 +194,7 @@ namespace Lineage.Core.Editor.Studio
             entityID = (ID)EditorGUILayout.EnumPopup(entityID);
             
             GUILayout.Label("Entity Size:");
-            entitySize = (EntitySize)EditorGUILayout.EnumPopup("Size", entitySize);
+            entitySize = (EntitySize)EditorGUILayout.EnumPopup(entitySize);
             
             GUILayout.Label("Aggression Type:");
             aggressionType = (AggressionType)EditorGUILayout.EnumPopup(aggressionType);

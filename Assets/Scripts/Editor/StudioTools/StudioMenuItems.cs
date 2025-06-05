@@ -80,7 +80,7 @@ namespace Lineage.Core.Editor.Studio
         [MenuItem(STUDIO_MENU_ROOT + "Content Creation/Lore & Narrative Designer", priority = MENU_PRIORITY_BASE + 105)]
         public static void OpenLoreDesigner()
         {
-            Lineage.Editor.LoreDesignerWindow.ShowWindow();
+            Lineage.Core.Editor.Studio.LoreDesignerWindow.ShowWindow();
         }
 
         #endregion

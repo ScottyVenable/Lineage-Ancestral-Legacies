@@ -814,10 +814,9 @@ namespace Lineage.Core.Editor.Studio
                     
                     importPreview.Add(previewItem);
                 }
-            }
-            catch (System.Exception ex)
+            }            catch (System.Exception ex)
             {
-                Debug.LogError($"Error generating import preview: {ex.Message}");
+                UnityEngine.Debug.LogError($"Error generating import preview: {ex.Message}");
                 EditorUtility.DisplayDialog("Import Error", $"Failed to preview import file:\n{ex.Message}", "OK");
             }
         }
@@ -870,10 +869,9 @@ namespace Lineage.Core.Editor.Studio
                         break;
                     // Add other database types as needed
                 }
-            }
-            catch (System.Exception ex)
+            }            catch (System.Exception ex)
             {
-                Debug.LogError($"JSON parsing error: {ex.Message}");
+                UnityEngine.Debug.LogError($"JSON parsing error: {ex.Message}");
             }
             
             return data;
@@ -949,11 +947,10 @@ namespace Lineage.Core.Editor.Studio
                 EditorUtility.DisplayDialog("Import Complete", $"Successfully imported {imported} records.", "OK");
             }
             catch (System.Exception ex)
-            {
-                operation.success = false;
+            {                operation.success = false;
                 operation.errorMessage = ex.Message;
                 
-                Debug.LogError($"Import failed: {ex.Message}");
+                UnityEngine.Debug.LogError($"Import failed: {ex.Message}");
                 EditorUtility.DisplayDialog("Import Failed", $"Import failed:\n{ex.Message}", "OK");
             }
             
@@ -972,9 +969,8 @@ namespace Lineage.Core.Editor.Studio
                         {
                             case ImportMode.Add:
                                 GameData.entityDatabase.Add(entity);
-                                break;
-                            case ImportMode.Replace:
-                                var existingIndex = GameData.entityDatabase.FindIndex(e => e.name == entity.name);
+                                break;                            case ImportMode.Replace:
+                                var existingIndex = GameData.entityDatabase.FindIndex(e => e.entityName == entity.entityName);
                                 if (existingIndex >= 0)
                                     GameData.entityDatabase[existingIndex] = entity;
                                 else
@@ -1029,11 +1025,10 @@ namespace Lineage.Core.Editor.Studio
                 EditorUtility.DisplayDialog("Export Complete", $"Successfully exported {data.Count} records to:\n{exportPath}", "OK");
             }
             catch (System.Exception ex)
-            {
-                operation.success = false;
+            {                operation.success = false;
                 operation.errorMessage = ex.Message;
                 
-                Debug.LogError($"Export failed: {ex.Message}");
+                UnityEngine.Debug.LogError($"Export failed: {ex.Message}");
                 EditorUtility.DisplayDialog("Export Failed", $"Export failed:\n{ex.Message}", "OK");
             }
             
@@ -1154,16 +1149,16 @@ namespace Lineage.Core.Editor.Studio
         {
             switch (entity)
             {
-                case Entity e: return e.name;
-                case Item i: return i.name;
-                case Trait t: return t.name;
-                case Quest q: return q.title;
-                case NPC n: return n.name;
-                case Skill s: return s.name;
-                case Buff b: return b.name;
-                case QuestObjective o: return o.description;
-                case Stat s: return s.name;
-                case GeneticTrait g: return g.name;
+                case Entity e: return e.entityName;
+                case Item i: return i.itemName;
+                case Trait t: return t.traitName;
+                case Quest q: return q.questName;
+                case NPC n: return n.npcName;
+                case Skill s: return s.skillType.ToString();
+                case Buff b: return b.buffName;
+                case Objective o: return o.description;
+                case Stat s: return s.statName;
+                case Genetics g: return g.geneType.ToString();
                 case JournalEntry j: return j.title;
                 default: return entity?.ToString() ?? "Unknown";
             }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -659,17 +660,14 @@ namespace Lineage.Core.Editor.Studio
         {
             switch (entity)
             {
-                case Entity e: return e.name;
-                case Item i: return i.name;
-                case Trait t: return t.name;
-                case Quest q: return q.title;
-                case NPC n: return n.name;
-                case Skill s: return s.name;
-                case Buff b: return b.name;
-                case QuestObjective o: return o.description;
-                case Stat s: return s.name;
-                case GeneticTrait g: return g.name;
-                case JournalEntry j: return j.title;
+                case Entity e: return e.entityName;
+                case Item i: return i.itemName;
+                case Trait t: return t.traitName;
+                case Quest q: return q.questName;
+                case NPC n: return n.npcName;
+                case Skill s: return s.skillName.ToString();
+                case Buff b: return b.buffName;
+                case Stat st: return st.statName;
                 default: return entity?.ToString() ?? "Unknown";
             }
         }
@@ -678,6 +676,9 @@ namespace Lineage.Core.Editor.Studio
         {
             searchResults.Clear();
             
+            if (string.IsNullOrWhiteSpace(searchQuery))
+                return;
+                
             var allEntities = GetAllEntitiesForScope();
             
             foreach (var entity in allEntities)
@@ -716,25 +717,25 @@ namespace Lineage.Core.Editor.Studio
                 entities.AddRange(GameData.geneticsDatabase.Cast<object>());
             if (searchScope == SearchScope.All || searchScope == SearchScope.Journal)
                 entities.AddRange(GameData.journalDatabase.Cast<object>());
-            
+                
             return entities;
         }
 
         private SearchResult SearchEntity(object entity)
         {
-            string entityName = GetEntityDisplayName(entity);
-            
             bool matches = false;
             string matchingContent = "";
             string propertyName = "";
+            string entityName = GetEntityDisplayName(entity);
             
             switch (searchType)
             {
                 case SearchType.Global:
-                    matches = SearchInAllProperties(entity, out matchingContent, out propertyName);
+                    matches = SearchInName(entityName) || SearchInAllProperties(entity, out matchingContent, out propertyName);
                     break;
                 case SearchType.ByName:
                     matches = SearchInName(entityName);
+                    matchingContent = entityName;
                     break;
                 case SearchType.ByProperty:
                     matches = SearchInSpecificProperty(entity, out matchingContent, out propertyName);
@@ -765,20 +766,31 @@ namespace Lineage.Core.Editor.Studio
             matchingContent = "";
             propertyName = "";
             
-            var properties = entity.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+            if (entity == null)
+                return false;
+                
+            Type type = entity.GetType();
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             
             foreach (var prop in properties)
             {
-                var value = prop.GetValue(entity);
-                if (value != null)
+                try
                 {
-                    string valueStr = value.ToString();
-                    if (MatchesQuery(valueStr))
+                    var value = prop.GetValue(entity);
+                    if (value != null)
                     {
-                        matchingContent = valueStr;
-                        propertyName = prop.Name;
-                        return true;
+                        string stringValue = value.ToString();
+                        if (MatchesQuery(stringValue))
+                        {
+                            matchingContent = stringValue;
+                            propertyName = prop.Name;
+                            return true;
+                        }
                     }
+                }
+                catch (Exception)
+                {
+                    // Skip properties that throw exceptions when accessed
                 }
             }
             
@@ -787,7 +799,7 @@ namespace Lineage.Core.Editor.Studio
 
         private bool SearchInName(string entityName)
         {
-            return MatchesQuery(entityName);
+            return !string.IsNullOrEmpty(entityName) && MatchesQuery(entityName);
         }
 
         private bool SearchInSpecificProperty(object entity, out string matchingContent, out string propertyName)
@@ -795,7 +807,43 @@ namespace Lineage.Core.Editor.Studio
             matchingContent = "";
             propertyName = "";
             
-            // This would need to be customized based on specific property searches
+            if (entity == null)
+                return false;
+                
+            // In a real implementation, you might want to show a dropdown to select which property to search
+            // For simplicity, let's search commonly used properties like "name", "description", etc.
+            string[] commonProperties = { "name", "description", "title", "content", "text", "value" };
+            
+            Type type = entity.GetType();
+            
+            foreach (var commonProp in commonProperties)
+            {
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                   .Where(p => p.Name.ToLower().Contains(commonProp));
+                
+                foreach (var prop in properties)
+                {
+                    try
+                    {
+                        var value = prop.GetValue(entity);
+                        if (value != null)
+                        {
+                            string stringValue = value.ToString();
+                            if (MatchesQuery(stringValue))
+                            {
+                                matchingContent = stringValue;
+                                propertyName = prop.Name;
+                                return true;
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Skip properties that throw exceptions when accessed
+                    }
+                }
+            }
+            
             return false;
         }
 
@@ -803,21 +851,16 @@ namespace Lineage.Core.Editor.Studio
         {
             matchingContent = "";
             
-            // Search in description/content fields
-            var contentFields = new[] { "description", "content", "text", "details" };
-            var properties = entity.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+            if (entity == null)
+                return false;
+                
+            // Convert entity to JSON or string representation to search through all its content
+            string entityContent = JsonUtility.ToJson(entity);
             
-            foreach (var prop in properties)
+            if (MatchesQuery(entityContent))
             {
-                if (contentFields.Contains(prop.Name.ToLower()))
-                {
-                    var value = prop.GetValue(entity);
-                    if (value != null && MatchesQuery(value.ToString()))
-                    {
-                        matchingContent = value.ToString();
-                        return true;
-                    }
-                }
+                matchingContent = entityContent.Substring(0, Math.Min(50, entityContent.Length)) + "...";
+                return true;
             }
             
             return false;
@@ -827,20 +870,25 @@ namespace Lineage.Core.Editor.Studio
         {
             if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(searchQuery))
                 return false;
-            
-            var comparison = caseSensitive ? System.StringComparison.Ordinal : System.StringComparison.OrdinalIgnoreCase;
+                
+            StringComparison comparison = caseSensitive ? 
+                StringComparison.Ordinal : 
+                StringComparison.OrdinalIgnoreCase;
             
             if (useRegex)
             {
                 try
                 {
-                    var regex = new System.Text.RegularExpressions.Regex(searchQuery, 
-                        caseSensitive ? System.Text.RegularExpressions.RegexOptions.None : System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    var regex = new System.Text.RegularExpressions.Regex(
+                        searchQuery, 
+                        caseSensitive ? System.Text.RegularExpressions.RegexOptions.None : System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                    );
                     return regex.IsMatch(text);
                 }
                 catch
                 {
-                    return false;
+                    // If regex pattern is invalid, fall back to simple string comparison
+                    return text.IndexOf(searchQuery, comparison) >= 0;
                 }
             }
             else
@@ -851,25 +899,47 @@ namespace Lineage.Core.Editor.Studio
 
         private float CalculateRelevanceScore(string entityName, string matchingContent)
         {
-            float score = 0f;
+            float score = 1.0f;
             
-            if (entityName.IndexOf(searchQuery, System.StringComparison.OrdinalIgnoreCase) >= 0)
-                score += 1.0f;
+            // Boost score if the match is in the entity name
+            if (entityName.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                score += 2.0f;
+                
+                // Even higher score for exact name match
+                if (string.Equals(entityName, searchQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    score += 3.0f;
+                }
+            }
             
+            // Add score based on matching content
             if (!string.IsNullOrEmpty(matchingContent))
             {
-                int index = matchingContent.IndexOf(searchQuery, System.StringComparison.OrdinalIgnoreCase);
+                int index = matchingContent.IndexOf(searchQuery, StringComparison.OrdinalIgnoreCase);
                 if (index >= 0)
                 {
-                    // Earlier matches get higher scores
-                    score += 0.5f * (1.0f - (float)index / matchingContent.Length);
+                    // Higher score if match is at the beginning of a field
+                    if (index == 0)
+                    {
+                        score += 1.0f;
+                    }
+                    
+                    // Add score for multiple matches
+                    int matchCount = 0;
+                    int startIndex = 0;
+                    while ((startIndex = matchingContent.IndexOf(searchQuery, startIndex, StringComparison.OrdinalIgnoreCase)) >= 0)
+                    {
+                        matchCount++;
+                        startIndex += searchQuery.Length;
+                    }
+                    
+                    score += matchCount * 0.2f;
                 }
             }
             
             return score;
-        }
-
-        private string GetDatabaseType(object entity)
+        }        private string GetDatabaseType(object entity)
         {
             switch (entity)
             {
@@ -880,10 +950,10 @@ namespace Lineage.Core.Editor.Studio
                 case NPC: return "NPC";
                 case Skill: return "Skill";
                 case Buff: return "Buff";
-                case QuestObjective: return "Objective";
                 case Stat: return "Stat";
-                case GeneticTrait: return "Genetic";
                 case JournalEntry: return "Journal";
+                case Genetics: return "Genetics";
+                case Objective: return "Objective";
                 default: return "Unknown";
             }
         }
@@ -892,15 +962,108 @@ namespace Lineage.Core.Editor.Studio
         {
             relationships.Clear();
             
-            if (selectedEntity == null) return;
+            if (selectedEntity == null)
+                return;
+                
+            // Find incoming relationships (where other entities reference this one)
+            if (showIncomingRefs)
+            {
+                var allEntities = GetAllEntitiesForScope();
+                foreach (var entity in allEntities)
+                {
+                    if (entity == selectedEntity)
+                        continue;
+                        
+                    FindRelationships(entity, selectedEntity, true);
+                }
+            }
             
-            // This would analyze relationships between entities
-            // For now, this is a placeholder implementation
+            // Find outgoing relationships (where this entity references others)
+            if (showOutgoingRefs)
+            {
+                var allEntities = GetAllEntitiesForScope();
+                foreach (var entity in allEntities)
+                {
+                    if (entity == selectedEntity)
+                        continue;
+                        
+                    FindRelationships(selectedEntity, entity, false);
+                }
+            }
+        }
+        
+        private void FindRelationships(object fromEntity, object toEntity, bool isIncoming)
+        {
+            if (fromEntity == null || toEntity == null)
+                return;
+                
+            Type fromType = fromEntity.GetType();
+            string toEntityName = GetEntityDisplayName(toEntity);
             
-            // TODO: Implement comprehensive relationship analysis
-            // - Find references to this entity in other entities
-            // - Find entities this entity references
-            // - Build dependency graph
+            // Check reference properties
+            foreach (var prop in fromType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                try
+                {
+                    // Skip complex types that might cause stack overflows
+                    if (prop.PropertyType == typeof(UnityEngine.Object))
+                        continue;
+                        
+                    var value = prop.GetValue(fromEntity);
+                    
+                    // Check if property directly references the target entity
+                    if (value == toEntity)
+                    {
+                        relationships.Add(new RelationshipInfo
+                        {
+                            fromEntity = fromEntity,
+                            toEntity = toEntity,
+                            relationshipType = "Direct Reference",
+                            propertyPath = prop.Name,
+                            isIncoming = isIncoming
+                        });
+                        continue;
+                    }
+                    
+                    // Check if it's a string property containing the entity's name
+                    if (value is string strValue && toEntityName != null)
+                    {
+                        if (strValue.Contains(toEntityName))
+                        {
+                            relationships.Add(new RelationshipInfo
+                            {
+                                fromEntity = fromEntity,
+                                toEntity = toEntity,
+                                relationshipType = "Name Reference",
+                                propertyPath = prop.Name,
+                                isIncoming = isIncoming
+                            });
+                            continue;
+                        }
+                    }
+                    
+                    // Check if it's a collection containing the entity
+                    if (value is IEnumerable<object> collection)
+                    {
+                        if (collection.Contains(toEntity))
+                        {
+                            relationships.Add(new RelationshipInfo
+                            {
+                                fromEntity = fromEntity,
+                                toEntity = toEntity,
+                                relationshipType = "Collection Reference",
+                                propertyPath = prop.Name,
+                                isIncoming = isIncoming
+                            });
+                            continue;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Skip properties that throw exceptions when accessed
+                }
+            }
         }
 
         private void CalculateStatistics()
@@ -923,24 +1086,117 @@ namespace Lineage.Core.Editor.Studio
 
         private void CalculateDatabaseStatistics(string databaseName, List<object> entities)
         {
-            var stats = new DatabaseStatistics
-            {
-                totalEntries = entities.Count,
-                propertyUsage = new Dictionary<string, int>(),
-                duplicateEntries = new List<string>(),
-                extremeValues = new Dictionary<string, object>()
-            };
+            var stats = new DatabaseStatistics();
             
             if (entities.Count > 0)
             {
+                stats.totalEntries = entities.Count;
+                
                 // Calculate average properties per entry
                 int totalProperties = 0;
                 foreach (var entity in entities)
                 {
-                    var properties = entity.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
-                    totalProperties += properties.Length;
+                    if (entity != null)
+                    {
+                        var type = entity.GetType();
+                        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                        totalProperties += properties.Length;
+                    }
                 }
-                stats.avgPropertiesPerEntry = totalProperties / entities.Count;
+                stats.avgPropertiesPerEntry = totalProperties / Math.Max(1, entities.Count);
+                
+                // Track property usage
+                stats.propertyUsage = new Dictionary<string, int>();
+                foreach (var entity in entities)
+                {
+                    if (entity != null)
+                    {
+                        var type = entity.GetType();
+                        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                        foreach (var prop in properties)
+                        {
+                            string propName = prop.Name;
+                            if (!stats.propertyUsage.ContainsKey(propName))
+                            {
+                                stats.propertyUsage[propName] = 0;
+                            }
+                            stats.propertyUsage[propName]++;
+                        }
+                    }
+                }
+                
+                // Check for duplicates based on names
+                stats.duplicateEntries = new List<string>();
+                var nameSet = new HashSet<string>();
+                foreach (var entity in entities)
+                {
+                    string name = GetEntityDisplayName(entity);
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        if (nameSet.Contains(name))
+                        {
+                            stats.duplicateEntries.Add(name);
+                        }
+                        else
+                        {
+                            nameSet.Add(name);
+                        }
+                    }
+                }
+                
+                // Track extreme values
+                stats.extremeValues = new Dictionary<string, object>();
+                // Example: find max/min values for common number properties
+                foreach (var entity in entities)
+                {
+                    if (entity != null)
+                    {
+                        var type = entity.GetType();
+                        
+                        // Look for some common properties like level, value, etc.
+                        string[] commonNumericProps = { "level", "value", "health", "power", "count", "amount" };
+                        
+                        foreach (var propName in commonNumericProps)
+                        {
+                            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                .Where(p => p.Name.ToLower().Contains(propName));
+                            
+                            foreach (var prop in properties)
+                            {
+                                try
+                                {
+                                    var value = prop.GetValue(entity);
+                                    if (value is float || value is int || value is double)
+                                    {
+                                        // Convert to double for comparison
+                                        double numValue = Convert.ToDouble(value);
+                                        
+                                        string maxPropKey = $"max_{prop.Name}";
+                                        string minPropKey = $"min_{prop.Name}";
+                                        
+                                        // Update max value
+                                        if (!stats.extremeValues.ContainsKey(maxPropKey) || 
+                                            numValue > Convert.ToDouble(stats.extremeValues[maxPropKey]))
+                                        {
+                                            stats.extremeValues[maxPropKey] = value;
+                                        }
+                                        
+                                        // Update min value
+                                        if (!stats.extremeValues.ContainsKey(minPropKey) || 
+                                            numValue < Convert.ToDouble(stats.extremeValues[minPropKey]))
+                                        {
+                                            stats.extremeValues[minPropKey] = value;
+                                        }
+                                    }
+                                }
+                                catch (Exception)
+                                {
+                                    // Skip properties that throw exceptions when accessed
+                                }
+                            }
+                        }
+                    }
+                }
             }
             
             databaseStats[databaseName] = stats;
@@ -950,7 +1206,6 @@ namespace Lineage.Core.Editor.Studio
         {
             integrityIssues.Clear();
             
-            // Check for common integrity issues
             CheckForMissingReferences();
             CheckForDuplicateEntries();
             CheckForInvalidData();
@@ -959,89 +1214,506 @@ namespace Lineage.Core.Editor.Studio
 
         private void CheckForMissingReferences()
         {
-            // TODO: Implement missing reference checks
+            // Example: Check if quests reference valid objectives
+            foreach (var quest in GameData.questDatabase)
+            {
+                if (quest.objectives != null)
+                {
+                    foreach (var objective in quest.objectives)
+                    {
+                        if (GameData.objectiveDatabase.Find(o => o.objectiveID == objective.objectiveID).objectiveID == 0)
+                        {
+                            integrityIssues.Add(new IntegrityIssue
+                            {
+                                severity = SeverityLevel.Warning,
+                                issueType = "Missing Objective Reference",
+                                description = $"Quest '{quest.questName}' references an objective with ID {objective.objectiveID} that doesn't exist in the database.",
+                                relatedEntity = quest,
+                                suggestedFix = "Remove the invalid objective reference or create the missing objective."
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Check if items reference valid items in their requiredItems list
+            foreach (var trait in GameData.traitDatabase)
+            {
+                if (trait.requiredItems != null)
+                {
+                    foreach (var itemID in trait.requiredItems)
+                    {
+                        if (GameData.GetItemByID(itemID).itemID == 0)
+                        {
+                            integrityIssues.Add(new IntegrityIssue
+                            {
+                                severity = SeverityLevel.Warning,
+                                issueType = "Missing Item Reference",
+                                description = $"Trait '{trait.traitName}' requires an item with ID {itemID} that doesn't exist in the database.",
+                                relatedEntity = trait,
+                                suggestedFix = "Remove the invalid item reference or create the missing item."
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // More reference checks could be added here
         }
 
         private void CheckForDuplicateEntries()
         {
-            // TODO: Implement duplicate entry checks
+            // Check for duplicate entity names
+            var entityNames = new Dictionary<string, List<Entity>>();
+            foreach (var entity in GameData.entityDatabase)
+            {
+                if (!string.IsNullOrEmpty(entity.entityName))
+                {
+                    if (!entityNames.ContainsKey(entity.entityName))
+                    {
+                        entityNames[entity.entityName] = new List<Entity>();
+                    }
+                    entityNames[entity.entityName].Add(entity);
+                }
+            }
+            
+            foreach (var kvp in entityNames)
+            {
+                if (kvp.Value.Count > 1)
+                {
+                    integrityIssues.Add(new IntegrityIssue
+                    {
+                        severity = SeverityLevel.Warning,
+                        issueType = "Duplicate Entity Name",
+                        description = $"There are {kvp.Value.Count} entities with the name '{kvp.Key}'.",
+                        relatedEntity = kvp.Value[0],
+                        suggestedFix = "Rename the entities to ensure unique names."
+                    });
+                }
+            }
+            
+            // Check for duplicate item names
+            var itemNames = new Dictionary<string, List<Item>>();
+            foreach (var item in GameData.itemDatabase)
+            {
+                if (!string.IsNullOrEmpty(item.itemName))
+                {
+                    if (!itemNames.ContainsKey(item.itemName))
+                    {
+                        itemNames[item.itemName] = new List<Item>();
+                    }
+                    itemNames[item.itemName].Add(item);
+                }
+            }
+            
+            foreach (var kvp in itemNames)
+            {
+                if (kvp.Value.Count > 1)
+                {
+                    integrityIssues.Add(new IntegrityIssue
+                    {
+                        severity = SeverityLevel.Warning,
+                        issueType = "Duplicate Item Name",
+                        description = $"There are {kvp.Value.Count} items with the name '{kvp.Key}'.",
+                        relatedEntity = kvp.Value[0],
+                        suggestedFix = "Rename the items to ensure unique names."
+                    });
+                }
+            }
+            
+            // More duplicate checks could be added here
         }
 
         private void CheckForInvalidData()
         {
-            // TODO: Implement invalid data checks
+            // Check for entities with empty names
+            foreach (var entity in GameData.entityDatabase)
+            {
+                if (string.IsNullOrWhiteSpace(entity.entityName))
+                {
+                    integrityIssues.Add(new IntegrityIssue
+                    {
+                        severity = SeverityLevel.Error,
+                        issueType = "Invalid Entity Name",
+                        description = $"Entity with ID {entity.entityID} has an empty name.",
+                        relatedEntity = entity,
+                        suggestedFix = "Set a valid name for the entity."
+                    });
+                }
+            }
+            
+            // Check for entities with invalid stat values
+            foreach (var entity in GameData.entityDatabase)
+            {                // Check for valid health - this depends on your Health class structure
+                // This is just a placeholder check
+                var healthProp = entity.GetType().GetField("health");
+                if (healthProp != null)
+                {
+                    var health = healthProp.GetValue(entity);
+                    if (health != null && health.ToString().Contains("-"))
+                    {
+                        integrityIssues.Add(new IntegrityIssue
+                        {
+                            severity = SeverityLevel.Warning,
+                            issueType = "Invalid Health Value",
+                            description = $"Entity '{entity.entityName}' may have a negative health value.",
+                            relatedEntity = entity,
+                            suggestedFix = "Set a non-negative health value."
+                        });
+                    }
+                }
+            }
+            
+            // Check for items with invalid values
+            foreach (var item in GameData.itemDatabase)
+            {
+                if (item.value < 0)
+                {
+                    integrityIssues.Add(new IntegrityIssue
+                    {
+                        severity = SeverityLevel.Info,
+                        issueType = "Negative Item Value",
+                        description = $"Item '{item.itemName}' has a negative value: {item.value}.",
+                        relatedEntity = item,
+                        suggestedFix = "Set a non-negative value for the item."
+                    });
+                }
+                
+                if (item.weight < 0)
+                {
+                    integrityIssues.Add(new IntegrityIssue
+                    {
+                        severity = SeverityLevel.Info,
+                        issueType = "Negative Item Weight",
+                        description = $"Item '{item.itemName}' has a negative weight: {item.weight}.",
+                        relatedEntity = item,
+                        suggestedFix = "Set a non-negative weight for the item."
+                    });
+                }
+            }
+            
+            // More invalid data checks could be added here
         }
 
         private void CheckForCircularReferences()
         {
-            // TODO: Implement circular reference checks
+            // Example: Check for circular dependencies in traits requiring other traits
+            foreach (var trait in GameData.traitDatabase)
+            {
+                if (trait.requiredTraits != null && trait.requiredTraits.Count > 0)
+                {
+                    CheckTraitCircularDependency(trait, new HashSet<Trait.ID>(), new List<string>());
+                }
+            }
+        }
+        
+        private void CheckTraitCircularDependency(Trait trait, HashSet<Trait.ID> visitedTraits, List<string> path)
+        {
+            if (visitedTraits.Contains(trait.traitID))
+            {
+                // Circular dependency detected
+                path.Add(trait.traitName);
+                string pathString = string.Join(" -> ", path);
+                
+                integrityIssues.Add(new IntegrityIssue
+                {
+                    severity = SeverityLevel.Error,
+                    issueType = "Circular Trait Dependency",
+                    description = $"Circular dependency detected in trait requirements: {pathString}.",
+                    relatedEntity = trait,
+                    suggestedFix = "Break the circular dependency by removing one of the trait requirements."
+                });
+                return;
+            }
+            
+            visitedTraits.Add(trait.traitID);
+            path.Add(trait.traitName);
+            
+            foreach (var requiredTrait in trait.requiredTraits)
+            {
+                CheckTraitCircularDependency(requiredTrait, new HashSet<Trait.ID>(visitedTraits), new List<string>(path));
+            }
         }
 
         private void FixIntegrityIssues()
         {
+            List<IntegrityIssue> issuesFixed = new List<IntegrityIssue>();
+            
             foreach (var issue in integrityIssues)
             {
-                ApplyIntegrityFix(issue);
+                if (!string.IsNullOrEmpty(issue.suggestedFix))
+                {                    bool isFixed = ApplyIntegrityFix(issue);
+                    if (isFixed)
+                    {
+                        issuesFixed.Add(issue);
+                    }
+                }
             }
             
-            CheckDatabaseIntegrity(); // Re-check after fixes
+            // Remove fixed issues
+            foreach (var issue in issuesFixed)
+            {
+                integrityIssues.Remove(issue);
+            }
+            
+            if (issuesFixed.Count > 0)
+            {
+                EditorUtility.DisplayDialog("Issues Fixed", $"Fixed {issuesFixed.Count} integrity issues.", "OK");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("No Issues Fixed", "No issues could be automatically fixed.", "OK");
+            }
         }
 
-        private void ApplyIntegrityFix(IntegrityIssue issue)
+        private bool ApplyIntegrityFix(IntegrityIssue issue)
         {
-            // TODO: Implement integrity fix application
+            // Apply fixes based on issue type
+            switch (issue.issueType)
+            {
+                case "Invalid Entity Name":
+                    if (issue.relatedEntity is Entity entity)
+                    {
+                        // Generate a name based on ID
+                        var entityType = entity.GetType();
+                        var nameField = entityType.GetField("entityName");
+                        if (nameField != null)
+                        {
+                            nameField.SetValue(entity, $"Entity_{entity.entityID}");
+                            return true;
+                        }
+                    }
+                    break;
+                    
+                case "Negative Item Value":
+                    if (issue.relatedEntity is Item item && item.value < 0)
+                    {
+                        // Use reflection to set the value to 0
+                        var itemType = item.GetType();
+                        var valueField = itemType.GetField("value");
+                        if (valueField != null)
+                        {
+                            valueField.SetValue(item, 0);
+                            return true;
+                        }
+                    }
+                    break;
+                    
+                case "Negative Item Weight":
+                    if (issue.relatedEntity is Item weightItem && weightItem.weight < 0)
+                    {
+                        // Use reflection to set the weight to 0
+                        var itemType = weightItem.GetType();
+                        var weightField = itemType.GetField("weight");
+                        if (weightField != null)
+                        {
+                            weightField.SetValue(weightItem, 0f);
+                            return true;
+                        }
+                    }
+                    break;
+            }
+            
+            // No fix was applied
+            return false;
         }
 
         private void MeasurePerformance()
         {
             performanceMetrics.Clear();
             
-            // TODO: Implement performance measurement
-            // - Measure search times
-            // - Calculate memory usage
-            // - Analyze query performance
+            // Measure search performance
+            MeasureSearchPerformance("Entities", GameData.entityDatabase);
+            MeasureSearchPerformance("Items", GameData.itemDatabase);
+            MeasureSearchPerformance("Traits", GameData.traitDatabase);
+            MeasureSearchPerformance("Quests", GameData.questDatabase);
+            MeasureSearchPerformance("NPCs", GameData.npcDatabase);
+            MeasureSearchPerformance("Skills", GameData.skillDatabase);
+            MeasureSearchPerformance("Buffs", GameData.buffDatabase);
+            MeasureSearchPerformance("Objectives", GameData.objectiveDatabase);
+        }
+        
+        private void MeasureSearchPerformance<T>(string databaseName, List<T> database)
+        {
+            if (database == null || database.Count == 0)
+                return;
+                
+            var metrics = new PerformanceMetrics
+            {
+                queryTimes = new Dictionary<string, float>()
+            };
+            
+            // Measure the time it takes to search the database
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            
+            // Benchmark: full scan
+            stopwatch.Restart();
+            foreach (var item in database)
+            {
+                // Do a basic check on each item (simulates a basic search operation)
+                var type = item.GetType();
+                var properties = type.GetProperties();
+                foreach (var prop in properties.Take(5)) // Limit to first 5 props for benchmark
+                {
+                    try { var val = prop.GetValue(item); } catch { }
+                }
+            }
+            stopwatch.Stop();
+            metrics.searchTime = stopwatch.ElapsedMilliseconds;
+            metrics.queryTimes["FullScan"] = stopwatch.ElapsedMilliseconds;
+            
+            // Calculate memory usage (rough estimate)
+            int estimatedItemSize = 0;
+            T sampleItem = database[0];
+            var sampleType = sampleItem.GetType();
+            foreach (var prop in sampleType.GetProperties())
+            {
+                if (prop.PropertyType == typeof(int)) estimatedItemSize += 4;
+                else if (prop.PropertyType == typeof(float)) estimatedItemSize += 4;
+                else if (prop.PropertyType == typeof(bool)) estimatedItemSize += 1;
+                else if (prop.PropertyType == typeof(string)) estimatedItemSize += 40; // Rough estimate for a string
+                else estimatedItemSize += 8; // Rough estimate for object reference
+            }
+            
+            metrics.memoryUsage = estimatedItemSize * database.Count;
+            
+            // Estimate index size (if we were to index every property)
+            metrics.indexSize = database.Count * sampleType.GetProperties().Length * 12; // Rough estimate
+            
+            performanceMetrics[databaseName] = metrics;
         }
 
         private void OpenDatabaseEditor(string databaseName)
         {
-            DatabaseEditorWindow.ShowWindow();
+            // Open the database editor focused on the selected database
+            DatabaseEditorWindow window = EditorWindow.GetWindow<DatabaseEditorWindow>();
+            
+            // Set the selected database type - the exact implementation depends on your DatabaseEditorWindow structure
+            // This is just a placeholder implementation
+            var selectDatabaseMethod = typeof(DatabaseEditorWindow).GetMethod("SelectDatabase", 
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                
+            if (selectDatabaseMethod != null)
+            {
+                selectDatabaseMethod.Invoke(window, new object[] { databaseName });
+            }
+            else
+            {
+                // Fallback if no direct method is available
+                window.Show();
+                EditorUtility.DisplayDialog("Database Selected", 
+                    $"The database editor has been opened. Please select the '{databaseName}' database manually.", "OK");
+            }
         }
 
         private void ExportDatabaseSummary()
         {
-            string path = EditorUtility.SaveFilePanel("Export Database Summary", "", "database_summary.txt", "txt");
+            string path = EditorUtility.SaveFilePanel("Export Database Summary", "", "DatabaseSummary.txt", "txt");
             if (!string.IsNullOrEmpty(path))
             {
-                var summary = GenerateDatabaseSummary();
+                string summary = GenerateDatabaseSummary();
                 System.IO.File.WriteAllText(path, summary);
-                EditorUtility.DisplayDialog("Export Complete", $"Database summary exported to:\n{path}", "OK");
+                EditorUtility.RevealInFinder(path);
             }
         }
 
         private string GenerateDatabaseSummary()
         {
-            var summary = new System.Text.StringBuilder();
-            summary.AppendLine("Database Summary");
-            summary.AppendLine("================");
-            summary.AppendLine($"Generated: {System.DateTime.Now}");
-            summary.AppendLine();
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
             
+            sb.AppendLine("DATABASE SUMMARY REPORT");
+            sb.AppendLine("======================");
+            sb.AppendLine($"Generated: {System.DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine();
+            
+            // Database Counts
+            sb.AppendLine("DATABASE COUNTS");
+            sb.AppendLine("--------------");
             foreach (var kvp in databaseCounts)
             {
-                summary.AppendLine($"{kvp.Key}: {kvp.Value} entries");
+                sb.AppendLine($"{kvp.Key}: {kvp.Value} entries");
+            }
+            sb.AppendLine();
+            
+            // Statistics
+            if (databaseStats.Count > 0)
+            {
+                sb.AppendLine("STATISTICS");
+                sb.AppendLine("----------");
+                foreach (var kvp in databaseStats)
+                {
+                    sb.AppendLine($"{kvp.Key} Database:");
+                    sb.AppendLine($"  - Total Entries: {kvp.Value.totalEntries}");
+                    sb.AppendLine($"  - Avg Properties per Entry: {kvp.Value.avgPropertiesPerEntry}");
+                    
+                    if (kvp.Value.duplicateEntries != null && kvp.Value.duplicateEntries.Count > 0)
+                    {
+                        sb.AppendLine($"  - Duplicate Entries: {kvp.Value.duplicateEntries.Count}");
+                        foreach (var dup in kvp.Value.duplicateEntries.Take(5)) // Show first 5 duplicates at most
+                        {
+                            sb.AppendLine($"    - {dup}");
+                        }
+                        if (kvp.Value.duplicateEntries.Count > 5)
+                        {
+                            sb.AppendLine($"    - ... and {kvp.Value.duplicateEntries.Count - 5} more");
+                        }
+                    }
+                    
+                    sb.AppendLine();
+                }
             }
             
-            return summary.ToString();
+            // Integrity Issues
+            if (integrityIssues.Count > 0)
+            {
+                sb.AppendLine("INTEGRITY ISSUES");
+                sb.AppendLine("----------------");
+                
+                var issuesBySeverity = integrityIssues.GroupBy(i => i.severity);
+                foreach (var group in issuesBySeverity.OrderByDescending(g => g.Key))
+                {
+                    sb.AppendLine($"{group.Key} Issues: {group.Count()}");
+                    
+                    foreach (var issue in group.Take(10)) // Show first 10 issues at most
+                    {
+                        sb.AppendLine($"  - {issue.issueType}: {issue.description}");
+                    }
+                    
+                    if (group.Count() > 10)
+                    {
+                        sb.AppendLine($"  - ... and {group.Count() - 10} more {group.Key} issues");
+                    }
+                    
+                    sb.AppendLine();
+                }
+            }
+            else
+            {
+                sb.AppendLine("INTEGRITY ISSUES");
+                sb.AppendLine("----------------");
+                sb.AppendLine("No integrity issues found.");
+                sb.AppendLine();
+            }
+            
+            return sb.ToString();
         }
 
         private void RefreshAllData()
         {
+            // Refresh database counts
             RefreshDatabaseCounts();
+            
+            // Recalculate statistics
             CalculateStatistics();
+            
+            // Check integrity if enabled
             if (autoCheckIntegrity)
             {
                 CheckDatabaseIntegrity();
             }
+            
+            // Measure performance metrics
+            MeasurePerformance();
         }
 
         #endregion

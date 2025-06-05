@@ -212,7 +212,7 @@ namespace Lineage.Core.Editor.Studio
             public int totalItems;
             public float averagePower;
             public float powerVariance;
-            public Dictionary<Item.Rarity, int> rarityDistribution;
+            public Dictionary<Item.ItemRarity, int> rarityDistribution;
             public List<Item> overpoweredItems;
             public List<Item> underpoweredItems;
             public BalanceStatus overallBalance;

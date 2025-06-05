@@ -857,10 +857,9 @@ namespace Lineage.Core.Editor.Studio
             {
                 isValidating = false;
             }
-            
-            if (logToConsole)
+              if (logToConsole)
             {
-                Debug.Log($"[Data Validator] Validation complete. Found {validationIssues.Count} issues.");
+                UnityEngine.Debug.Log($"[Data Validator] Validation complete. Found {validationIssues.Count} issues.");
             }
         }
 
@@ -1120,22 +1119,20 @@ namespace Lineage.Core.Editor.Studio
                 (filterDatabase == "All" || i.databaseType.Contains(filterDatabase)) &&
                 (showFixedIssues || !i.isFixed)
             ).ToList();
-        }
-
-        private string GetEntityId(object entity)
+        }        private string GetEntityId(object entity)
         {
             switch (entity)
             {
-                case Entity e: return e.name;
-                case Item i: return i.name;
-                case Trait t: return t.name;
-                case Quest q: return q.title;
-                case NPC n: return n.name;
-                case Skill s: return s.name;
-                case Buff b: return b.name;
-                case QuestObjective o: return o.description;
-                case Stat s: return s.name;
-                case GeneticTrait g: return g.name;
+                case Entity e: return e.entityName;
+                case Item i: return i.itemName;
+                case Trait t: return t.traitName;
+                case Quest q: return q.questName;
+                case NPC n: return n.npcName;
+                case Skill skill: return skill.skillType.ToString();
+                case Buff b: return b.buffName;
+                case Objective o: return o.objectiveName;
+                case Stat stat: return stat.statName;
+                case Genetics g: return g.geneType.ToString();
                 case JournalEntry j: return j.title;
                 default: return entity?.ToString() ?? "Unknown";
             }
@@ -1161,9 +1158,8 @@ namespace Lineage.Core.Editor.Studio
             foreach (var issue in autoFixableIssues)
             {
                 ApplyAutoFix(issue);
-            }
-            
-            Debug.Log($"[Data Validator] Auto-fixed {autoFixableIssues.Count} issues.");
+            }            
+            UnityEngine.Debug.Log($"[Data Validator] Auto-fixed {autoFixableIssues.Count} issues.");
         }
 
         private void ShowIssueDetails(ValidationIssue issue)

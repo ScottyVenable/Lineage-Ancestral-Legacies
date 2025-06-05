@@ -528,8 +528,7 @@ namespace Lineage.Core.Editor.Studio
         private void CalculateStatistics()
         {
             _contentStats = new ContentStats();
-            
-            if (GameData.Instance == null)
+              if (GameData.entityDatabase == null)
             {
                 EditorUtility.DisplayDialog("Error", "GameData instance not found. Initialize the database first.", "OK");
                 return;
@@ -554,54 +553,56 @@ namespace Lineage.Core.Editor.Studio
                 EditorUtility.DisplayDialog("Error", "Failed to calculate statistics. Check console for details.", "OK");
             }
         }
-        
-        private void CalculateBasicStats()
+          private void CalculateBasicStats()
         {
-            _contentStats.TotalEntities = GameData.Instance.EntityDatabase.GetAllEntities().Count;
-            _contentStats.TotalTraits = GameData.Instance.TraitDatabase.GetAllTraits().Count;
-            _contentStats.TotalItems = GameData.Instance.ItemDatabase.GetAllItems().Count;
-            _contentStats.TotalRelationships = GameData.Instance.RelationshipDatabase.GetAllRelationships().Count;
+            _contentStats.TotalEntities = GameData.entityDatabase.Count;
+            _contentStats.TotalTraits = GameData.traitDatabase.Count;
+            _contentStats.TotalItems = GameData.itemDatabase.Count;
+            _contentStats.TotalRelationships = 0; // Relationships are stored within NPCs, not as separate database
         }
-        
-        private void CalculateDistributions()
+          private void CalculateDistributions()
         {
             // Entity type distribution (mock implementation)
-            var entities = GameData.Instance.EntityDatabase.GetAllEntities();
+            var entities = GameData.entityDatabase;
             foreach (var entity in entities)
             {
                 string type = "Character"; // Placeholder - determine actual type
                 _contentStats.EntityTypeDistribution[type] = _contentStats.EntityTypeDistribution.GetValueOrDefault(type) + 1;
             }
             
-            // Trait category distribution (mock implementation)
-            var traits = GameData.Instance.TraitDatabase.GetAllTraits();
+            // Trait category distribution
+            var traits = GameData.traitDatabase;
             foreach (var trait in traits)
             {
-                string category = "Personality"; // Placeholder - determine actual category
+                string category = trait.category ?? "Unknown";
                 _contentStats.TraitCategoryDistribution[category] = _contentStats.TraitCategoryDistribution.GetValueOrDefault(category) + 1;
             }
             
-            // Item category distribution (mock implementation)
-            var items = GameData.Instance.ItemDatabase.GetAllItems();
+            // Item category distribution
+            var items = GameData.itemDatabase;
             foreach (var item in items)
             {
-                string category = "Tool"; // Placeholder - determine actual category
+                string category = item.itemType.ToString();
                 _contentStats.ItemCategoryDistribution[category] = _contentStats.ItemCategoryDistribution.GetValueOrDefault(category) + 1;
             }
         }
-        
-        private void CalculateUsagePatterns()
+          private void CalculateUsagePatterns()
         {
             // Calculate trait usage frequency
-            var entities = GameData.Instance.EntityDatabase.GetAllEntities();
+            var entities = GameData.entityDatabase;
             var traitUsageCount = new Dictionary<string, int>();
-            
-            foreach (var entity in entities)
+              foreach (var entity in entities)
             {
-                var entityTraits = GameData.Instance.TraitDatabase.GetEntityTraits(entity.Id);
-                foreach (var trait in entityTraits)
+                // Note: Entity-trait relationships need to be implemented in the database
+                // Using tags as a proxy for trait relationships since Entity.traits doesn't exist
+                // This is a temporary workaround until proper entity-trait relationships are implemented                if (entity.tags != null)
                 {
-                    traitUsageCount[trait.Name] = traitUsageCount.GetValueOrDefault(trait.Name) + 1;
+                    var entityTraits = GameData.traitDatabase.Where(t => 
+                        entity.tags.Contains(t.traitName) || entity.tags.Contains(t.traitID.ToString())).ToList();
+                    foreach (var trait in entityTraits)
+                    {
+                        traitUsageCount[trait.traitName] = traitUsageCount.GetValueOrDefault(trait.traitName) + 1;
+                    }
                 }
             }
             
@@ -617,18 +618,19 @@ namespace Lineage.Core.Editor.Studio
             _contentStats.LeastUsedTraits = sortedTraits.TakeLast(20).Select(x => x.Key).ToList();
             
             // Find unused traits
-            var allTraits = GameData.Instance.TraitDatabase.GetAllTraits().Select(t => t.Name).ToHashSet();
+            var allTraits = GameData.traitDatabase.Select(t => t.traitName).ToHashSet();
             var usedTraits = traitUsageCount.Keys.ToHashSet();
             _contentStats.UnusedTraits = allTraits.Except(usedTraits).ToList();
         }
-        
-        private void CalculateQualityMetrics()
+          private void CalculateQualityMetrics()
         {
             if (_contentStats.TotalEntities > 0)
             {
                 // Calculate average traits per entity
-                var totalTraitAssignments = GameData.Instance.EntityDatabase.GetAllEntities()
-                    .Sum(e => GameData.Instance.TraitDatabase.GetEntityTraits(e.Id).Count);
+                // Note: Since Entity-Trait relationships are not implemented yet,
+                // using a placeholder calculation based on available data
+                var entities = GameData.entityDatabase;
+                var totalTraitAssignments = entities.Sum(e => e.tags?.Count ?? 0);
                 _contentStats.AverageTraitsPerEntity = (float)totalTraitAssignments / _contentStats.TotalEntities;
                 
                 // Calculate average relationships per entity
@@ -642,16 +644,19 @@ namespace Lineage.Core.Editor.Studio
                 );
             }
         }
-        
-        private void CalculateConnectionAnalysis()
+          private void CalculateConnectionAnalysis()
         {
             var entityConnections = new Dictionary<string, int>();
-            var relationships = GameData.Instance.RelationshipDatabase.GetAllRelationships();
+            
+            // Note: RelationshipDatabase is not implemented yet
+            // Using placeholder data until relationship system is available
+            var relationships = new List<object>(); // GameData.relationshipDatabase when available
             
             foreach (var relationship in relationships)
             {
-                entityConnections[relationship.SourceEntityId] = entityConnections.GetValueOrDefault(relationship.SourceEntityId) + 1;
-                entityConnections[relationship.TargetEntityId] = entityConnections.GetValueOrDefault(relationship.TargetEntityId) + 1;
+                // This would access relationship properties when available
+                // entityConnections[relationship.SourceEntityId] = entityConnections.GetValueOrDefault(relationship.SourceEntityId) + 1;
+                // entityConnections[relationship.TargetEntityId] = entityConnections.GetValueOrDefault(relationship.TargetEntityId) + 1;
             }
             
             // Find highly connected entities (top 10%)
@@ -661,7 +666,7 @@ namespace Lineage.Core.Editor.Studio
                 .Select(x => $"{x.Key} ({x.Value} connections)").ToList();
             
             // Find orphaned entities (no relationships)
-            var allEntityIds = GameData.Instance.EntityDatabase.GetAllEntities().Select(e => e.Id).ToHashSet();
+            var allEntityIds = GameData.entityDatabase.Select(e => e.entityID.ToString()).ToHashSet();
             var connectedEntityIds = entityConnections.Keys.ToHashSet();
             _contentStats.OrphanedEntities = allEntityIds.Except(connectedEntityIds).ToList();
         }

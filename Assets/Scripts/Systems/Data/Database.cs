@@ -1849,20 +1849,57 @@ namespace Lineage.Ancestral.Legacies.Database
 
             public ID populationID;
             public string populationName;
+        public Location populationLocation;
             private readonly List<Entity> _members = new List<Entity>();
             public IReadOnlyList<Entity> Members => _members;
-            public int PopulationSize => _members.Count;
+        public enum Type
+        {
+            Theocracy = 0,         // Population governed by religious leaders or divine mandate
+            Democracy = 1,         // Population governed by elected representatives
+            Primitive = 2,         // Early or tribal society with basic technology
+            Cult = 3,              // Population organized around a charismatic leader or esoteric beliefs
+            Bandit = 4,            // Lawless or criminal population, often nomadic or hidden
+            Nomadic = 5,           // Population that moves from place to place, often following resources
+            Mercenary = 6,         // Population organized around military service for hire
+            Feudal = 7,            // Population structured by lords, vassals, and serfs
+            Mythic = 8,            // Population with legendary or supernatural origins
+            Technological = 9,     // Highly advanced, science-driven population
+            Autocracy = 10,        // Population ruled by a single powerful leader
+            Tribal = 11,           // Small, kin-based population with shared customs
+            Oligarchy = 12,        // Population ruled by a small group of elites
+            Matriarchy = 13,       // Population led by women or maternal lineage
+            Patriarchy = 14,       // Population led by men or paternal lineage
+            Republic = 15,         // Population governed by representatives and laws
+            Confederation = 16,    // Loose alliance of smaller groups or settlements
+            Plutocracy = 17,       // Population ruled by the wealthy or merchant class
+            Military = 18,         // Population organized around martial discipline and hierarchy
+            SlaveSociety = 19      // Population that relies on enslaved individuals for labor and social structure
+        }
+
+        private Type _populationType;
+        public Type populationType
+        {
+            get => _populationType;
+            set
+            {
+                _populationType = value;
+                populationTypeString = value.ToString();
+            }
+        }
+        public string populationTypeString { get; private set; }
+        public int PopulationSize => _members.Count;
 
             /// <summary>
             /// Reference to the settlement this population belongs to.
             /// </summary>
             public Settlement Settlement { get; }
 
-            public Population(ID id, string name, Settlement settlement)
+            public Population(ID id, string name, Settlement settlement, Type type)
             {
                 populationID = id;
                 populationName = name;
                 Settlement = settlement;
+                populationType = type;
             }
 
             /// <summary>
@@ -1923,836 +1960,880 @@ namespace Lineage.Ancestral.Legacies.Database
                 return _members[idx];
             }
         }
+
+    /// <summary>
+    /// Represents a location in the game world.
+    /// </summary>
+    public class Location
+    {
+        public int ID { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public Vector3 Position { get; set; } // Assuming Unity's Vector3 for 3D coordinates
+        public Population population { get; set; } // Reference to the population in this location
+        public bool hasSettlement { get; set; } // Indicates if this location has a settlement
+        public int Seed { get; set; } // Random seed for procedural generation
+        public LoreEntry lore { get; set; } // Reference to the lore entry for this location if any.
+        public List<NPC> NPCs { get; set; } = new List<NPC>(); // List of NPCs in this location
+
+    }
+
+
+    //todo: potentially add this to a WorldDatabase.cs file to avoid Database file getting too long.
+    /// <summary>
+    /// Represents a chunk of the game world, which can contain multiple locations.
+    /// </summary>
+    public class Chunk
+    {
+        public int ID { get; set; }
+        public int Seed { get; set; }
+        public List<Location> Locations { get; set; } = new List<Location>();
+        public List<Settlement> Settlements { get; set; } = new List<Settlement>();
+        public List<Population> Populations { get; set; } = new List<Population>();
+
+        //Other data required for chunk loading and generation.
+        public Chunk(int id, int seed, List<Location> locations, List<Settlement> settlements, List<Population> populations)
+        {
+            ID = id;
+            Seed = seed;
+            Locations = locations ?? new List<Location>();
+            Settlements = settlements ?? new List<Settlement>();
+            Populations = populations ?? new List<Population>();
+        }
+
+    }
+
         // Todo: Consider adding Dialogue system, Weather system, Economy system, and Territory management structures.
 
-        #endregion // Game Data Structures
+    #endregion // Game Data Structures
+
+    /// <summary>
+    /// Contains all game data structures, enums, and database management.
+    /// </summary>
+    public static class GameData
+    {
+        #region Databases
+        public static List<Entity> entityDatabase = new List<Entity>();
+        public static List<Item> itemDatabase = new List<Item>(); // Added item database
+        public static List<Buff> buffDatabase = new List<Buff>(); // Added buff database
+        public static List<Quest> questDatabase = new List<Quest>(); // Added quest database
+        public static List<Objective> objectiveDatabase = new List<Objective>(); // Added objective database
+        public static List<Stat> statDatabase = new List<Stat>(); // Added stat database
+        public static List<Trait> traitDatabase = new List<Trait>(); // Added trait database
+        public static List<NPC> npcDatabase = new List<NPC>(); // Added NPC database
+        public static List<LoreEntry> loreDatabase = new List<LoreEntry>(); // Added lore database
+        public static List<JournalEntry> journalDatabase = new List<JournalEntry>(); // Added journal database
+        public static List<Genetics> geneticsDatabase = new List<Genetics>(); // Added genetics database
+        public static List<LevelingSystem> levelingSystemDatabase = new List<LevelingSystem>(); // Added leveling system database
+        public static List<Skill> skillDatabase = new List<Skill>(); // Added skill database
+        public static List<Population> populationDatabase = new List<Population>(); // Added population database
 
         /// <summary>
-        /// Contains all game data structures, enums, and database management.
+        /// Gets or sets the lore entries. This is a convenience property that maps to loreDatabase.
         /// </summary>
-        public static class GameData
+        public static List<LoreEntry> LoreEntries
         {
-            #region Databases
-            public static List<Entity> entityDatabase = new List<Entity>();
-            public static List<Item> itemDatabase = new List<Item>(); // Added item database
-            public static List<Buff> buffDatabase = new List<Buff>(); // Added buff database
-            public static List<Quest> questDatabase = new List<Quest>(); // Added quest database
-            public static List<Objective> objectiveDatabase = new List<Objective>(); // Added objective database
-            public static List<Stat> statDatabase = new List<Stat>(); // Added stat database
-            public static List<Trait> traitDatabase = new List<Trait>(); // Added trait database
-            public static List<NPC> npcDatabase = new List<NPC>(); // Added NPC database
-            public static List<LoreEntry> loreDatabase = new List<LoreEntry>(); // Added lore database
-            public static List<JournalEntry> journalDatabase = new List<JournalEntry>(); // Added journal database
-            public static List<Genetics> geneticsDatabase = new List<Genetics>(); // Added genetics database
-            public static List<LevelingSystem> levelingSystemDatabase = new List<LevelingSystem>(); // Added leveling system database
-            public static List<Skill> skillDatabase = new List<Skill>(); // Added skill database            public static List<Population> populationDatabase = new List<Population>(); // Added population database
-            
-            /// <summary>
-            /// Gets or sets the lore entries. This is a convenience property that maps to loreDatabase.
-            /// </summary>
-            public static List<LoreEntry> LoreEntries
-            {
-                get => loreDatabase;
-                set => loreDatabase = value ?? new List<LoreEntry>();
-            }
-            
-            /// <summary>
-            /// Retrieves a quest from the database by its unique ID.
-            /// </summary>
-            /// <param name="id">The ID of the quest to retrieve.</param>
-            /// <returns>The found <see cref="Quest"/>, or a default quest if not found.</returns>
-            public static Quest GetQuestByID(Quest.ID id)
-            {
-                Quest quest = questDatabase.Find(q => q.questID == id);
-                if (quest.questID == id)
-                {
-                    return quest;
-                }
-                return new Quest(id, "Unknown Quest", "Quest not found");
-            }
-
-            /// <summary>
-            /// Retrieves an objective from the database by its unique ID.
-            /// </summary>
-            /// <param name="id">The ID of the objective to retrieve.</param>
-            /// <returns>The found <see cref="Objective"/>, or a default objective if not found.</returns>
-            public static Objective GetObjectiveByID(Objective.ID id)
-            {
-                Objective objective = objectiveDatabase.Find(o => o.objectiveID == id);
-                if (objective.objectiveID == id)
-                {
-                    return objective;
-                }
-                return new Objective(id, "Unknown Objective", "Objective not found");
-            }
-
-            /// <summary>
-            /// Retrieves a trait from the database by its unique ID.
-            /// </summary>
-            /// <param name="id">The ID of the trait to retrieve.</param>
-            /// <returns>The found <see cref="Trait"/>, or a default trait if not found.</returns>
-            public static Trait GetTraitByID(Trait.ID id)
-            {
-                Trait trait = traitDatabase.Find(t => t.traitID == id);
-                if (trait.traitID == id)
-                {
-                    return trait;
-                }
-                return new Trait(id, "Unknown Trait", "Trait not found", "Unknown");
-            }
-
-            /// <summary>
-            /// Retrieves an NPC from the database by name.
-            /// </summary>
-            /// <param name="name">The name of the NPC to retrieve.</param>
-            /// <returns>The found <see cref="NPC"/>, or a default NPC if not found.</returns>
-            public static NPC GetNPCByName(string name)
-            {
-                NPC npc = npcDatabase.Find(n => string.Equals(n.npcName, name, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrEmpty(npc.npcName))
-                {
-                    return npc;
-                }
-                return new NPC(name, NPC.Archetype.Trader, new Entity("Unknown NPC", Entity.ID.Pop));
-            }
-
-            /// <summary>
-            /// Retrieves a lore entry from the database by title.
-            /// </summary>
-            /// <param name="title">The title of the lore entry to retrieve.</param>
-            /// <returns>The found <see cref="LoreEntry"/>, or a default entry if not found.</returns>
-            public static LoreEntry GetLoreEntryByTitle(string title)
-            {
-                LoreEntry entry = loreDatabase.Find(l => string.Equals(l.title, title, StringComparison.OrdinalIgnoreCase));
-                if (!string.IsNullOrEmpty(entry.title))
-                {
-                    return entry;
-                }
-                return new LoreEntry(title, LoreEntry.LegacyCategory.History, "Lore entry not found");
-            }
-
-            /// <summary>
-            /// Retrieves all quests of a specific type.
-            /// </summary>
-            /// <param name="questType">The type of quests to retrieve.</param>
-            /// <returns>A list of quests matching the specified type.</returns>
-            public static List<Quest> GetQuestsByType(Quest.Type questType)
-            {
-                return questDatabase.FindAll(q => q.questType == questType);
-            }
-
-            /// <summary>
-            /// Retrieves all quests with a specific status.
-            /// </summary>
-            /// <param name="status">The status of quests to retrieve.</param>
-            /// <returns>A list of quests matching the specified status.</returns>
-            public static List<Quest> GetQuestsByStatus(Quest.Status status)
-            {
-                return questDatabase.FindAll(q => q.status == status);
-            }
-
-            /// <summary>
-            /// Retrieves all objectives that are completed.
-            /// </summary>
-            /// <returns>A list of completed objectives.</returns>
-            public static List<Objective> GetCompletedObjectives()
-            {
-                return objectiveDatabase.FindAll(o => o.isCompleted);
-            }
-
-            /// <summary>
-            /// Retrieves all traits by category.
-            /// </summary>
-            /// <param name="category">The category of traits to retrieve.</param>
-            /// <returns>A list of traits in the specified category.</returns>
-            public static List<Trait> GetTraitsByCategory(string category)
-            {
-                return traitDatabase.FindAll(t => string.Equals(t.category, category, StringComparison.OrdinalIgnoreCase));
-            }
-
-            /// <summary>
-            /// Retrieves all NPCs of a specific archetype.
-            /// </summary>
-            /// <param name="archetype">The archetype of NPCs to retrieve.</param>
-            /// <returns>A list of NPCs matching the specified archetype.</returns>
-            public static List<NPC> GetNPCsByArchetype(NPC.Archetype archetype)
-            {
-                return npcDatabase.FindAll(n => n.archetype == archetype);
-            }            /// <summary>
-            /// Retrieves all lore entries of a specific category.
-            /// </summary>
-            /// <param name="category">The category of lore entries to retrieve.</param>
-            /// <returns>A list of lore entries in the specified category.</returns>
-            public static List<LoreEntry> GetLoreEntriesByCategory(LoreEntry.LegacyCategory category)
-            {
-                return loreDatabase.FindAll(l => l.category == category);
-            }
-
-            /// <summary>
-            /// Retrieves all discovered lore entries.
-            /// </summary>
-            /// <returns>A list of discovered lore entries.</returns>
-            public static List<LoreEntry> GetDiscoveredLoreEntries()
-            {
-                return loreDatabase.FindAll(l => l.isDiscovered);
-            }
-
-            /// <summary>
-            /// Retrieves all journal entries of a specific type.
-            /// </summary>
-            /// <param name="entryType">The type of journal entries to retrieve.</param>
-            /// <returns>A list of journal entries matching the specified type.</returns>
-            public static List<JournalEntry> GetJournalEntriesByType(JournalEntry.EntryType entryType)
-            {
-                return journalDatabase.FindAll(j => j.type == entryType);
-            }
-
-            /// <summary>
-            /// Retrieves all important journal entries.
-            /// </summary>
-            /// <returns>A list of important journal entries.</returns>
-            public static List<JournalEntry> GetImportantJournalEntries()
-            {
-                return journalDatabase.FindAll(j => j.isImportant);
-            }
-
-            /// <summary>
-            /// Retrieves all genetics of a specific type.
-            /// </summary>
-            /// <param name="geneType">The type of genetics to retrieve.</param>
-            /// <returns>A list of genetics matching the specified type.</returns>
-            public static List<Genetics> GetGeneticsByType(Genetics.GeneType geneType)
-            {
-                return geneticsDatabase.FindAll(g => g.geneType == geneType);
-            }
-
-            /// <summary>
-            /// Gets updated database counts including all databases.
-            /// </summary>
-            /// <returns>A dictionary with database names and their entry counts.</returns>
-            public static Dictionary<string, int> GetDatabaseCounts()
-            {
-                return new Dictionary<string, int>
-                {
-                { "Entities", entityDatabase.Count },
-                { "Items", itemDatabase.Count },
-                { "Buffs", buffDatabase.Count },
-                { "Skills", skillDatabase.Count },
-                { "Quests", questDatabase.Count },
-                { "Objectives", objectiveDatabase.Count },
-                { "Stats", statDatabase.Count },
-                { "Traits", traitDatabase.Count },
-                { "NPCs", npcDatabase.Count },
-                { "Lore Entries", loreDatabase.Count },
-                { "Journal Entries", journalDatabase.Count },
-                { "Genetics", geneticsDatabase.Count },
-                { "Leveling Systems", levelingSystemDatabase.Count }
-                };
-            }
-
-
-            #endregion // Databases
-
-            #region Data Retrieval Methods        /// <summary>
-            /// Retrieves an entity from the database by its unique ID.
-            /// </summary>
-            /// <param name="id">The ID of the entity to retrieve.</param>
-            /// <returns>The found <see cref="Entity"/>, or a default "Unknown" entity if not found.</returns>
-            public static Entity GetEntityByID(int id)
-            {
-                Entity entity = entityDatabase.Find(e => e.entityID == id);
-                if (entity.entityID != 0)
-                {
-                    return entity;
-                }
-                // Return a default entity if not found
-                return new Entity("Entity_" + id, (Entity.ID)id);
-            }
-
-            /// <summary>
-            /// Retrieves an entity from the database by its unique ID.
-            /// </summary>
-            /// <param name="id">The ID of the entity to retrieve.</param>
-            /// <returns>The found <see cref="Entity"/>, or a default "Unknown" entity if not found.</returns>
-            public static Entity GetEntityByID(Entity.ID id)
-            {
-                int entityId = (int)id;
-                return GetEntityByID(entityId);
-            }
-
-            /// <summary>
-            /// Retrieves an item from the database by its unique ID.
-            /// </summary>
-            /// <param name="id">The ID of the item to retrieve.</param>
-            /// <returns>The found <see cref="Item"/>, or a default "Unknown" item if not found.</returns>
-
-            public static Item GetItemByID(Item.ID id)
-            {
-                int itemId = (int)id;
-                Item item = itemDatabase.Find(i => i.itemID == itemId);
-                // Check if item is not default (structs can't be null)
-                if (item.itemID == itemId && !string.IsNullOrEmpty(item.itemName))
-                {
-                    return item;
-                }            // Return a default item if not found
-                return new Item("Item_" + itemId, (Item.ID)itemId, Item.ItemType.Miscellaneous);
-            }        /// <summary>
-                     /// Retrieves a buff from the database by its unique ID.
-                     /// </summary>
-                     /// <param name="id">The ID of the buff to retrieve.</param>
-                     /// <returns>The found <see cref="Buff"/>, or a default "Unknown" buff if not found.</returns>
-            public static Buff GetBuffByID(Buff.ID id)
-            {
-                int buffId = (int)id;
-                Buff buff = buffDatabase.Find(b => b.buffID == buffId);
-                // Check if buff is not default (structs can't be null)
-                if (buff.buffID == buffId && !string.IsNullOrEmpty(buff.buffName))
-                {
-                    return buff;
-                }
-                // Return a default buff if not found
-                return new Buff(id, "Buff_" + buffId, "Unknown buff effect", Buff.BuffType.Temporary, 1f, 10f);
-            }        /// <summary>
-                     /// Retrieves a skill from the database by its unique ID.
-                     /// </summary>
-                     /// <param name="id">The ID of the skill to retrieve.</param>
-                     /// <returns>The found <see cref="Skill"/>, or a default "Unknown" skill if not found.</returns>
-            public static Skill GetSkillByID(Skill.ID id)
-            {
-                Skill skill = skillDatabase.Find(s => s.skillID == id);
-
-                // Check if skill is not default (structs can't be null, but we can check if it matches the ID)
-                if (skill.skillID == id)
-                {
-                    return skill;
-                }
-
-                // Return a default skill if not found
-                return new Skill(id, Skill.SkillType.Combat)
-                {
-                    tags = new List<string> { "Unknown" }
-                };
-            }
-
-            /// <summary>
-            /// Retrieves a stat definition by its unique ID. Returns a default stat template.
-            /// </summary>
-            /// <param name="id">The ID of the stat to retrieve.</param>
-            /// <returns>A default <see cref="Stat"/> template with the specified ID.</returns>
-            public static Stat GetStatByID(Stat.ID id)
-            {
-                // Since stats are typically created per-entity, this returns a template
-                string statName = id.ToString();
-                string description = $"The {statName.ToLower()} statistic";
-
-                // Set appropriate defaults based on stat type
-                float defaultMax = 100f;
-                Stat.StatType statType = Stat.StatType.Primary;
-
-                switch (id)
-                {
-                    case Stat.ID.Health:
-                    case Stat.ID.Mana:
-                    case Stat.ID.Stamina:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Primary;
-                        break;
-                    case Stat.ID.Attack:
-                    case Stat.ID.Defense:
-                    case Stat.ID.Speed:
-                    case Stat.ID.MagicPower:
-                    case Stat.ID.MagicDefense:
-                        defaultMax = float.MaxValue;
-                        statType = Stat.StatType.Secondary;
-                        break;
-                    case Stat.ID.Experience:
-                    case Stat.ID.Level:
-                    case Stat.ID.Luck:
-                        defaultMax = float.MaxValue;
-                        statType = Stat.StatType.Tertiary;
-                        break;
-                    case Stat.ID.CriticalHitChance:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Secondary;
-                        description = "The chance to deal critical damage (percentage)";
-                        break;
-                    case Stat.ID.CriticalHitDamage:
-                        defaultMax = 500f;
-                        statType = Stat.StatType.Secondary;
-                        description = "The multiplier for critical hit damage (percentage)";
-                        break;
-                    case Stat.ID.Hunger:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Primary;
-                        description = "Current hunger level - decreases over time, affects health when low";
-                        break;
-                    case Stat.ID.Thirst:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Primary;
-                        description = "Current thirst level - decreases over time, affects health when low";
-                        break;
-                    case Stat.ID.Energy:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Primary;
-                        description = "Current energy level - decreases with activity, affects movement and actions";
-                        break;
-                    case Stat.ID.Rest:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Primary;
-                        description = "Current rest level - decreases over time, affects energy recovery";
-                        break;
-                    default:
-                        defaultMax = 100f;
-                        statType = Stat.StatType.Primary;
-                        break;
-                }
-
-                return new Stat(id, statName, 0f, 0f, defaultMax, statType, description);
-            }
-
-            /// <summary>
-            /// Retrieves a rarity enum value by its numeric index.
-            /// </summary>
-            /// <param name="rarityIndex">The numeric index of the rarity (0=Common, 1=Uncommon, etc.).</param>
-            /// <returns>The corresponding <see cref="Rarity"/> enum value, or Common if out of range.</returns>
-            public static Rarity GetRarityByIndex(int rarityIndex)
-            {
-                if (rarityIndex < 0 || rarityIndex >= System.Enum.GetValues(typeof(Rarity)).Length)
-                {
-                    return Rarity.Common;
-                }
-                return (Rarity)rarityIndex;
-            }
-
-            /// <summary>
-            /// Retrieves an entity size template by its size category.
-            /// </summary>
-            /// <param name="size">The size category to retrieve.</param>
-            /// <returns>The corresponding <see cref="EntitySize"/> with predefined values.</returns>
-            public static EntitySize GetEntitySizeByCategory(EntitySize.Size size)
-            {
-                switch (size)
-                {
-                    case EntitySize.Size.Small:
-                        return EntitySize.Small;
-                    case EntitySize.Size.Medium:
-                        return EntitySize.Medium;
-                    case EntitySize.Size.Large:
-                        return EntitySize.Large;
-                    case EntitySize.Size.Huge:
-                        return EntitySize.Huge;
-                    case EntitySize.Size.Gargantuan:
-                        return EntitySize.Gargantuan;
-                    default:
-                        return EntitySize.Medium;
-                }
-            }
-
-            /// <summary>
-            /// Retrieves all entities of a specific type.
-            /// </summary>
-            /// <param name="entityType">The type of entities to retrieve.</param>
-            /// <returns>A list of entities matching the specified type.</returns>
-            public static List<Entity> GetEntitiesByType(Entity.EntityType entityType)
-            {
-                return entityDatabase.FindAll(e => e.entityType.Contains(entityType));
-            }
-
-            /// <summary>
-            /// Retrieves all items of a specific type.
-            /// </summary>
-            /// <param name="itemType">The type of items to retrieve.</param>
-            /// <returns>A list of items matching the specified type.</returns>
-            public static List<Item> GetItemsByType(Item.ItemType itemType)
-            {
-                return itemDatabase.FindAll(i => i.itemType == itemType);
-            }
-
-            /// <summary>
-            /// Retrieves all buffs of a specific type.
-            /// </summary>
-            /// <param name="buffType">The type of buffs to retrieve.</param>
-            /// <returns>A list of buffs matching the specified type.</returns>
-            public static List<Buff> GetBuffsByType(Buff.BuffType buffType)
-            {
-                return buffDatabase.FindAll(b => b.buffType == buffType);
-            }
-
-            /// <summary>
-            /// Retrieves all skills of a specific type.
-            /// </summary>
-            /// <param name="skillType">The type of skills to retrieve.</param>
-            /// <returns>A list of skills matching the specified type.</returns>
-            public static List<Skill> GetSkillsByType(Skill.SkillType skillType)
-            {
-                return skillDatabase.FindAll(s => s.skillType == skillType);
-            }
-
-            /// <summary>
-            /// Retrieves all entities with a specific rarity level.
-            /// </summary>
-            /// <param name="rarity">The rarity level to search for.</param>
-            /// <returns>A list of entities with the specified rarity.</returns>
-            public static List<Entity> GetEntitiesByRarity(Rarity rarity)
-            {
-                return entityDatabase.FindAll(e => e.rarity == rarity);
-            }
-
-            /// <summary>
-            /// Retrieves all items with a specific rarity level.
-            /// </summary>
-            /// <param name="rarity">The rarity level to search for.</param>
-            /// <returns>A list of items with the specified rarity.</returns>
-            public static List<Item> GetItemsByRarity(Item.ItemRarity rarity)
-            {
-                return itemDatabase.FindAll(i => i.itemRarity == rarity);
-            }
-
-            /// <summary>
-            /// Retrieves entities by name (case-insensitive search).
-            /// </summary>
-            /// <param name="name">The name to search for.</param>
-            /// <param name="exactMatch">If true, requires exact match; if false, allows partial matches.</param>
-            /// <returns>A list of entities matching the search criteria.</returns>
-            public static List<Entity> GetEntitiesByName(string name, bool exactMatch = true)
-            {
-                if (exactMatch)
-                {
-                    return entityDatabase.FindAll(e => string.Equals(e.entityName, name, StringComparison.OrdinalIgnoreCase));
-                }
-                else
-                {
-                    return entityDatabase.FindAll(e => e.entityName.ToLower().Contains(name.ToLower()));
-                }
-            }
-
-            /// <summary>
-            /// Retrieves items by name (case-insensitive search).
-            /// </summary>
-            /// <param name="name">The name to search for.</param>
-            /// <param name="exactMatch">If true, requires exact match; if false, allows partial matches.</param>
-            /// <returns>A list of items matching the search criteria.</returns>
-            public static List<Item> GetItemsByName(string name, bool exactMatch = true)
-            {
-                if (exactMatch)
-                {
-                    return itemDatabase.FindAll(i => string.Equals(i.itemName, name, StringComparison.OrdinalIgnoreCase));
-                }
-                else
-                {
-                    return itemDatabase.FindAll(i => i.itemName.ToLower().Contains(name.ToLower()));
-                }
-            }
-
-            /// <summary>
-            /// Retrieves entities that contain a specific tag.
-            /// </summary>
-            /// <param name="tag">The tag to search for.</param>
-            /// <returns>A list of entities that have the specified tag.</returns>
-            public static List<Entity> GetEntitiesByTag(string tag)
-            {
-                return entityDatabase.FindAll(e => e.tags != null && e.tags.Contains(tag));
-            }
-
-            /// <summary>
-            /// Retrieves items that contain a specific tag.
-            /// </summary>
-            /// <param name="tag">The tag to search for.</param>
-            /// <returns>A list of items that have the specified tag.</returns>
-            public static List<Item> GetItemsByTag(string tag)
-            {
-                return itemDatabase.FindAll(i => i.tags != null && i.tags.Contains(tag));
-            }
-
-            /// <summary>
-            /// Retrieves buffs that contain a specific tag.
-            /// </summary>
-            /// <param name="tag">The tag to search for.</param>
-            /// <returns>A list of buffs that have the specified tag.</returns>
-            public static List<Buff> GetBuffsByTag(string tag)
-            {
-                return buffDatabase.FindAll(b => b.tags != null && b.tags.Contains(tag));
-            }
-
-            /// <summary>
-            /// Retrieves skills that contain a specific tag.
-            /// </summary>
-            /// <param name="tag">The tag to search for.</param>
-            /// <returns>A list of skills that have the specified tag.</returns>
-            public static List<Skill> GetSkillsByTag(string tag)
-            {
-                return skillDatabase.FindAll(s => s.tags != null && s.tags.Contains(tag));
-            }
-
-
-
-            #endregion // Data Retrieval Methods
-
-            #region Database Initialization
-
-            /// <summary>
-            /// Initializes the entity database with predefined entities. Clears any existing data.
-            /// </summary>
-            public static void InitializeEntityDatabase()
-            {
-                entityDatabase.Clear(); // Clear existing data
-
-                // Example initialization of the entity database
-                entityDatabase.Add(new Entity("Pop", Entity.ID.Pop)
-                {
-                    entityType = new List<Entity.EntityType> { Entity.EntityType.PlayerControlled },
-                    health = new Health(100f),
-                    mana = new Stat(Stat.ID.Mana, "Mana", 50f, 0f, 50f),
-                    attack = new Stat(Stat.ID.Attack, "Attack", 5f, 0f, float.MaxValue),
-                    defense = new Stat(Stat.ID.Defense, "Defense", 3f, 0f, float.MaxValue),
-                    speed = new Stat(Stat.ID.Speed, "Speed", 8f, 0f, float.MaxValue),
-                    entitySize = EntitySize.Medium,
-                    aggressionType = Entity.AggressionType.Neutral,
-                    tags = new List<string> { "Humanoid", "Playable", "CanCraft" },
-                    thirst = new Stat(Stat.ID.Thirst, "Thirst", 100f, 0f, 100f),
-                    hunger = new Stat(Stat.ID.Hunger, "Hunger", 100f, 0f, 100f),
-                    energy = new Stat(Stat.ID.Energy, "Energy", 100f, 0f, 100f),
-
-                });
-
-                entityDatabase.Add(new Entity("Wolf", Entity.ID.Wolf)
-                {
-                    entityType = new List<Entity.EntityType> { Entity.EntityType.Animal },
-                    health = new Health(60f),
-                    attack = new Stat(Stat.ID.Attack, "Attack", 12f),
-                    defense = new Stat(Stat.ID.Defense, "Defense", 4f),
-                    speed = new Stat(Stat.ID.Speed, "Speed", 15f),
-                    entitySize = EntitySize.Medium,
-                    aggressionType = Entity.AggressionType.Aggressive,
-                    tags = new List<string> { "Animal", "Predator" }
-                });
-                entityDatabase.Add(new Entity("Dragon", Entity.ID.Dragon)
-                {
-                    entityType = new List<Entity.EntityType> { Entity.EntityType.Boss, Entity.EntityType.Monster },
-                    health = new Health(500f),
-                    mana = new Stat(Stat.ID.Mana, "Mana", 200f),
-                    attack = new Stat(Stat.ID.Attack, "Attack", 50f),
-                    defense = new Stat(Stat.ID.Defense, "Defense", 30f),
-                    speed = new Stat(Stat.ID.Speed, "Speed", 20f),
-                    entitySize = EntitySize.Gargantuan,
-                    aggressionType = Entity.AggressionType.Aggressive,
-                    rarity = Rarity.Legendary, // Note: Rarity enum is in the namespace
-                    level = 50,
-                    tags = new List<string> { "Boss", "Flying", "Fire" }
-                });
-            }
-            /// <summary>
-            /// Initializes the item database with predefined items. Clears any existing data.
-            /// </summary>        
-            public static void InitializeItemDatabase()
-            {
-                itemDatabase.Clear();
-
-                // Weapons
-                itemDatabase.Add(new Item("Iron Sword", Item.ID.IronSword, Item.ItemType.Weapon, 3f, 1, 50, Item.ItemRarity.Common, Item.ItemQuality.Good)
-                {
-                    tags = new List<string> { "Weapon", "Melee", "Sword" }
-                });
-
-                itemDatabase.Add(new Item("Steel Axe", Item.ID.SteelAxe, Item.ItemType.Weapon, 4f, 1, 75, Item.ItemRarity.Common, Item.ItemQuality.Good)
-                {
-                    tags = new List<string> { "Weapon", "Melee", "Axe" }
-                });
-
-                itemDatabase.Add(new Item("Enchanted Staff", Item.ID.EnchantedStaff, Item.ItemType.Weapon, 2f, 1, 150, Item.ItemRarity.Rare, Item.ItemQuality.Excellent)
-                {
-                    tags = new List<string> { "Weapon", "Magic", "Staff" }
-                });
-
-                // Armor
-                itemDatabase.Add(new Item("Leather Armor", Item.ID.LeatherArmor, Item.ItemType.Armor, 5f, 1, 30, Item.ItemRarity.Common, Item.ItemQuality.Fair)
-                {
-                    tags = new List<string> { "Armor", "Light", "Chest" }
-                });
-
-                itemDatabase.Add(new Item("Chain Mail", Item.ID.ChainMail, Item.ItemType.Armor, 8f, 1, 80, Item.ItemRarity.Uncommon, Item.ItemQuality.Good)
-                {
-                    tags = new List<string> { "Armor", "Medium", "Chest" }
-                });
-
-                itemDatabase.Add(new Item("Dragon Scale Armor", Item.ID.DragonScaleArmor, Item.ItemType.Armor, 15f, 1, 500, Item.ItemRarity.Legendary, Item.ItemQuality.Masterwork)
-                {
-                    tags = new List<string> { "Armor", "Heavy", "Chest", "Dragon" }
-                });
-
-                // Consumables
-                itemDatabase.Add(new Item("Health Potion", Item.ID.HealthPotion, Item.ItemType.Consumable, 0.5f, 5, 25, Item.ItemRarity.Common, Item.ItemQuality.Good)
-                {
-                    tags = new List<string> { "Consumable", "Potion", "Healing" }
-                });
-
-                itemDatabase.Add(new Item("Mana Potion", Item.ID.ManaPotion, Item.ItemType.Consumable, 0.5f, 3, 35, Item.ItemRarity.Common, Item.ItemQuality.Good)
-                {
-                    tags = new List<string> { "Consumable", "Potion", "Mana" }
-                });
-
-                itemDatabase.Add(new Item("Bread", Item.ID.Bread, Item.ItemType.Consumable, 0.2f, 10, 5, Item.ItemRarity.Common, Item.ItemQuality.Fair)
-                {
-                    tags = new List<string> { "Consumable", "Food" }
-                });
-
-                // Quest Items
-                itemDatabase.Add(new Item("Ancient Key", Item.ID.AncientKey, Item.ItemType.QuestItem, 0.1f, 1, 0, Item.ItemRarity.Rare, Item.ItemQuality.Excellent)
-                {
-                    tags = new List<string> { "Quest", "Key", "Ancient" }
-                });
-
-                // Miscellaneous
-                itemDatabase.Add(new Item("Gold Coin", Item.ID.GoldCoin, Item.ItemType.Miscellaneous, 0.01f, 100, 1, Item.ItemRarity.Common, Item.ItemQuality.Fair)
-                {
-                    tags = new List<string> { "Currency", "Gold" }
-                });
-            }        /// <summary>
-                     /// Initializes the buff database with predefined buffs. Clears any existing data.
-                     /// </summary>
-            public static void InitializeBuffDatabase()
-            {
-                buffDatabase.Clear();
-
-                // Positive Buffs
-                buffDatabase.Add(new Buff(Buff.ID.HealthRegen, "Health Regeneration", "Slowly restores health over time", Buff.BuffType.Temporary, 5f, 30f)
-                {
-                    tags = new List<string> { "Healing", "Regeneration", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.ManaRegen, "Mana Regeneration", "Slowly restores mana over time", Buff.BuffType.Temporary, 3f, 45f)
-                {
-                    tags = new List<string> { "Mana", "Regeneration", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.SpeedBoost, "Speed Boost", "Increases movement speed significantly", Buff.BuffType.Temporary, 25f, 20f)
-                {
-                    tags = new List<string> { "Speed", "Movement", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.StrengthBoost, "Strength Boost", "Increases attack power and physical damage", Buff.BuffType.Temporary, 15f, 60f)
-                {
-                    tags = new List<string> { "Strength", "Attack", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.DefenseBoost, "Defense Boost", "Increases damage resistance and armor", Buff.BuffType.Temporary, 20f, 90f)
-                {
-                    tags = new List<string> { "Defense", "Protection", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.CriticalHitChanceBoost, "Critical Hit Chance", "Increases the chance of landing critical hits", Buff.BuffType.Temporary, 10f, 40f)
-                {
-                    tags = new List<string> { "Critical", "Luck", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.CriticalHitDamageBoost, "Critical Hit Damage", "Increases damage dealt by critical hits", Buff.BuffType.Temporary, 50f, 35f)
-                {
-                    tags = new List<string> { "Critical", "Damage", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.ExperienceBoost, "Experience Boost", "Increases experience points gained from actions", Buff.BuffType.Temporary, 100f, 300f)
-                {
-                    tags = new List<string> { "Experience", "Learning", "Beneficial" }
-                });
-
-                buffDatabase.Add(new Buff(Buff.ID.LuckBoost, "Luck Boost", "Increases chance of rare drops and positive outcomes", Buff.BuffType.Temporary, 25f, 120f)
-                {
-                    tags = new List<string> { "Luck", "Fortune", "Beneficial" }
-                });
-
-                // Debuffs (using negative IDs for distinction)
-                buffDatabase.Add(new Buff((Buff.ID)(-1), "Poison", "Slowly drains health over time", Buff.BuffType.Debuff, -3f, 15f)
-                {
-                    tags = new List<string> { "Poison", "Damage", "Debuff" }
-                });
-
-                buffDatabase.Add(new Buff((Buff.ID)(-2), "Weakness", "Reduces attack power and physical damage", Buff.BuffType.Debuff, -10f, 45f)
-                {
-                    tags = new List<string> { "Weakness", "Attack", "Debuff" }
-                });
-
-                buffDatabase.Add(new Buff((Buff.ID)(-3), "Slowness", "Reduces movement speed", Buff.BuffType.Debuff, -15f, 25f)
-                {
-                    tags = new List<string> { "Slow", "Movement", "Debuff" }
-                });
-            }        /// <summary>
-                     /// Initializes the skill database with predefined skills. Clears any existing data.
-                     /// </summary>
-            public static void InitializeSkillDatabase()
-            {
-                skillDatabase.Clear();
-
-                // Combat Skills
-                skillDatabase.Add(new Skill(Skill.ID.Combat, Skill.SkillType.Combat, 0f, 1)
-                {
-                    tags = new List<string> { "Combat", "Fighting", "Weapons" }
-                });
-
-                // Crafting Skills
-                skillDatabase.Add(new Skill(Skill.ID.Crafting, Skill.SkillType.Crafting, 0f, 1)
-                {
-                    tags = new List<string> { "Crafting", "Creation", "Items", "CanCraft" }
-                });
-
-                // Gathering Skills
-                skillDatabase.Add(new Skill(Skill.ID.Gathering, Skill.SkillType.Gathering, 0f, 1)
-                {
-                    tags = new List<string> { "Gathering", "Resources", "Collection", "CanGather" }
-                });
-
-                // Social Skills
-                skillDatabase.Add(new Skill(Skill.ID.Social, Skill.SkillType.Social, 0f, 1)
-                {
-                    tags = new List<string> { "Social", "Communication", "Persuasion", "Speaking", "CanCommunicate" }
-                });
-
-                // Magic Skills
-                skillDatabase.Add(new Skill(Skill.ID.Magic, Skill.SkillType.Magic, 0f, 1)
-                {
-                    tags = new List<string> { "Magic", "Spells", "Arcane", "CanCast" }
-                });
-
-                // Exploration Skills
-                skillDatabase.Add(new Skill(Skill.ID.Exploration, Skill.SkillType.Exploration, 0f, 1)
-                {
-                    tags = new List<string> { "Exploration", "Discovery", "Navigation" }
-                });
-
-                // Survival Skills
-                skillDatabase.Add(new Skill(Skill.ID.Survival, Skill.SkillType.Survival, 0f, 1)
-                {
-                    tags = new List<string> { "Survival", "Wilderness", "Endurance" }
-                });
-
-                // Stealth Skills
-                skillDatabase.Add(new Skill(Skill.ID.Stealth, Skill.SkillType.Stealth, 0f, 1)
-                {
-                    tags = new List<string> { "Stealth", "Sneaking", "Hiding" }
-                });
-
-                // Engineering Skills
-                skillDatabase.Add(new Skill(Skill.ID.Engineering, Skill.SkillType.Engineering, 0f, 1)
-                {
-                    tags = new List<string> { "Engineering", "Mechanics", "Technology", "CanEngineer" }
-                });
-
-                // Alchemy Skills
-                skillDatabase.Add(new Skill(Skill.ID.Alchemy, Skill.SkillType.Alchemy, 0f, 1)
-                {
-                    tags = new List<string> { "Alchemy", "Potions", "Chemistry" }
-                });
-            }
-
-            /// <summary>
-            /// Initializes all game databases by calling their respective initialization methods.
-            /// </summary>
-            public static void InitializeAllDatabases()
-            {
-                InitializeEntityDatabase();
-                InitializeItemDatabase();
-                InitializeBuffDatabase();
-                InitializeSkillDatabase();
-            }
-            #endregion // Database Initialization
+            get => loreDatabase;
+            set => loreDatabase = value ?? new List<LoreEntry>();
         }
+
+        /// <summary>
+        /// Retrieves a quest from the database by its unique ID.
+        /// </summary>
+        /// <param name="id">The ID of the quest to retrieve.</param>
+        /// <returns>The found <see cref="Quest"/>, or a default quest if not found.</returns>
+        public static Quest GetQuestByID(Quest.ID id)
+        {
+            Quest quest = questDatabase.Find(q => q.questID == id);
+            if (quest.questID == id)
+            {
+                return quest;
+            }
+            return new Quest(id, "Unknown Quest", "Quest not found");
+        }
+
+        /// <summary>
+        /// Retrieves an objective from the database by its unique ID.
+        /// </summary>
+        /// <param name="id">The ID of the objective to retrieve.</param>
+        /// <returns>The found <see cref="Objective"/>, or a default objective if not found.</returns>
+        public static Objective GetObjectiveByID(Objective.ID id)
+        {
+            Objective objective = objectiveDatabase.Find(o => o.objectiveID == id);
+            if (objective.objectiveID == id)
+            {
+                return objective;
+            }
+            return new Objective(id, "Unknown Objective", "Objective not found");
+        }
+
+        /// <summary>
+        /// Retrieves a trait from the database by its unique ID.
+        /// </summary>
+        /// <param name="id">The ID of the trait to retrieve.</param>
+        /// <returns>The found <see cref="Trait"/>, or a default trait if not found.</returns>
+        public static Trait GetTraitByID(Trait.ID id)
+        {
+            Trait trait = traitDatabase.Find(t => t.traitID == id);
+            if (trait.traitID == id)
+            {
+                return trait;
+            }
+            return new Trait(id, "Unknown Trait", "Trait not found", "Unknown");
+        }
+
+        /// <summary>
+        /// Retrieves an NPC from the database by name.
+        /// </summary>
+        /// <param name="name">The name of the NPC to retrieve.</param>
+        /// <returns>The found <see cref="NPC"/>, or a default NPC if not found.</returns>
+        public static NPC GetNPCByName(string name)
+        {
+            NPC npc = npcDatabase.Find(n => string.Equals(n.npcName, name, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(npc.npcName))
+            {
+                return npc;
+            }
+            return new NPC(name, NPC.Archetype.Trader, new Entity("Unknown NPC", Entity.ID.Pop));
+        }
+
+        /// <summary>
+        /// Retrieves a lore entry from the database by title.
+        /// </summary>
+        /// <param name="title">The title of the lore entry to retrieve.</param>
+        /// <returns>The found <see cref="LoreEntry"/>, or a default entry if not found.</returns>
+        public static LoreEntry GetLoreEntryByTitle(string title)
+        {
+            LoreEntry entry = loreDatabase.Find(l => string.Equals(l.title, title, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(entry.title))
+            {
+                return entry;
+            }
+            return new LoreEntry(title, LoreEntry.LegacyCategory.History, "Lore entry not found");
+        }
+
+        /// <summary>
+        /// Retrieves all quests of a specific type.
+        /// </summary>
+        /// <param name="questType">The type of quests to retrieve.</param>
+        /// <returns>A list of quests matching the specified type.</returns>
+        public static List<Quest> GetQuestsByType(Quest.Type questType)
+        {
+            return questDatabase.FindAll(q => q.questType == questType);
+        }
+
+        /// <summary>
+        /// Retrieves all quests with a specific status.
+        /// </summary>
+        /// <param name="status">The status of quests to retrieve.</param>
+        /// <returns>A list of quests matching the specified status.</returns>
+        public static List<Quest> GetQuestsByStatus(Quest.Status status)
+        {
+            return questDatabase.FindAll(q => q.status == status);
+        }
+
+        /// <summary>
+        /// Retrieves all objectives that are completed.
+        /// </summary>
+        /// <returns>A list of completed objectives.</returns>
+        public static List<Objective> GetCompletedObjectives()
+        {
+            return objectiveDatabase.FindAll(o => o.isCompleted);
+        }
+
+        /// <summary>
+        /// Retrieves all traits by category.
+        /// </summary>
+        /// <param name="category">The category of traits to retrieve.</param>
+        /// <returns>A list of traits in the specified category.</returns>
+        public static List<Trait> GetTraitsByCategory(string category)
+        {
+            return traitDatabase.FindAll(t => string.Equals(t.category, category, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Retrieves all NPCs of a specific archetype.
+        /// </summary>
+        /// <param name="archetype">The archetype of NPCs to retrieve.</param>
+        /// <returns>A list of NPCs matching the specified archetype.</returns>
+        public static List<NPC> GetNPCsByArchetype(NPC.Archetype archetype)
+        {
+            return npcDatabase.FindAll(n => n.archetype == archetype);
+        }            /// <summary>
+                     /// Retrieves all lore entries of a specific category.
+                     /// </summary>
+                     /// <param name="category">The category of lore entries to retrieve.</param>
+                     /// <returns>A list of lore entries in the specified category.</returns>
+        public static List<LoreEntry> GetLoreEntriesByCategory(LoreEntry.LegacyCategory category)
+        {
+            return loreDatabase.FindAll(l => l.category == category);
+        }
+
+        /// <summary>
+        /// Retrieves all discovered lore entries.
+        /// </summary>
+        /// <returns>A list of discovered lore entries.</returns>
+        public static List<LoreEntry> GetDiscoveredLoreEntries()
+        {
+            return loreDatabase.FindAll(l => l.isDiscovered);
+        }
+
+        /// <summary>
+        /// Retrieves all journal entries of a specific type.
+        /// </summary>
+        /// <param name="entryType">The type of journal entries to retrieve.</param>
+        /// <returns>A list of journal entries matching the specified type.</returns>
+        public static List<JournalEntry> GetJournalEntriesByType(JournalEntry.EntryType entryType)
+        {
+            return journalDatabase.FindAll(j => j.type == entryType);
+        }
+
+        /// <summary>
+        /// Retrieves all important journal entries.
+        /// </summary>
+        /// <returns>A list of important journal entries.</returns>
+        public static List<JournalEntry> GetImportantJournalEntries()
+        {
+            return journalDatabase.FindAll(j => j.isImportant);
+        }
+
+        /// <summary>
+        /// Retrieves all genetics of a specific type.
+        /// </summary>
+        /// <param name="geneType">The type of genetics to retrieve.</param>
+        /// <returns>A list of genetics matching the specified type.</returns>
+        public static List<Genetics> GetGeneticsByType(Genetics.GeneType geneType)
+        {
+            return geneticsDatabase.FindAll(g => g.geneType == geneType);
+        }
+
+        /// <summary>
+        /// Gets updated database counts including all databases.
+        /// </summary>
+        /// <returns>A dictionary with database names and their entry counts.</returns>
+        public static Dictionary<string, int> GetDatabaseCounts()
+        {
+            return new Dictionary<string, int>
+                {
+                    { "Entities", entityDatabase.Count },
+                    { "Items", itemDatabase.Count },
+                    { "Buffs", buffDatabase.Count },
+                    { "Skills", skillDatabase.Count },
+                    { "Quests", questDatabase.Count },
+                    { "Objectives", objectiveDatabase.Count },
+                    { "Stats", statDatabase.Count },
+                    { "Traits", traitDatabase.Count },
+                    { "NPCs", npcDatabase.Count },
+                    { "Lore Entries", loreDatabase.Count },
+                    { "Journal Entries", journalDatabase.Count },
+                    { "Genetics", geneticsDatabase.Count },
+                    { "Leveling Systems", levelingSystemDatabase.Count }
+                };
+        }
+
+
+        #endregion // Databases
+
+        #region Data Retrieval Methods        /// <summary>
+        /// Retrieves an entity from the database by its unique ID.
+        /// </summary>
+        /// <param name="id">The ID of the entity to retrieve.</param>
+        /// <returns>The found <see cref="Entity"/>, or a default "Unknown" entity if not found.</returns>
+        public static Entity GetEntityByID(int id)
+        {
+            Entity entity = entityDatabase.Find(e => e.entityID == id);
+            if (entity.entityID != 0)
+            {
+                return entity;
+            }
+            // Return a default entity if not found
+            return new Entity("Entity_" + id, (Entity.ID)id);
+        }
+
+        /// <summary>
+        /// Retrieves an entity from the database by its unique ID.
+        /// </summary>
+        /// <param name="id">The ID of the entity to retrieve.</param>
+        /// <returns>The found <see cref="Entity"/>, or a default "Unknown" entity if not found.</returns>
+        public static Entity GetEntityByID(Entity.ID id)
+        {
+            int entityId = (int)id;
+            return GetEntityByID(entityId);
+        }
+
+        /// <summary>
+        /// Retrieves an item from the database by its unique ID.
+        /// </summary>
+        /// <param name="id">The ID of the item to retrieve.</param>
+        /// <returns>The found <see cref="Item"/>, or a default "Unknown" item if not found.</returns>
+
+        public static Item GetItemByID(Item.ID id)
+        {
+            int itemId = (int)id;
+            Item item = itemDatabase.Find(i => i.itemID == itemId);
+            // Check if item is not default (structs can't be null)
+            if (item.itemID == itemId && !string.IsNullOrEmpty(item.itemName))
+            {
+                return item;
+            }            // Return a default item if not found
+            return new Item("Item_" + itemId, (Item.ID)itemId, Item.ItemType.Miscellaneous);
+        }        /// <summary>
+                 /// Retrieves a buff from the database by its unique ID.
+                 /// </summary>
+                 /// <param name="id">The ID of the buff to retrieve.</param>
+                 /// <returns>The found <see cref="Buff"/>, or a default "Unknown" buff if not found.</returns>
+        public static Buff GetBuffByID(Buff.ID id)
+        {
+            int buffId = (int)id;
+            Buff buff = buffDatabase.Find(b => b.buffID == buffId);
+            // Check if buff is not default (structs can't be null)
+            if (buff.buffID == buffId && !string.IsNullOrEmpty(buff.buffName))
+            {
+                return buff;
+            }
+            // Return a default buff if not found
+            return new Buff(id, "Buff_" + buffId, "Unknown buff effect", Buff.BuffType.Temporary, 1f, 10f);
+        }        /// <summary>
+                 /// Retrieves a skill from the database by its unique ID.
+                 /// </summary>
+                 /// <param name="id">The ID of the skill to retrieve.</param>
+                 /// <returns>The found <see cref="Skill"/>, or a default "Unknown" skill if not found.</returns>
+        public static Skill GetSkillByID(Skill.ID id)
+        {
+            Skill skill = skillDatabase.Find(s => s.skillID == id);
+
+            // Check if skill is not default (structs can't be null, but we can check if it matches the ID)
+            if (skill.skillID == id)
+            {
+                return skill;
+            }
+
+            // Return a default skill if not found
+            return new Skill(id, Skill.SkillType.Combat)
+            {
+                tags = new List<string> { "Unknown" }
+            };
+        }
+
+        /// <summary>
+        /// Retrieves a stat definition by its unique ID. Returns a default stat template.
+        /// </summary>
+        /// <param name="id">The ID of the stat to retrieve.</param>
+        /// <returns>A default <see cref="Stat"/> template with the specified ID.</returns>
+        public static Stat GetStatByID(Stat.ID id)
+        {
+            // Since stats are typically created per-entity, this returns a template
+            string statName = id.ToString();
+            string description = $"The {statName.ToLower()} statistic";
+
+            // Set appropriate defaults based on stat type
+            float defaultMax = 100f;
+            Stat.StatType statType = Stat.StatType.Primary;
+
+            switch (id)
+            {
+                case Stat.ID.Health:
+                case Stat.ID.Mana:
+                case Stat.ID.Stamina:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Primary;
+                    break;
+                case Stat.ID.Attack:
+                case Stat.ID.Defense:
+                case Stat.ID.Speed:
+                case Stat.ID.MagicPower:
+                case Stat.ID.MagicDefense:
+                    defaultMax = float.MaxValue;
+                    statType = Stat.StatType.Secondary;
+                    break;
+                case Stat.ID.Experience:
+                case Stat.ID.Level:
+                case Stat.ID.Luck:
+                    defaultMax = float.MaxValue;
+                    statType = Stat.StatType.Tertiary;
+                    break;
+                case Stat.ID.CriticalHitChance:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Secondary;
+                    description = "The chance to deal critical damage (percentage)";
+                    break;
+                case Stat.ID.CriticalHitDamage:
+                    defaultMax = 500f;
+                    statType = Stat.StatType.Secondary;
+                    description = "The multiplier for critical hit damage (percentage)";
+                    break;
+                case Stat.ID.Hunger:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Primary;
+                    description = "Current hunger level - decreases over time, affects health when low";
+                    break;
+                case Stat.ID.Thirst:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Primary;
+                    description = "Current thirst level - decreases over time, affects health when low";
+                    break;
+                case Stat.ID.Energy:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Primary;
+                    description = "Current energy level - decreases with activity, affects movement and actions";
+                    break;
+                case Stat.ID.Rest:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Primary;
+                    description = "Current rest level - decreases over time, affects energy recovery";
+                    break;
+                default:
+                    defaultMax = 100f;
+                    statType = Stat.StatType.Primary;
+                    break;
+            }
+
+            return new Stat(id, statName, 0f, 0f, defaultMax, statType, description);
+        }
+
+        /// <summary>
+        /// Retrieves a rarity enum value by its numeric index.
+        /// </summary>
+        /// <param name="rarityIndex">The numeric index of the rarity (0=Common, 1=Uncommon, etc.).</param>
+        /// <returns>The corresponding <see cref="Rarity"/> enum value, or Common if out of range.</returns>
+        public static Rarity GetRarityByIndex(int rarityIndex)
+        {
+            if (rarityIndex < 0 || rarityIndex >= System.Enum.GetValues(typeof(Rarity)).Length)
+            {
+                return Rarity.Common;
+            }
+            return (Rarity)rarityIndex;
+        }
+
+        /// <summary>
+        /// Retrieves an entity size template by its size category.
+        /// </summary>
+        /// <param name="size">The size category to retrieve.</param>
+        /// <returns>The corresponding <see cref="EntitySize"/> with predefined values.</returns>
+        public static EntitySize GetEntitySizeByCategory(EntitySize.Size size)
+        {
+            switch (size)
+            {
+                case EntitySize.Size.Small:
+                    return EntitySize.Small;
+                case EntitySize.Size.Medium:
+                    return EntitySize.Medium;
+                case EntitySize.Size.Large:
+                    return EntitySize.Large;
+                case EntitySize.Size.Huge:
+                    return EntitySize.Huge;
+                case EntitySize.Size.Gargantuan:
+                    return EntitySize.Gargantuan;
+                default:
+                    return EntitySize.Medium;
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all entities of a specific type.
+        /// </summary>
+        /// <param name="entityType">The type of entities to retrieve.</param>
+        /// <returns>A list of entities matching the specified type.</returns>
+        public static List<Entity> GetEntitiesByType(Entity.EntityType entityType)
+        {
+            return entityDatabase.FindAll(e => e.entityType.Contains(entityType));
+        }
+
+        /// <summary>
+        /// Retrieves all items of a specific type.
+        /// </summary>
+        /// <param name="itemType">The type of items to retrieve.</param>
+        /// <returns>A list of items matching the specified type.</returns>
+        public static List<Item> GetItemsByType(Item.ItemType itemType)
+        {
+            return itemDatabase.FindAll(i => i.itemType == itemType);
+        }
+
+        /// <summary>
+        /// Retrieves all buffs of a specific type.
+        /// </summary>
+        /// <param name="buffType">The type of buffs to retrieve.</param>
+        /// <returns>A list of buffs matching the specified type.</returns>
+        public static List<Buff> GetBuffsByType(Buff.BuffType buffType)
+        {
+            return buffDatabase.FindAll(b => b.buffType == buffType);
+        }
+
+        /// <summary>
+        /// Retrieves all skills of a specific type.
+        /// </summary>
+        /// <param name="skillType">The type of skills to retrieve.</param>
+        /// <returns>A list of skills matching the specified type.</returns>
+        public static List<Skill> GetSkillsByType(Skill.SkillType skillType)
+        {
+            return skillDatabase.FindAll(s => s.skillType == skillType);
+        }
+
+        /// <summary>
+        /// Retrieves all entities with a specific rarity level.
+        /// </summary>
+        /// <param name="rarity">The rarity level to search for.</param>
+        /// <returns>A list of entities with the specified rarity.</returns>
+        public static List<Entity> GetEntitiesByRarity(Rarity rarity)
+        {
+            return entityDatabase.FindAll(e => e.rarity == rarity);
+        }
+
+        /// <summary>
+        /// Retrieves all items with a specific rarity level.
+        /// </summary>
+        /// <param name="rarity">The rarity level to search for.</param>
+        /// <returns>A list of items with the specified rarity.</returns>
+        public static List<Item> GetItemsByRarity(Item.ItemRarity rarity)
+        {
+            return itemDatabase.FindAll(i => i.itemRarity == rarity);
+        }
+
+        /// <summary>
+        /// Retrieves entities by name (case-insensitive search).
+        /// </summary>
+        /// <param name="name">The name to search for.</param>
+        /// <param name="exactMatch">If true, requires exact match; if false, allows partial matches.</param>
+        /// <returns>A list of entities matching the search criteria.</returns>
+        public static List<Entity> GetEntitiesByName(string name, bool exactMatch = true)
+        {
+            if (exactMatch)
+            {
+                return entityDatabase.FindAll(e => string.Equals(e.entityName, name, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return entityDatabase.FindAll(e => e.entityName.ToLower().Contains(name.ToLower()));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves items by name (case-insensitive search).
+        /// </summary>
+        /// <param name="name">The name to search for.</param>
+        /// <param name="exactMatch">If true, requires exact match; if false, allows partial matches.</param>
+        /// <returns>A list of items matching the search criteria.</returns>
+        public static List<Item> GetItemsByName(string name, bool exactMatch = true)
+        {
+            if (exactMatch)
+            {
+                return itemDatabase.FindAll(i => string.Equals(i.itemName, name, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                return itemDatabase.FindAll(i => i.itemName.ToLower().Contains(name.ToLower()));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves entities that contain a specific tag.
+        /// </summary>
+        /// <param name="tag">The tag to search for.</param>
+        /// <returns>A list of entities that have the specified tag.</returns>
+        public static List<Entity> GetEntitiesByTag(string tag)
+        {
+            return entityDatabase.FindAll(e => e.tags != null && e.tags.Contains(tag));
+        }
+
+        /// <summary>
+        /// Retrieves items that contain a specific tag.
+        /// </summary>
+        /// <param name="tag">The tag to search for.</param>
+        /// <returns>A list of items that have the specified tag.</returns>
+        public static List<Item> GetItemsByTag(string tag)
+        {
+            return itemDatabase.FindAll(i => i.tags != null && i.tags.Contains(tag));
+        }
+
+        /// <summary>
+        /// Retrieves buffs that contain a specific tag.
+        /// </summary>
+        /// <param name="tag">The tag to search for.</param>
+        /// <returns>A list of buffs that have the specified tag.</returns>
+        public static List<Buff> GetBuffsByTag(string tag)
+        {
+            return buffDatabase.FindAll(b => b.tags != null && b.tags.Contains(tag));
+        }
+
+        /// <summary>
+        /// Retrieves skills that contain a specific tag.
+        /// </summary>
+        /// <param name="tag">The tag to search for.</param>
+        /// <returns>A list of skills that have the specified tag.</returns>
+        public static List<Skill> GetSkillsByTag(string tag)
+        {
+            return skillDatabase.FindAll(s => s.tags != null && s.tags.Contains(tag));
+        }
+
+
+
+        #endregion // Data Retrieval Methods
+
+        #region Database Initialization
+
+        /// <summary>
+        /// Initializes the entity database with predefined entities. Clears any existing data.
+        /// </summary>
+        public static void InitializeEntityDatabase()
+        {
+            entityDatabase.Clear(); // Clear existing data
+
+            // Example initialization of the entity database
+            entityDatabase.Add(new Entity("Pop", Entity.ID.Pop)
+            {
+                entityType = new List<Entity.EntityType> { Entity.EntityType.PlayerControlled },
+                health = new Health(100f),
+                mana = new Stat(Stat.ID.Mana, "Mana", 50f, 0f, 50f),
+                attack = new Stat(Stat.ID.Attack, "Attack", 5f, 0f, float.MaxValue),
+                defense = new Stat(Stat.ID.Defense, "Defense", 3f, 0f, float.MaxValue),
+                speed = new Stat(Stat.ID.Speed, "Speed", 8f, 0f, float.MaxValue),
+                entitySize = EntitySize.Medium,
+                aggressionType = Entity.AggressionType.Neutral,
+                tags = new List<string> { "Humanoid", "Playable", "CanCraft" },
+                thirst = new Stat(Stat.ID.Thirst, "Thirst", 100f, 0f, 100f),
+                hunger = new Stat(Stat.ID.Hunger, "Hunger", 100f, 0f, 100f),
+                energy = new Stat(Stat.ID.Energy, "Energy", 100f, 0f, 100f),
+
+            });
+
+            entityDatabase.Add(new Entity("Wolf", Entity.ID.Wolf)
+            {
+                entityType = new List<Entity.EntityType> { Entity.EntityType.Animal },
+                health = new Health(60f),
+                attack = new Stat(Stat.ID.Attack, "Attack", 12f),
+                defense = new Stat(Stat.ID.Defense, "Defense", 4f),
+                speed = new Stat(Stat.ID.Speed, "Speed", 15f),
+                entitySize = EntitySize.Medium,
+                aggressionType = Entity.AggressionType.Aggressive,
+                tags = new List<string> { "Animal", "Predator" }
+            });
+            entityDatabase.Add(new Entity("Dragon", Entity.ID.Dragon)
+            {
+                entityType = new List<Entity.EntityType> { Entity.EntityType.Boss, Entity.EntityType.Monster },
+                health = new Health(500f),
+                mana = new Stat(Stat.ID.Mana, "Mana", 200f),
+                attack = new Stat(Stat.ID.Attack, "Attack", 50f),
+                defense = new Stat(Stat.ID.Defense, "Defense", 30f),
+                speed = new Stat(Stat.ID.Speed, "Speed", 20f),
+                entitySize = EntitySize.Gargantuan,
+                aggressionType = Entity.AggressionType.Aggressive,
+                rarity = Rarity.Legendary, // Note: Rarity enum is in the namespace
+                level = 50,
+                tags = new List<string> { "Boss", "Flying", "Fire" }
+            });
+        }
+        /// <summary>
+        /// Initializes the item database with predefined items. Clears any existing data.
+        /// </summary>        
+        public static void InitializeItemDatabase()
+        {
+            itemDatabase.Clear();
+
+            // Weapons
+            itemDatabase.Add(new Item("Iron Sword", Item.ID.IronSword, Item.ItemType.Weapon, 3f, 1, 50, Item.ItemRarity.Common, Item.ItemQuality.Good)
+            {
+                tags = new List<string> { "Weapon", "Melee", "Sword" }
+            });
+
+            itemDatabase.Add(new Item("Steel Axe", Item.ID.SteelAxe, Item.ItemType.Weapon, 4f, 1, 75, Item.ItemRarity.Common, Item.ItemQuality.Good)
+            {
+                tags = new List<string> { "Weapon", "Melee", "Axe" }
+            });
+
+            itemDatabase.Add(new Item("Enchanted Staff", Item.ID.EnchantedStaff, Item.ItemType.Weapon, 2f, 1, 150, Item.ItemRarity.Rare, Item.ItemQuality.Excellent)
+            {
+                tags = new List<string> { "Weapon", "Magic", "Staff" }
+            });
+
+            // Armor
+            itemDatabase.Add(new Item("Leather Armor", Item.ID.LeatherArmor, Item.ItemType.Armor, 5f, 1, 30, Item.ItemRarity.Common, Item.ItemQuality.Fair)
+            {
+                tags = new List<string> { "Armor", "Light", "Chest" }
+            });
+
+            itemDatabase.Add(new Item("Chain Mail", Item.ID.ChainMail, Item.ItemType.Armor, 8f, 1, 80, Item.ItemRarity.Uncommon, Item.ItemQuality.Good)
+            {
+                tags = new List<string> { "Armor", "Medium", "Chest" }
+            });
+
+            itemDatabase.Add(new Item("Dragon Scale Armor", Item.ID.DragonScaleArmor, Item.ItemType.Armor, 15f, 1, 500, Item.ItemRarity.Legendary, Item.ItemQuality.Masterwork)
+            {
+                tags = new List<string> { "Armor", "Heavy", "Chest", "Dragon" }
+            });
+
+            // Consumables
+            itemDatabase.Add(new Item("Health Potion", Item.ID.HealthPotion, Item.ItemType.Consumable, 0.5f, 5, 25, Item.ItemRarity.Common, Item.ItemQuality.Good)
+            {
+                tags = new List<string> { "Consumable", "Potion", "Healing" }
+            });
+
+            itemDatabase.Add(new Item("Mana Potion", Item.ID.ManaPotion, Item.ItemType.Consumable, 0.5f, 3, 35, Item.ItemRarity.Common, Item.ItemQuality.Good)
+            {
+                tags = new List<string> { "Consumable", "Potion", "Mana" }
+            });
+
+            itemDatabase.Add(new Item("Bread", Item.ID.Bread, Item.ItemType.Consumable, 0.2f, 10, 5, Item.ItemRarity.Common, Item.ItemQuality.Fair)
+            {
+                tags = new List<string> { "Consumable", "Food" }
+            });
+
+            // Quest Items
+            itemDatabase.Add(new Item("Ancient Key", Item.ID.AncientKey, Item.ItemType.QuestItem, 0.1f, 1, 0, Item.ItemRarity.Rare, Item.ItemQuality.Excellent)
+            {
+                tags = new List<string> { "Quest", "Key", "Ancient" }
+            });
+
+            // Miscellaneous
+            itemDatabase.Add(new Item("Gold Coin", Item.ID.GoldCoin, Item.ItemType.Miscellaneous, 0.01f, 100, 1, Item.ItemRarity.Common, Item.ItemQuality.Fair)
+            {
+                tags = new List<string> { "Currency", "Gold" }
+            });
+        }        /// <summary>
+                 /// Initializes the buff database with predefined buffs. Clears any existing data.
+                 /// </summary>
+        public static void InitializeBuffDatabase()
+        {
+            buffDatabase.Clear();
+
+            // Positive Buffs
+            buffDatabase.Add(new Buff(Buff.ID.HealthRegen, "Health Regeneration", "Slowly restores health over time", Buff.BuffType.Temporary, 5f, 30f)
+            {
+                tags = new List<string> { "Healing", "Regeneration", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.ManaRegen, "Mana Regeneration", "Slowly restores mana over time", Buff.BuffType.Temporary, 3f, 45f)
+            {
+                tags = new List<string> { "Mana", "Regeneration", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.SpeedBoost, "Speed Boost", "Increases movement speed significantly", Buff.BuffType.Temporary, 25f, 20f)
+            {
+                tags = new List<string> { "Speed", "Movement", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.StrengthBoost, "Strength Boost", "Increases attack power and physical damage", Buff.BuffType.Temporary, 15f, 60f)
+            {
+                tags = new List<string> { "Strength", "Attack", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.DefenseBoost, "Defense Boost", "Increases damage resistance and armor", Buff.BuffType.Temporary, 20f, 90f)
+            {
+                tags = new List<string> { "Defense", "Protection", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.CriticalHitChanceBoost, "Critical Hit Chance", "Increases the chance of landing critical hits", Buff.BuffType.Temporary, 10f, 40f)
+            {
+                tags = new List<string> { "Critical", "Luck", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.CriticalHitDamageBoost, "Critical Hit Damage", "Increases damage dealt by critical hits", Buff.BuffType.Temporary, 50f, 35f)
+            {
+                tags = new List<string> { "Critical", "Damage", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.ExperienceBoost, "Experience Boost", "Increases experience points gained from actions", Buff.BuffType.Temporary, 100f, 300f)
+            {
+                tags = new List<string> { "Experience", "Learning", "Beneficial" }
+            });
+
+            buffDatabase.Add(new Buff(Buff.ID.LuckBoost, "Luck Boost", "Increases chance of rare drops and positive outcomes", Buff.BuffType.Temporary, 25f, 120f)
+            {
+                tags = new List<string> { "Luck", "Fortune", "Beneficial" }
+            });
+
+            // Debuffs (using negative IDs for distinction)
+            buffDatabase.Add(new Buff((Buff.ID)(-1), "Poison", "Slowly drains health over time", Buff.BuffType.Debuff, -3f, 15f)
+            {
+                tags = new List<string> { "Poison", "Damage", "Debuff" }
+            });
+
+            buffDatabase.Add(new Buff((Buff.ID)(-2), "Weakness", "Reduces attack power and physical damage", Buff.BuffType.Debuff, -10f, 45f)
+            {
+                tags = new List<string> { "Weakness", "Attack", "Debuff" }
+            });
+
+            buffDatabase.Add(new Buff((Buff.ID)(-3), "Slowness", "Reduces movement speed", Buff.BuffType.Debuff, -15f, 25f)
+            {
+                tags = new List<string> { "Slow", "Movement", "Debuff" }
+            });
+        }        /// <summary>
+                 /// Initializes the skill database with predefined skills. Clears any existing data.
+                 /// </summary>
+        public static void InitializeSkillDatabase()
+        {
+            skillDatabase.Clear();
+
+            // Combat Skills
+            skillDatabase.Add(new Skill(Skill.ID.Combat, Skill.SkillType.Combat, 0f, 1)
+            {
+                tags = new List<string> { "Combat", "Fighting", "Weapons" }
+            });
+
+            // Crafting Skills
+            skillDatabase.Add(new Skill(Skill.ID.Crafting, Skill.SkillType.Crafting, 0f, 1)
+            {
+                tags = new List<string> { "Crafting", "Creation", "Items", "CanCraft" }
+            });
+
+            // Gathering Skills
+            skillDatabase.Add(new Skill(Skill.ID.Gathering, Skill.SkillType.Gathering, 0f, 1)
+            {
+                tags = new List<string> { "Gathering", "Resources", "Collection", "CanGather" }
+            });
+
+            // Social Skills
+            skillDatabase.Add(new Skill(Skill.ID.Social, Skill.SkillType.Social, 0f, 1)
+            {
+                tags = new List<string> { "Social", "Communication", "Persuasion", "Speaking", "CanCommunicate" }
+            });
+
+            // Magic Skills
+            skillDatabase.Add(new Skill(Skill.ID.Magic, Skill.SkillType.Magic, 0f, 1)
+            {
+                tags = new List<string> { "Magic", "Spells", "Arcane", "CanCast" }
+            });
+
+            // Exploration Skills
+            skillDatabase.Add(new Skill(Skill.ID.Exploration, Skill.SkillType.Exploration, 0f, 1)
+            {
+                tags = new List<string> { "Exploration", "Discovery", "Navigation" }
+            });
+
+            // Survival Skills
+            skillDatabase.Add(new Skill(Skill.ID.Survival, Skill.SkillType.Survival, 0f, 1)
+            {
+                tags = new List<string> { "Survival", "Wilderness", "Endurance" }
+            });
+
+            // Stealth Skills
+            skillDatabase.Add(new Skill(Skill.ID.Stealth, Skill.SkillType.Stealth, 0f, 1)
+            {
+                tags = new List<string> { "Stealth", "Sneaking", "Hiding" }
+            });
+
+            // Engineering Skills
+            skillDatabase.Add(new Skill(Skill.ID.Engineering, Skill.SkillType.Engineering, 0f, 1)
+            {
+                tags = new List<string> { "Engineering", "Mechanics", "Technology", "CanEngineer" }
+            });
+
+            // Alchemy Skills
+            skillDatabase.Add(new Skill(Skill.ID.Alchemy, Skill.SkillType.Alchemy, 0f, 1)
+            {
+                tags = new List<string> { "Alchemy", "Potions", "Chemistry" }
+            });
+        }
+
+        /// <summary>
+        /// Initializes all game databases by calling their respective initialization methods.
+        /// </summary>
+        public static void InitializeAllDatabases()
+        {
+            InitializeEntityDatabase();
+            InitializeItemDatabase();
+            InitializeBuffDatabase();
+            InitializeSkillDatabase();
+        }
+        #endregion // Database Initialization
+    }
     }

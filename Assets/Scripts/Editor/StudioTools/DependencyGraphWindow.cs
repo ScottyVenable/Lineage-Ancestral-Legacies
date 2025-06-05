@@ -794,36 +794,34 @@ namespace Lineage.Core.Editor.Studio
             _nodes.Clear();
             _edges.Clear();
             _nodeMap.Clear();
-            
-            if (GameData.Instance == null)
+              if (GameData.entityDatabase == null)
             {
                 UnityEngine.Debug.LogWarning("[Dependency Graph] GameData instance not found.");
                 return;
             }
             
             try
-            {
-                // Build nodes from entities
-                var entities = GameData.Instance.EntityDatabase.GetAllEntities();
+            {                // Build nodes from entities
+                var entities = GameData.entityDatabase;
                 foreach (var entity in entities)
-                {
-                    var node = new GraphNode
+                {                    var node = new GraphNode
                     {
-                        EntityId = entity.Id,
-                        DisplayName = entity.Name ?? entity.Id,
+                        EntityId = entity.entityID.ToString(),
+                        DisplayName = entity.entityName ?? entity.entityID.ToString(),
                         Position = UnityEngine.Random.insideUnitCircle * 200f,
                         Color = GetEntityColor(entity),
                         Size = 20f
                     };
                     
                     _nodes.Add(node);
-                    _nodeMap[entity.Id] = node;
+                    _nodeMap[entity.entityID.ToString()] = node;
                 }
-                
-                // Build edges from relationships
-                var relationships = GameData.Instance.RelationshipDatabase.GetAllRelationships();
-                foreach (var relationship in relationships)
+                  // Build edges from relationships
+                // TODO: Implement relationship database access when relationships are available
+                var relationships = new List<object>(); // GameData.relationshipDatabase;                foreach (var relationship in relationships)
                 {
+                    // TODO: Implement when relationship structure is available
+                    /*
                     var edge = new GraphEdge
                     {
                         SourceId = relationship.SourceEntityId,
@@ -835,6 +833,7 @@ namespace Lineage.Core.Editor.Studio
                     };
                     
                     _edges.Add(edge);
+                    */
                 }
                 
                 // Update node connection counts

@@ -118,17 +118,17 @@ namespace Lineage.Editor
         
         private void DrawPopulations()
         {
-            if (Lineage.Ancestral.Legacies.Database.GameData.Populations == null) return;
+            if (Lineage.Ancestral.Legacies.Database.GameData.populationDatabase == null) return;
 
-            var filteredPopulations = Lineage.Ancestral.Legacies.Database.GameData.Populations.Where(p =>
+            var filteredPopulations = Lineage.Ancestral.Legacies.Database.GameData.populationDatabase.Where(p =>
                 string.IsNullOrEmpty(searchFilter) ||
-                p.Name.ToLower().Contains(searchFilter.ToLower()) ||
-                p.SettlementType.ToLower().Contains(searchFilter.ToLower()) ||
-                p.Location.ToLower().Contains(searchFilter.ToLower())).ToList();
+                p.populationName.ToLower().Contains(searchFilter.ToLower()) ||
+                p.populationTypeString.ToLower().Contains(searchFilter.ToLower()) ||
+                p.populationLocation.ToLower().Contains(searchFilter.ToLower())).ToList();
             
             // Group by settlement type
-            var groupedPopulations = filteredPopulations.GroupBy(p => p.SettlementType).OrderBy(g => g.Key);
-            
+            var groupedPopulations = filteredPopulations.GroupBy(p => p.populationTypeString).OrderBy(g => g.Key);
+
             foreach (var group in groupedPopulations)
             {
                 GUILayout.Label(group.Key, EditorStyles.boldLabel);
