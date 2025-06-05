@@ -1,127 +1,131 @@
 # Database.cs Modularization Implementation Plan
 
-This plan outlines the steps to refactor the monolithic `Database.cs` file into a more organized, modular structure. The goal is to improve readability, maintainability, and overall project organization without creating an excessive number of small files.
+This plan details how to refactor the monolithic `Database.cs` into a modular, maintainable structure for improved readability and project organization.
 
 ---
 
 ## Phase 1: Preparation & Strategic Decisions
 
-**Goal:** Plan the new structure and ensure a safe working environment.
+### 1. Backup Your Project
+- **[x]** Backup your entire Unity project (zip or commit to a new branch).
+- **Why:** Ensures you can revert if needed.
 
-- [ ] **Backup Your Entire Unity Project!**  
-    *Task:* Before making any large-scale refactoring changes, create a full backup of your project (e.g., zip it up, commit to version control on a new branch).  
-    *Recommended Branch Name:* `feature/database-modularization`  
-    *How to Create the Branch:*  
-    If you are using Git, open a terminal in your project root and run:
-    ```powershell
-    git checkout -b feature/database-modularization
-    git add .
-    git commit -m "Initial commit for database modularization refactor"
-    ```
-    *Why:* Safety first! If anything goes wrong, you can revert.
+### 2. Define Modularization Strategy for Data Structures
+- **[x]** Decide how to group data definitions (classes, structs, enums), typically by domain/category.
+- **Example Groupings:**
+    - `EntityRelatedTypes.cs` (Entity, Health, related enums) ✓
+    - `ItemRelatedTypes.cs` (Item, related enums) ✓
+    - `SkillAndBuffTypes.cs` (Skill, Buff, Stat, StatModifiers, related enums) ✓
+    - `QuestAndObjectiveTypes.cs` ✓
+    - `LoreAndJournalTypes.cs` ✓
+    - `WorldDataTypes.cs` (Settlement, Population, Location, Chunk) ✓
+    - `GeneticTypes.cs` ✓
+    - `StateTypes.cs` ✓
+    - `GlobalEnums.cs` (enums used across domains) ✓
+- **Why:** Establishes clear organization before moving code.
 
-- [ ] **Define Your Modularization Strategy for Data Structures**  
-    *Task:* Decide how you will group your data definitions (classes, structs, enums). The recommended approach is by "domain" or "category."  
-    *Example Groupings (to be refined by you):*
-        - `EntityRelatedTypes.cs` (for `Entity` class, `Health` struct, related enums)
-        - `ItemRelatedTypes.cs` (for `Item` class, related enums)
-        - `SkillAndBuffTypes.cs` (for `Skill`, `Buff`, `Stat`, `StatModifiers` classes/structs, related enums)
-        - `QuestAndObjectiveTypes.cs`
-        - `LoreAndJournalTypes.cs`
-        - `WorldDataTypes.cs` (for `Settlement`, `Population`, `Location`, `Chunk`)
-        - `GeneticAndTraitTypes.cs`
-        - `GlobalEnums.cs` (for enums used across multiple domains, if any)  
-    *Why:* Establishes a clear organization before you start moving code.
+### 3. Decide on Namespace Structure
+- **[x]** Choose a namespace strategy:
+    - Option 1: `Lineage.Ancestral.Legacies.Database` ✓
+    - Option 2: Sub-namespaces (e.g., `.Models`, `.Management`)
+- **Why:** Impacts using statements project-wide.
 
-- [ ] **Decide on Namespace Structure**  
-    *Task:* Confirm your namespace strategy.  
-    *Options:*
-        1. Keep everything under `Lineage.Ancestral.Legacies.Database`.
-        2. Use sub-namespaces for more clarity, e.g., `Lineage.Ancestral.Legacies.Database.Models` for the data structures, and `Lineage.Ancestral.Legacies.Database.Management` for the static `GameData` parts or repositories.  
-    *Why:* Affects using statements throughout your project.
+### 4. Plan New Folder Structure
+- **[x]** Create a new folder, e.g., `Assets/Scripts/GameDatabase/` with subfolders like `DataModels/`, `Repositories/`, `Enums/`. ✓
+- **Why:** Keeps files organized in Unity's Project view.
 
-- [ ] **Plan the New Folder Structure**  
-    *Task:* Create a new folder in your Unity project, e.g., `Assets/Scripts/GameDatabase/` (or similar).  
-    *Sub-folders could be:*  
-        - `DataModels/`
-        - `Repositories/` (if you choose that for `GameData`)
-        - `Enums/`  
-    *Why:* Keeps the new files organized in the Project view.
-
-- [ ] **Strategy for GameData Static Class (Database Lists & Initializers)**  
-    *Task:* Decide how to break up the static `GameData` class which holds the `public static List<T> ...Database` fields and the `Initialize...Database()` methods.  
-    *Options:*
-        - **Option A (Partial Classes):** Keep `GameData` as the access point but split its definition across multiple files using `public static partial class GameData`. E.g., `GameData.Entities.cs`, `GameData.Items.cs`.
-        - **Option B (Separate Static Repositories):** Create new static classes per domain, e.g., `EntityRepository.cs` (with `public static List<Entity> AllEntities;`), `ItemRepository.cs`, etc. Then have a `MasterDatabaseInitializer.cs` to call all their individual init methods.  
-    *Why:* Determines how runtime code and potentially some tools will access these master lists. Option A means less change to existing access code. Option B is arguably cleaner separation.
+### 5. Strategy for GameData Static Class
+- **[x]** Decide how to split the static `GameData` class:
+    - **Option A:** Partial classes (e.g., `GameData.Entities.cs`)
+    - **Option B:** Separate static repositories (e.g., `EntityRepository.cs`, `ItemRepository.cs`) with a `MasterDatabaseInitializer.cs` ✓
+- **Why:** Determines data access patterns and separation.
 
 ---
 
 ## Phase 2: Refactoring the Code
 
-**Goal:** Physically move the code into the new structure.
+### 1. Create New Script Files
+- **[x]** In `Assets/Scripts/GameDatabase/`, create empty C# files for each domain grouping. ✓
 
-- [ ] **Create New C# Script Files**  
-    *Task:* In your new `Assets/Scripts/GameDatabase/` folder (and subfolders), create the empty C# script files based on the domain groupings decided in Phase 1 (e.g., `EntityRelatedTypes.cs`, `ItemRelatedTypes.cs`).
+### 2. Move Data Structure Definitions
+- **[x]** Move class, struct, and enum definitions from `Database.cs` to new files. ✓
+- Ensure correct `using` directives and namespaces.
 
-- [ ] **Move Data Structure Definitions**  
-    *Task:* Carefully cut and paste the class, struct, and enum definitions from the original `Database.cs` into their new respective files.  
-    - Ensure each new file has the correct `using UnityEngine;`, `using System.Collections.Generic;`, etc., at the top.
-    - Ensure all moved code is within the chosen namespace(s).
-    - **Focus:** Get the definitions moved first.
+### 3. Refactor GameData Static Class
+- **[x]** Implement chosen strategy (partial classes or repositories). ✓
+- Move static list declarations and initializers to new files.
+- If using repositories, implement `MasterDatabaseInitializer.cs`. ✓
 
-- [ ] **Refactor the GameData Static Class**  
-    *Task:* Implement your chosen strategy (Partial Classes or Separate Repositories).  
-    - Move the static list declarations (`public static List<Entity> entityDatabase;`) and their corresponding `Initialize...Database()` methods into the new partial class files or new repository class files.
-    - If using separate repositories, create and implement `MasterDatabaseInitializer.cs`.  
-    *Why:* This separates the data storage/management logic.
+### 4. Update InitializeAllDatabases()
+- **[x]** Ensure the main initializer calls all individual database/repository initializers. ✓
 
-- [ ] **Update InitializeAllDatabases()**  
-    *Task:* Ensure the main `InitializeAllDatabases()` method (wherever it now resides – possibly in `GameData.Core.cs` if using partials, or in `MasterDatabaseInitializer.cs`) correctly calls all the individual `Initialize...Database()` or `Initialize...Repository()` methods.
-
-- [ ] **Clean Up Original Database.cs**  
-    *Task:* As you move sections of code out of the original `Database.cs`, you can delete them from that file. The goal is to eventually have a very slim `Database.cs` or even an empty one if all its contents are successfully migrated. (Do this cautiously, perhaps commenting out sections first).
+### 5. Clean Up Original Database.cs
+- **[x]** Remove migrated code from `Database.cs` (comment out first if needed). ✓
 
 ---
 
 ## Phase 3: Updating Project-Wide Code References
 
-**Goal:** Make sure all other scripts in your project can still find and use the database types and data.
+### 1. Update Using Directives
+- **[~]** Update `using` statements in all scripts to match new namespaces. (In Progress - some compilation errors remain)
 
-- [ ] **Update using Directives**  
-    *Task:* Go through all your runtime gameplay scripts and all your StudioTools editor scripts.  
-    - If you changed or added sub-namespaces for your database code, update the using statements at the top of these files accordingly (e.g., `using Lineage.Ancestral.Legacies.Database.Models;`).  
-    *Tip:* Unity's compiler errors will guide you here if types can't be found.
+### 2. Update Data Access Logic
+- **[~]** Update code accessing `GameData` if the access pattern changed (e.g., to `EntityRepository.AllEntities`). (In Progress - some compilation errors remain)
 
-- [ ] **Update Data Access Logic (if GameData access changed)**  
-    *Task:* If you switched from a monolithic `GameData.entityDatabase` to something like `EntityRepository.AllEntities` (Option B for GameData refactor), you'll need to find and replace these access points in your runtime code and potentially in some StudioTools (especially those that might display overall database stats or allow selection from these master lists).  
-    *Note:* If your StudioTools primarily load/edit ScriptableObject assets, this step will have less impact on them. The `GenericEditorUIDrawer` doesn't care how the list that holds the object is structured, only about the object's type itself.
-
-- [ ] **Compile & Fix Initial Errors**  
-    *Task:* Let Unity compile. Address any compiler errors that arise from moved types, incorrect namespaces, or changed access patterns. This will be an iterative process.
+### 3. Compile & Fix Errors
+- **[~]** Let Unity compile and fix any errors from moved types or changed access. (In Progress - missing using System.Collections.Generic and debug logging issues)
 
 ---
 
 ## Phase 4: Thorough Testing & Validation
 
-**Goal:** Confirm that the game and all tools work correctly with the new modular database structure.
+### 1. Test Runtime Game Logic
+- **[ ]** Playtest all features that use the database (spawning, items, skills, quests, NPCs).
 
-- [ ] **Test Runtime Game Logic**  
-    *Task:* Playtest your game. Focus on areas that:
-        - Spawn entities
-        - Use items, skills, buffs
-        - Trigger quests or lore
-        - Involve NPC interactions
-        - Basically, anything that reads from your game database  
-    *Why:* To ensure the game still functions as expected.
+### 2. Test StudioTools
+- **[ ]** Verify all editor tools (creation, editing, analysis, validation, menu integration) work as expected.
 
-- [ ] **Test ALL StudioTools Extensively**  
-    *Task:*  
-        - Creator/Designer Tools: Can you still create new ScriptableObject assets for entities, items, etc.? Do they save correctly?
-        - Do dropdowns and editors still populate as expected?
-        - Are all references and lookups working?
-        - Test any custom editors or database viewers.
+### 3. Test Reflection-Based UI
+- **[ ]** Ensure tools like `GenericEditorUIDrawer` still reflect on data classes correctly.
 
 ---
 
-**Tip:** Take your time with each phase. Modularization is a big step, but it will pay off in maintainability and clarity for your project!
+## Phase 5: Cleanup & Documentation
+
+### 1. Final Removal of Old Database.cs Content
+- **[x]** Delete or archive the now-empty `Database.cs`. ✓ (Archived as Database_Original_Backup.cs.backup)
+
+### 2. Update Documentation
+- **[ ]** Update design docs to reflect new file layout, namespaces, and data access.
+
+### 3. Commit Changes
+- **[ ]** Commit all changes with a clear message.
+
+---
+
+## Current Status & Remaining Issues
+
+### ✅ **Completed**
+- All major database refactoring has been completed
+- New modular folder structure created: `Assets/Scripts/GameDatabase/`
+- Data types separated into logical groups in `DataModels/` folder
+- Repository pattern implemented in `Repositories/` folder
+- `MasterDatabaseInitializer.cs` created to manage all repositories
+- Original `Database.cs` archived as backup
+
+### ⚠️ **Known Issues to Fix**
+1. **Missing using directives** - Need to add `using System.Collections.Generic;` to files using `List<T>`
+2. **Debug logging compilation errors** - `Lineage.Ancestral.Legacies.Debug.Log` method signatures need fixing
+3. **Repository ambiguity issues** - Some properties are duplicated causing compiler ambiguity
+4. **Project-wide using statement updates** - Other scripts may need namespace updates
+
+### 📋 **Next Steps**
+1. Fix compilation errors in `MasterDatabaseInitializer.cs` and repositories
+2. Update all scripts throughout the project to use new repository access patterns
+3. Test all editor tools and runtime functionality
+4. Update documentation to reflect new structure
+
+---
+
+**Result:**  
+Your new modular GameDatabase structure will be easier to maintain and scale as your project grows!
