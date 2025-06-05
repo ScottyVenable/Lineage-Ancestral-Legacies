@@ -8,14 +8,14 @@ namespace Lineage.Ancestral.Legacies.Systems.Crafting
     {
         public string recipeId;
         public List<Ingredient> ingredients;
-        public string resultItemId;
+        public Lineage.Ancestral.Legacies.Database.Item.ID resultItemId;
         public int resultQuantity;
     }
 
     [System.Serializable]
     public class Ingredient
     {
-        public string itemId;
+        public Lineage.Ancestral.Legacies.Database.Item.ID itemId;
         public int quantity;
     }
 }

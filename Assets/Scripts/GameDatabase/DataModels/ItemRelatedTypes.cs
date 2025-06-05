@@ -42,10 +42,16 @@ namespace Lineage.Ancestral.Legacies.Database
             Gloves = 27
         }
 
+        // Core data fields
+        public ID itemID;
         public string itemName;
-        public int itemID;
+        public string itemDescription;
         public ItemType itemType;
-        public 
+
+        // Equipment information
+        public EquipSlot equipSlot;
+
+        // Additional properties
         public float weight;
         public int quantity;
         public int value;
