@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Lineage.Ancestral.Legacies.Database;
+using Lineage.Core.Editor.StudioTools;
 
 namespace Lineage.Core.Editor.Studio
 {
@@ -11,7 +12,7 @@ namespace Lineage.Core.Editor.Studio
     /// Data Validation Suite for comprehensive database integrity checking.
     /// Provides automated validation rules, custom checks, and detailed reporting.
     /// </summary>
-    public class DataValidatorWindow : EditorWindow
+    public class DataValidatorWindow : BaseStudioEditorWindow
     {
         #region Window Management
 
