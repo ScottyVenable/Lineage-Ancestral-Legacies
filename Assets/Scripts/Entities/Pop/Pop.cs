@@ -2,7 +2,7 @@ using UnityEngine;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 using Lineage.Ancestral.Legacies.Managers;
 using Lineage.Ancestral.Legacies.Debug;
-using Lineage.Ancestral.Legacies.Components;
+using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Database;
 using UnityEngine.UI;
 using UnityEngine.AI;
@@ -12,8 +12,8 @@ namespace Lineage.Ancestral.Legacies.Entities
     /// Core Pop entity representing a population unit with needs, inventory, and AI.
     /// 
     /// ARCHITECTURE CHANGE (v2.0):
-    /// This class has been refactored to use EntityDataComponent as the primary data store.
-    /// All stat management, needs tracking, and entity data is now handled by EntityDataComponent.
+    /// This class now relies on the unified Entity component for all stat
+    /// management and data storage.
     /// 
     /// Pop class responsibilities:
     /// - Unity component orchestration (NavMeshAgent, SpriteRenderer, Animator, etc.)
@@ -23,14 +23,14 @@ namespace Lineage.Ancestral.Legacies.Entities
     /// - Game lifecycle events (death, spawning, etc.)
     /// - PopData ScriptableObject integration
     /// 
-    /// EntityDataComponent responsibilities:
-    /// - All stat storage and management (health, hunger, thirst, etc.)
+    /// Entity component responsibilities:
+    /// - Stat storage and management (health, hunger, thirst, etc.)
     /// - Needs system logic and decay
     /// - Entity data structures (Entity struct from Database)
     /// - Buff/debuff management
     /// - State management
     /// </summary>
-    [RequireComponent(typeof(EntityDataComponent))]
+    [RequireComponent(typeof(Entity))]
     [RequireComponent(typeof(InventoryComponent))]
     [RequireComponent(typeof(NavMeshAgent))]
     public class Pop : MonoBehaviour
@@ -38,22 +38,18 @@ namespace Lineage.Ancestral.Legacies.Entities
         [Header("Pop Identity")]
         public string popName = "Unnamed Pop";
         public int age = 0;
-        [Header("Health & Stats - Use EntityDataComponent")]
-        // These properties delegate to EntityDataComponent for consistency
-        // The actual stat values are stored in EntityDataComponent.EntityData
-        // This provides backward compatibility while using EntityDataComponent as the source of truth
-        
-        // Getter properties that delegate to EntityDataComponent
-        public float health => entityDataComponent.GetStat(Stat.ID.Health).currentValue;
-        public float thirst => entityDataComponent.GetThirst();
-        public float hunger => entityDataComponent.GetHunger();
-        public float maxHealth => entityDataComponent.GetStat(Stat.ID.Health).maxValue;
-        public float maxThirst => entityDataComponent.GetStat(Stat.ID.Thirst).maxValue;
-        public float maxHunger => entityDataComponent.GetStat(Stat.ID.Hunger).maxValue;
+        [Header("Health & Stats - Entity System")]
+        // Getter properties that proxy to the Entity component
+        public float health => entity != null ? entity.Health : 0f;
+        public float thirst => entity != null ? entity.Thirst : 0f;
+        public float hunger => entity != null ? entity.Hunger : 0f;
+        public float maxHealth => entity != null ? entity.GetStat(Stat.ID.Health).maxValue : 0f;
+        public float maxThirst => entity != null ? entity.GetStat(Stat.ID.Thirst).maxValue : 0f;
+        public float maxHunger => entity != null ? entity.GetStat(Stat.ID.Hunger).maxValue : 0f;
 
         [Header("Pop Data Reference")]
         public PopData popData;
-        public EntityDataComponent entityDataComponent;
+        public Entity entity;
         public InventoryComponent inventoryComponent;
 
         [Header("Navigation")]
@@ -79,7 +75,7 @@ namespace Lineage.Ancestral.Legacies.Entities
         public static System.Action<Pop> OnPopDestroyed;        private void Awake()
         {
             // Get component references
-            entityDataComponent = GetComponent<EntityDataComponent>();
+            entity = GetComponent<Entity>();
             inventoryComponent = GetComponent<InventoryComponent>();
             agent = GetComponent<NavMeshAgent>();
             spriteRenderer = GetComponent<SpriteRenderer>();
@@ -112,8 +108,8 @@ namespace Lineage.Ancestral.Legacies.Entities
                 ApplyPopData();
             }
 
-            // Ensure EntityDataComponent is initialized
-            if (entityDataComponent != null && !entityDataComponent.isInitialized)
+            // Ensure Entity component is initialized
+            if (entity != null && !entity.isInitialized)
             {
                 InitializeEntityData();
             }            // Register with PopulationManager - use existing AddToPops method or manual list management
@@ -126,11 +122,7 @@ namespace Lineage.Ancestral.Legacies.Entities
 
         private void Update()
         {
-            // Update needs decay through EntityDataComponent
-            if (entityDataComponent != null)
-            {
-                entityDataComponent.UpdateNeeds(Time.deltaTime);
-            }
+            // Entity component handles needs decay internally
 
             if (showHealthBar && healthBar != null)
             {
@@ -154,11 +146,11 @@ namespace Lineage.Ancestral.Legacies.Entities
         }
 
         /// <summary>
-        /// Initializes EntityDataComponent with default entity data if not already set.
+        /// Initializes the Entity component with default data if not already set.
         /// </summary>
         private void InitializeEntityData()
         {
-            if (entityDataComponent == null) return;
+            if (entity == null) return;
 
             // Create default entity data if not set
             var entityData = new Database.Entity(
@@ -171,7 +163,7 @@ namespace Lineage.Ancestral.Legacies.Entities
                 usesMana: false // Pops do not use mana by default
             );
 
-            entityDataComponent.EntityData = entityData;
+            entity.EntityData = entityData;
             
         }        /// <summary>
         /// Applies PopData configuration to this Pop instance.
@@ -205,8 +197,8 @@ namespace Lineage.Ancestral.Legacies.Entities
                 return;
             }
 
-            // Check critical needs through EntityDataComponent
-            if (entityDataComponent != null && entityDataComponent.HasCriticalNeeds())
+            // Check critical needs via Entity component
+            if (HasCriticalNeeds())
             {
                 Die();
             }
@@ -240,34 +232,35 @@ namespace Lineage.Ancestral.Legacies.Entities
             }
         }
 
-        #region Needs Management (Delegated to EntityDataComponent)
+        #region Needs Management
 
         /// <summary>
         /// Gets the current hunger level (0-100).
         /// </summary>
-        public float GetHunger() => entityDataComponent?.GetHunger() ?? 50f;
+        public float GetHunger() => entity != null ? entity.Hunger : 50f;
 
         /// <summary>
         /// Gets the current thirst level (0-100).
         /// </summary>
-        public float GetThirst() => entityDataComponent?.GetThirst() ?? 50f;
+        public float GetThirst() => entity != null ? entity.Thirst : 50f;
 
         /// <summary>
         /// Gets the current energy level (0-100).
         /// </summary>
-        public float GetEnergy() => entityDataComponent?.GetEnergy() ?? 50f;
+        public float GetEnergy() => entity != null ? entity.Energy : 50f;
 
         /// <summary>
         /// Gets the current rest level (0-100).
         /// </summary>
-        public float GetRest() => entityDataComponent?.GetRest() ?? 50f;
+        public float GetRest() => entity != null ? entity.GetStat(Stat.ID.Rest).currentValue : 50f;
 
         /// <summary>
         /// Feeds the pop, increasing hunger satisfaction.
         /// </summary>
         public void EatFood(float amount)
         {
-            entityDataComponent?.EatFood(amount);
+            if (entity != null)
+                entity.ModifyStat(Stat.ID.Hunger, amount);
         }
 
         /// <summary>
@@ -275,7 +268,8 @@ namespace Lineage.Ancestral.Legacies.Entities
         /// </summary>
         public void DrinkWater(float amount)
         {
-            entityDataComponent?.DrinkWater(amount);
+            if (entity != null)
+                entity.ModifyStat(Stat.ID.Thirst, amount);
         }
 
         /// <summary>
@@ -283,7 +277,8 @@ namespace Lineage.Ancestral.Legacies.Entities
         /// </summary>
         public void RestoreEnergy(float amount)
         {
-            entityDataComponent?.RestoreEnergy(amount);
+            if (entity != null)
+                entity.ModifyStat(Stat.ID.Energy, amount);
         }
 
         /// <summary>
@@ -291,8 +286,19 @@ namespace Lineage.Ancestral.Legacies.Entities
         /// </summary>
         public void Sleep(float amount)
         {
-            entityDataComponent?.Sleep(amount);
-        }        // Convenience properties for backward compatibility - these delegate to EntityDataComponent
+            if (entity != null)
+                entity.ModifyStat(Stat.ID.Rest, amount);
+        }
+
+        public bool HasCriticalNeeds()
+        {
+            if (entity == null) return false;
+            return entity.Hunger < 20f ||
+                   entity.Thirst < 20f ||
+                   entity.Energy < 20f ||
+                   entity.Health < 30f;
+        }
+        // Convenience properties for backward compatibility
         public float stamina => GetEnergy(); // Map energy to stamina for backward compatibility
 
         public bool IsHungry => GetHunger() < 50f;
@@ -413,8 +419,8 @@ namespace Lineage.Ancestral.Legacies.Entities
         /// </summary>
         public string GetStatusString()
         {
-            if (entityDataComponent == null) 
-                return $"{popName}: Health={health:F1}/{maxHealth:F1}, Needs=N/A (EntityDataComponent missing)";
+            if (entity == null)
+                return $"{popName}: Health=N/A (Entity component missing)";
 
             return $"{popName}: Health={health:F1}/{maxHealth:F1}, " +
                    $"Hunger={GetHunger():F1}, Thirst={GetThirst():F1}, " +
