@@ -45,6 +45,7 @@ namespace Lineage.Ancestral.Legacies.Database
         public string itemName;
         public int itemID;
         public ItemType itemType;
+        public 
         public float weight;
         public int quantity;
         public int value;

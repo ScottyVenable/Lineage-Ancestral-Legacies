@@ -153,15 +153,16 @@ namespace Lineage.Ancestral.Legacies.Entities
             if (entity == null) return;
 
             // Create default entity data if not set
-            var entityData = new Database.Entity(
-                name: popName,
-                id: Database.Entity.ID.Pop,
-                faction: "Player", //todo: change this to the Settlement name from the lore.
-                description: "A member of your ancestral lineage",
-                level: 1,
-                healthValue: new Health(maxHealth, health),
-                usesMana: false // Pops do not use mana by default
-            );
+            var entityData = new Database.Entity
+            {
+                entityName = popName,
+                entityID = (int)Database.Entity.ID.Pop,
+                entityFaction = "Player", //todo: change this to the Settlement name from the lore.
+                entityDescription = "A member of your ancestral lineage",
+                level = 1,
+                health = new Health(maxHealth, health),
+                usesMana = false // Pops do not use mana by default
+            };
 
             entity.EntityData = entityData;
             

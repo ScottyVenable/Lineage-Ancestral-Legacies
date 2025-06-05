@@ -3,7 +3,6 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Database.GameData;
 using Lineage.Ancestral.Legacies.Editor.StudioTools.Core;
 using Lineage.Ancestral.Legacies.Systems.Inventory;
 
@@ -31,9 +30,9 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         // Temporary editing variables
         private string itemName = "New Item";
         private Item.ID selectedItemID = Item.ID.IronSword;
-        private Item.ItemType selectedItemType = Item.ItemType.Miscellaneous;
-        private Item.ItemRarity selectedRarity = Item.ItemRarity.Common;
-        private Item.ItemQuality selectedQuality = Item.ItemQuality.Fair;
+        private ItemType selectedItemType = ItemType.;
+        private ItemRarity selectedRarity = Item.ItemRarity.Common;
+        private ItemQuality selectedQuality = Item.ItemQuality.Fair;
         private Item.ItemSlot selectedSlot = Item.ItemSlot.Weapon;
         
         // Properties
@@ -199,9 +198,9 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
                 
                 // Determine item properties based on type and tags
                 isStackable = item.quantity > 1;
-                isEquippable = item.itemType == Item.ItemType.Weapon || item.itemType == Item.ItemType.Armor;
-                isConsumable = item.itemType == Item.ItemType.Consumable;
-                isQuestItem = item.itemType == Item.ItemType.QuestItem;
+                isEquippable = item.itemType == ItemType.Weapon || item.itemType == ItemType.Armor;
+                isConsumable = item.itemType == ItemType.Consumable;
+                isQuestItem = item.itemType == ItemType.QuestItem;
                 
                 // Load tags
                 itemTags = item.tags != null ? new List<string>(item.tags) : new List<string>();
@@ -313,11 +312,11 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             // Classification
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Classification", EditorStyles.boldLabel);
-            selectedItemType = (Item.ItemType)EditorGUILayout.EnumPopup("Item Type", selectedItemType);
+            selectedItemType = (ItemType)EditorGUILayout.EnumPopup("Item Type", selectedItemType);
             selectedRarity = (Item.ItemRarity)EditorGUILayout.EnumPopup("Rarity", selectedRarity);
             selectedQuality = (Item.ItemQuality)EditorGUILayout.EnumPopup("Quality", selectedQuality);
             
-            if (selectedItemType == Item.ItemType.Weapon || selectedItemType == Item.ItemType.Armor)
+            if (selectedItemType == ItemType.Weapon || selectedItemType == ItemType.Armor)
             {
                 selectedSlot = (Item.ItemSlot)EditorGUILayout.EnumPopup("Equipment Slot", selectedSlot);
             }
@@ -488,7 +487,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Quick Tag Presets", EditorStyles.boldLabel);
             
-            if (selectedItemType == Item.ItemType.Weapon)
+            if (selectedItemType == ItemType.Weapon)
             {
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Melee")) AddTagIfNotExists("Melee");
@@ -504,7 +503,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
                 if (GUILayout.Button("Staff")) AddTagIfNotExists("Staff");
                 EditorGUILayout.EndHorizontal();
             }
-            else if (selectedItemType == Item.ItemType.Armor)
+            else if (selectedItemType == ItemType.Armor)
             {
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Light")) AddTagIfNotExists("Light");
@@ -513,7 +512,7 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
                 if (GUILayout.Button("Magical")) AddTagIfNotExists("Magical");
                 EditorGUILayout.EndHorizontal();
             }
-            else if (selectedItemType == Item.ItemType.Consumable)
+            else if (selectedItemType == ItemType.Consumable)
             {
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Potion")) AddTagIfNotExists("Potion");
