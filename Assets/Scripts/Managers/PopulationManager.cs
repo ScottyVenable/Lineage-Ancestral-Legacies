@@ -4,7 +4,6 @@ using System.Linq;
 using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Debug;
 using Lineage.Ancestral.Legacies.Systems;
-using Lineage.Ancestral.Legacies.Components;
 using Lineage.Ancestral.Legacies.Database;
 
 namespace Lineage.Ancestral.Legacies.Managers
