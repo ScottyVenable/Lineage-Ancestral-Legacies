@@ -113,7 +113,7 @@ namespace Lineage.Ancestral.Legacies.Database
         public BuffType buffType;
         public float duration;
         public float strength;
-        public List<string> tags = new List<string>();
+        public List<string> tags;
         public StatModifiers statModifiers;
     }
 

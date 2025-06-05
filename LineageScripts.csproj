@@ -78,6 +78,7 @@
     <Compile Include="Assets\Scripts\Managers\SaveManager.cs" />
     <Compile Include="Assets\Scripts\Debug\DebugSystemTestFramework.cs" />
     <Compile Include="Assets\Scripts\Managers\CameraManager.cs" />
+    <Compile Include="Assets\Scripts\Systems\Inventory\EquipmentComponent.cs" />
     <Compile Include="Assets\Scripts\Systems\Data\Database\Skills\SkillStruct.cs" />
     <Compile Include="Assets\Scripts\Systems\Data\Database\Entities\EntityRepository.cs" />
     <Compile Include="Assets\Scripts\UI\Examples\AutoButtonCommandsDemo.cs" />
@@ -99,6 +100,7 @@
     <Compile Include="Assets\Scripts\Managers\PopulationManager.cs" />
     <Compile Include="Assets\Scripts\GameDatabase\Enums\GlobalEnums.cs" />
     <Compile Include="Assets\Scripts\GameDatabase\DataModels\SkillAndBuffTypes.cs" />
+    <Compile Include="Assets\Scripts\Debug\CommandServer.cs" />
     <Compile Include="Assets\Scripts\Utils\DepthSorterSystem.cs" />
     <Compile Include="Assets\Scripts\Managers\TimeManager.cs" />
     <Compile Include="Assets\Scripts\UI\Button\EnhancedAutoButtonHandler.cs" />
