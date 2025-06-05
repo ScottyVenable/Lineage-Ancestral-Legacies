@@ -4,7 +4,6 @@ using System.Linq;
 using Lineage.Ancestral.Legacies.Entities;
 using Lineage.Ancestral.Legacies.Debug;
 using Lineage.Ancestral.Legacies.Systems;
-using Lineage.Ancestral.Legacies.Components;
 using Lineage.Ancestral.Legacies.Database;
 
 namespace Lineage.Ancestral.Legacies.Managers
@@ -45,7 +44,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         
         // Private collections
         private List<Pop> _livingPops = new List<Pop>();
-        private List<EntityDataComponent> _entityComponents = new List<EntityDataComponent>();
+        private List<Entity> _entityComponents = new List<Entity>();
         private Dictionary<string, int> _settlementStock = new Dictionary<string, int>();
         private Dictionary<string, float> _resourceProduction = new Dictionary<string, float>();
 
@@ -156,7 +155,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                     continue;
                 }
 
-                EntityDataComponent entityData = i < _entityComponents.Count ? _entityComponents[i] : null;
+                Entity entityData = i < _entityComponents.Count ? _entityComponents[i] : null;
                 
                 if (entityData != null && _useGameDataSystem)
                 {
@@ -169,7 +168,7 @@ namespace Lineage.Ancestral.Legacies.Managers
             }
         }
 
-        private void ProcessGameDataNeeds(Pop pop, EntityDataComponent entityData)
+        private void ProcessGameDataNeeds(Pop pop, Entity entityData)
         {
             var healthStat = entityData.GetStat(Stat.ID.Health);
             
@@ -180,12 +179,12 @@ namespace Lineage.Ancestral.Legacies.Managers
                 return;
             }
 
-            var currentState = entityData.GetCurrentState();
+            var currentState = entityData.EntityData.currentState;
             ProcessPopStateEffects(pop, entityData, (State.ID)currentState.stateID);
             ManagePopStateTransitions(entityData);
         }
 
-        private void ProcessPopStateEffects(Pop pop, EntityDataComponent entityData, State.ID stateID)
+        private void ProcessPopStateEffects(Pop pop, Entity entityData, State.ID stateID)
         {
             switch (stateID)
             {
@@ -236,7 +235,7 @@ namespace Lineage.Ancestral.Legacies.Managers
             }
         }
 
-        private void ManagePopStateTransitions(EntityDataComponent entityData)
+        private void ManagePopStateTransitions(Entity entityData)
         {
             var staminaStat = entityData.GetStat(Stat.ID.Stamina);
             
@@ -292,7 +291,7 @@ namespace Lineage.Ancestral.Legacies.Managers
                     if (_useGameDataSystem && i < _entityComponents.Count)
                     {
                         var entityData = _entityComponents[i];
-                        if (entityData != null && entityData.IsHealthy())
+                        if (entityData != null && entityData.Health > entityData.MaxHealth * 0.5f)
                         {
                             candidates.Add(pop);
                         }
@@ -416,7 +415,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         {
             _livingPops.Add(pop);
             
-            var entityComponent = pop.GetComponent<EntityDataComponent>();
+            var entityComponent = pop.GetComponent<Entity>();
             _entityComponents.Add(entityComponent);
             
             _currentPopulation++;
@@ -455,9 +454,9 @@ namespace Lineage.Ancestral.Legacies.Managers
 
         #region Utility Methods
 
-        private void ChangeToRandomState(EntityDataComponent entityData)
+        private void ChangeToRandomState(Entity entityData)
         {
-            var availableStates = entityData.GetAvailableStates();
+            var availableStates = entityData.EntityData.availableStates;
             if (availableStates.Count > 0)
             {
                 var randomState = availableStates[Random.Range(0, availableStates.Count)];
@@ -477,7 +476,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         #region Public API
 
         public List<Pop> GetAllPops() => new List<Pop>(_livingPops);
-        public List<EntityDataComponent> GetAllEntityData() => new List<EntityDataComponent>(_entityComponents);
+        public List<Entity> GetAllEntityData() => new List<Entity>(_entityComponents);
         
         public void SetSettlementName(string newName)
         {
