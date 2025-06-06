@@ -66,6 +66,7 @@
     <Compile Include="Assets\Scripts\Debug\ThrottlingTestScript.cs" />
     <Compile Include="Assets\Scripts\Debug\Log.cs" />
     <Compile Include="Assets\Scripts\UI\Button\TopMenuButtons.cs" />
+    <Compile Include="Assets\Scripts\Systems\Inventory\AdvancedEquipmentComponent.cs" />
     <Compile Include="Assets\Scripts\Systems\Data\Database\Stats\StatRepository.cs" />
     <Compile Include="Assets\Scripts\GameDatabase\Repositories\ItemRepository.cs" />
     <Compile Include="Assets\Scripts\Systems\Data\Database\Skills\StatStruct.cs" />
@@ -96,11 +97,11 @@
     <Compile Include="Assets\Scripts\Systems\Crafting\CraftingComponent.cs" />
     <Compile Include="Assets\Scripts\Debug\DebugManager.cs" />
     <Compile Include="Assets\Scripts\Entities\Pop\PopData.cs" />
+    <Compile Include="Assets\Scripts\Debug\DatabaseTest.cs" />
     <Compile Include="Assets\Scripts\Debug\DebugConsoleManager.cs" />
     <Compile Include="Assets\Scripts\Managers\PopulationManager.cs" />
     <Compile Include="Assets\Scripts\GameDatabase\Enums\GlobalEnums.cs" />
     <Compile Include="Assets\Scripts\GameDatabase\DataModels\SkillAndBuffTypes.cs" />
-    <Compile Include="Assets\Scripts\Debug\CommandServer.cs" />
     <Compile Include="Assets\Scripts\Utils\DepthSorterSystem.cs" />
     <Compile Include="Assets\Scripts\Managers\TimeManager.cs" />
     <Compile Include="Assets\Scripts\UI\Button\EnhancedAutoButtonHandler.cs" />

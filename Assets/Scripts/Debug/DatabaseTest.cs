@@ -35,7 +35,7 @@ namespace Lineage.Ancestral.Legacies.Debug
 
             // Test 3: GameData API Tests
             TestGameDataAPI();
-
+            
             // Test 4: Struct System Tests
             TestStructSystem();
 

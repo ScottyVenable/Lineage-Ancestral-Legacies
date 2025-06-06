@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace Lineage.Ancestral.Legacies.Debug
