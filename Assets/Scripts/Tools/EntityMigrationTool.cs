@@ -18,13 +18,13 @@ namespace Lineage.Tools
         public static void MigrateAllPopsInScene()
         {
             Pop[] allPops = Object.FindObjectsOfType&lt;Pop&gt;();
-            List&lt;Entity&gt; convertedEntities = new List&lt;Entity&gt;();
+            List&lt;Entities.Entity&gt; convertedEntities = new List&lt;Entities.Entity&gt;();
             
             Debug.Log($"Found {allPops.Length} Pop objects to migrate");
             
             foreach (Pop pop in allPops)
             {
-                Entity convertedEntity = MigratePop(pop);
+                Entities.Entity convertedEntity = MigratePop(pop);
                 if (convertedEntity != null)
                 {
                     convertedEntities.Add(convertedEntity);
@@ -37,7 +37,7 @@ namespace Lineage.Tools
         /// <summary>
         /// Convert a single Pop object to use the Entity system
         /// </summary>
-        public static Entity MigratePop(Pop pop)
+    public static Entities.Entity MigratePop(Pop pop)
         {
             if (pop == null)
             {
@@ -59,7 +59,7 @@ namespace Lineage.Tools
                 Object.DestroyImmediate(pop);
                 
                 // Add the new Entity component
-                Entity entity = popGameObject.AddComponent&lt;Entity&gt;();
+                Entities.Entity entity = popGameObject.AddComponent&lt;Entities.Entity&gt;();
                 
                 // Apply the preserved data
                 ApplyMigrationData(entity, migrationData);
@@ -96,7 +96,7 @@ namespace Lineage.Tools
         /// <summary>
         /// Apply preserved data to the new Entity
         /// </summary>
-        private static void ApplyMigrationData(Entity entity, MigrationData data)
+        private static void ApplyMigrationData(Entities.Entity entity, MigrationData data)
         {
             // Configure the Entity with Pop-specific settings
             entity.ConfigureAsEntity(Database.Entity.ID.Pop);
@@ -133,7 +133,7 @@ namespace Lineage.Tools
         /// <summary>
         /// Validate that migration was successful
         /// </summary>
-        public static bool ValidateMigration(Entity entity)
+        public static bool ValidateMigration(Entities.Entity entity)
         {
             if (entity == null) return false;
             if (entity.EntityData == null) return false;
@@ -208,9 +208,9 @@ namespace Lineage.Tools
             
             if (GUILayout.Button("Validate Entities in Scene"))
             {
-                Entity[] entities = FindObjectsOfType&lt;Entity&gt;();
+                Entities.Entity[] entities = FindObjectsOfType&lt;Entities.Entity&gt;();
                 int validCount = 0;
-                foreach (Entity entity in entities)
+                foreach (Entities.Entity entity in entities)
                 {
                     if (EntityMigrationTool.ValidateMigration(entity))
                     {

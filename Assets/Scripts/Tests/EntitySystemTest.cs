@@ -17,7 +17,7 @@ namespace Lineage.Tests
         public PopTypeData popTypeData; // ScriptableObject for Pop-specific behavior
         
         [Header("Test Results")]
-        public Entity testEntity;
+        public Entities.Entity testEntity;
         public bool testPassed = false;
         
         void Start()

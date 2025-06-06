@@ -46,7 +46,7 @@ namespace Lineage.Examples
             
             // Create a Pop using EntityFactory
             Vector3 popPosition = transform.position + new Vector3(2, 0, 0);
-            Entity pop = EntityFactory.CreateEntity(Database.Entity.ID.Pop, popPosition, popTypeData, "Demo Pop");
+            Entities.Entity pop = EntityFactory.CreateEntity(Database.Entity.ID.Pop, popPosition, popTypeData, "Demo Pop");
             
             if (pop != null)
             {
@@ -68,7 +68,7 @@ namespace Lineage.Examples
             
             // Create a Wolf using EntityFactory
             Vector3 wolfPosition = transform.position + new Vector3(-2, 0, 2);
-            Entity wolf = EntityFactory.CreateEntity(Database.Entity.ID.Wolf, wolfPosition, animalTypeData, "Demo Wolf");
+            Entities.Entity wolf = EntityFactory.CreateEntity(Database.Entity.ID.Wolf, wolfPosition, animalTypeData, "Demo Wolf");
             
             if (wolf != null)
             {
@@ -85,7 +85,7 @@ namespace Lineage.Examples
             
             // Create a Bear
             Vector3 bearPosition = transform.position + new Vector3(0, 0, 4);
-            Entity bear = EntityFactory.CreateEntity(Database.Entity.ID.Bear, bearPosition, animalTypeData, "Demo Bear");
+            Entities.Entity bear = EntityFactory.CreateEntity(Database.Entity.ID.Bear, bearPosition, animalTypeData, "Demo Bear");
             
             if (bear != null)
             {
@@ -98,9 +98,9 @@ namespace Lineage.Examples
             Debug.Log("Demonstrating entity system capabilities...");
             
             // Find all entities in the scene
-            Entity[] allEntities = FindObjectsOfType<Entity>();
+            Entities.Entity[] allEntities = FindObjectsOfType<Entities.Entity>();
             
-            foreach (Entity entity in allEntities)
+            foreach (Entities.Entity entity in allEntities)
             {
                 Debug.Log($"Entity: {entity.EntityName} (ID: {entity.EntityData?.EntityData.entityID})");
                 
@@ -136,7 +136,7 @@ namespace Lineage.Examples
                 foreach (Pop pop in existingPops)
                 {
                     Debug.Log($"Converting Pop '{pop.popName}' to Entity system...");
-                    Entity convertedEntity = EntityFactory.ConvertPopToEntity(pop.gameObject, Database.Entity.ID.Pop, popTypeData);
+                    Entities.Entity convertedEntity = EntityFactory.ConvertPopToEntity(pop.gameObject, Database.Entity.ID.Pop, popTypeData);
                     
                     if (convertedEntity != null)
                     {
@@ -185,8 +185,8 @@ namespace Lineage.Examples
             
             if (GUILayout.Button("Clear All Entities"))
             {
-                Entity[] allEntities = FindObjectsOfType<Entity>();
-                foreach (Entity entity in allEntities)
+                Entities.Entity[] allEntities = FindObjectsOfType<Entities.Entity>();
+                foreach (Entities.Entity entity in allEntities)
                 {
                     if (Application.isPlaying)
                     {

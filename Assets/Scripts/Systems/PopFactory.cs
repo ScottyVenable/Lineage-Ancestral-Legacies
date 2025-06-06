@@ -42,11 +42,11 @@ namespace Lineage.Systems
         }        /// <summary>
         /// Generates a Pop Entity using GameData system with genetic inheritance and random traits.
         /// </summary>
-        private static Entities.Entity GeneratePopEntity(Entities.Entity? parentA = null, Entity? parentB = null)
+        private static Entities.Entity GeneratePopEntity(Database.Entity? parentA = null, Database.Entity? parentB = null)
         {            // Start with a base human entity from GameData
-            Entity baseEntity = GameData.GetEntityByID(Entity.ID.Kaari); // Using Kaari entity type for human-like beings
+            Database.Entity baseEntity = GameData.GetEntityByID(Entity.ID.Kaari); // Using Kaari entity type for human-like beings
               // Create a new entity based on the base
-            Entity popEntity = new Entity(
+            Database.Entity popEntity = new Database.Entity(
                 name: GenerateRandomName(),
                 id: Entity.ID.Kaari, // Using Kaari entity type for human-like beings
                 faction: "Village",
@@ -82,7 +82,7 @@ namespace Lineage.Systems
         /// <summary>
         /// Applies genetic inheritance from two parent entities.
         /// </summary>
-        private static void ApplyGeneticInheritance(ref Entity child, Entity parentA, Entity parentB)
+        private static void ApplyGeneticInheritance(ref Database.Entity child, Database.Entity parentA, Database.Entity parentB)
         {
             // Inherit stats with some randomization
             child.strength = InheritStat(parentA.strength, parentB.strength);
@@ -112,7 +112,7 @@ namespace Lineage.Systems
         /// <summary>
         /// Generates random stats for first-generation Pops.
         /// </summary>
-        private static void GenerateRandomStats(ref Entity popEntity)
+        private static void GenerateRandomStats(ref Database.Entity popEntity)
         {
             popEntity.strength = new Stat(Stat.ID.Strength, "Strength", Random.Range(8f, 15f));
             popEntity.agility = new Stat(Stat.ID.Agility, "Agility", Random.Range(8f, 15f));
@@ -128,7 +128,7 @@ namespace Lineage.Systems
         /// <summary>
         /// Adds random traits from the GameData Trait system.
         /// </summary>
-        private static void AddRandomTraits(ref Entity popEntity)
+        private static void AddRandomTraits(ref Database.Entity popEntity)
         {
             // Add 1-3 random traits
             int traitCount = Random.Range(1, 4);
@@ -148,7 +148,7 @@ namespace Lineage.Systems
         }        /// <summary>
         /// Applies a trait's effects to an entity's stats.
         /// </summary>
-        private static void ApplyTraitToEntity(ref Entity entity, Trait trait)
+        private static void ApplyTraitToEntity(ref Database.Entity entity, Trait trait)
         {
             // Apply trait modifiers based on trait type
             switch (trait.traitID)
@@ -184,7 +184,7 @@ namespace Lineage.Systems
         /// <summary>
         /// Initializes appropriate states for a civilian Pop.
         /// </summary>
-        private static void InitializePopStates(ref Entity popEntity)
+        private static void InitializePopStates(ref Database.Entity popEntity)
         {
             popEntity.entityType = new List<EntityType> { EntityType.PlayerControlled };
             popEntity.InitializeStates();
@@ -199,7 +199,7 @@ namespace Lineage.Systems
         /// <summary>
         /// Applies GameData Entity information to a Pop component.
         /// </summary>
-        private static void ApplyEntityDataToPop(Entity entityData, Pop popComponent)
+        private static void ApplyEntityDataToPop(Database.Entity entityData, Pop popComponent)
         {
             // Basic information
             popComponent.popName = entityData.entityName;
@@ -222,7 +222,7 @@ namespace Lineage.Systems
         /// Stores complete Entity data in the Pop for future use.
         /// You might want to create an EntityDataComponent for this.
         /// </summary>
-        private static void StoreEntityDataInPop(Pop popComponent, Entity entityData)
+        private static void StoreEntityDataInPop(Pop popComponent, Database.Entity entityData)
         {
             // Option 1: Add EntityData as a component
             // EntityDataComponent entityComp = popComponent.GetComponent<EntityDataComponent>();

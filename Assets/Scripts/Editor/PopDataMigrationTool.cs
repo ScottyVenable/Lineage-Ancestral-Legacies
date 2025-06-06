@@ -84,7 +84,7 @@ namespace Lineage.Editor
             
             try
             {
-                Entity migratedEntity = ConvertPopDataToEntity(sourcePopData, entityName, entityID);
+                Database.Entity migratedEntity = ConvertPopDataToEntity(sourcePopData, entityName, entityID);
                   // Add to GameData database
                 if (!GameData.entityDatabase.Contains(migratedEntity))
                 {
@@ -125,7 +125,7 @@ namespace Lineage.Editor
                     try
                     {
                         Entity.ID autoID = (Entity.ID)(migratedCount % System.Enum.GetValues(typeof(Entity.ID)).Length);
-                        Entity migratedEntity = ConvertPopDataToEntity(popData, popData.name, autoID);
+                        Database.Entity migratedEntity = ConvertPopDataToEntity(popData, popData.name, autoID);
                           if (!GameData.entityDatabase.Contains(migratedEntity))
                         {
                             GameData.entityDatabase.Add(migratedEntity);
@@ -152,13 +152,13 @@ namespace Lineage.Editor
                 $"Successfully migrated {migratedCount} PopData assets to GameData Entities!", "OK");
         }
         
-        private Entity ConvertPopDataToEntity(PopData popData, string name, Entity.ID id)
+        private Database.Entity ConvertPopDataToEntity(PopData popData, string name, Database.Entity.ID id)
         {
             // Create health struct from PopData
             Health health = new Health(popData.maxHealth);
             
             // Create entity with basic configuration
-            Entity entity = new Entity(
+            Database.Entity entity = new Database.Entity(
                 name: name,
                 id: id,
                 faction: "Village",
@@ -199,7 +199,7 @@ namespace Lineage.Editor
             return entity;
         }
         
-        private void CreateEntityDataFile(Entity entity)
+        private void CreateEntityDataFile(Database.Entity entity)
         {
             string fileName = $"Entity_{entity.entityName.Replace(" ", "_")}.json";
             string path = $"Assets/GameData/Entities/{fileName}";
