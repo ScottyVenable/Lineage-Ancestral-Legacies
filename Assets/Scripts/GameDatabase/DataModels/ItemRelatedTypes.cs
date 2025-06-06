@@ -3,9 +3,7 @@ using System.Collections.Generic;
 
 namespace Lineage.Ancestral.Legacies.Database
 {
-    #region Item System
-
-    /// <summary>
+    #region Item System    /// <summary>
     /// Represents an item in the game, including its type, rarity, quality, and other properties.
     /// </summary>
     public struct Item
@@ -39,8 +37,21 @@ namespace Lineage.Ancestral.Legacies.Database
             Armor = 24,
             Helmet = 25,
             Boots = 26,
-            Gloves = 27
-        }
+            Gloves = 27,
+            // Additional items for the game
+            IronSword = 28,
+            SteelAxe = 29,
+            EnchantedStaff = 30,
+            LeatherArmor = 31,
+            ChainMail = 32,
+            DragonScaleArmor = 33,
+            HealthPotion = 34,
+            ManaPotion = 35
+        }        // Legacy enum compatibility properties - return default values for backwards compatibility
+        public ItemType LegacyItemType => itemType;
+        public ItemRarity LegacyItemRarity => itemRarity;
+        public ItemQuality LegacyItemQuality => itemQuality;
+        public EquipSlot LegacyItemSlot => equipSlot;
 
         // Core data fields
         public ID itemID;
@@ -58,6 +69,54 @@ namespace Lineage.Ancestral.Legacies.Database
         public ItemRarity itemRarity;
         public ItemQuality itemQuality;
         public List<string> tags;
+
+        // Constructors
+        public Item(string name, ID id, ItemType type, float weight = 1f, int quantity = 1, int value = 10, 
+                   ItemRarity rarity = ItemRarity.Common, ItemQuality quality = ItemQuality.Normal)
+        {
+            itemName = name;
+            itemID = id;
+            itemDescription = "";
+            itemType = type;
+            this.weight = weight;
+            this.quantity = quantity;
+            this.value = value;
+            itemRarity = rarity;
+            itemQuality = quality;
+            tags = new List<string>();
+            
+            // Set default equipment slot based on item type
+            equipSlot = type switch
+            {
+                ItemType.Weapon => EquipSlot.Weapon,
+                ItemType.Armor => EquipSlot.Chest,
+                ItemType.Accessory => EquipSlot.Accessory,
+                _ => EquipSlot.Accessory
+            };
+        }
+
+        public Item(string name, int id, ItemType type, float weight = 1f, int quantity = 1, int value = 10, 
+                   ItemRarity rarity = ItemRarity.Common, ItemQuality quality = ItemQuality.Normal)
+        {
+            itemName = name;
+            itemID = (ID)id;
+            itemDescription = "";
+            itemType = type;
+            this.weight = weight;
+            this.quantity = quantity;
+            this.value = value;
+            itemRarity = rarity;
+            itemQuality = quality;
+            tags = new List<string>();
+              // Set default equipment slot based on item type
+            equipSlot = type switch
+            {
+                ItemType.Weapon => EquipSlot.Weapon,
+                ItemType.Armor => EquipSlot.Chest,
+                ItemType.Accessory => EquipSlot.Accessory,
+                _ => EquipSlot.Accessory
+            };
+        }
     }
 
     #endregion

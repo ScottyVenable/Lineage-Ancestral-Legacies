@@ -30,11 +30,11 @@ namespace Lineage.Ancestral.Legacies.Editor.StudioTools
         // Temporary editing variables
         private string itemName = "New Item";
         private Item.ID selectedItemID = Item.ID.IronSword;
-        private ItemType selectedItemType = ItemType.;
-        private ItemRarity selectedRarity = Item.ItemRarity.Common;
-        private ItemQuality selectedQuality = Item.ItemQuality.Fair;
-        private Item.ItemSlot selectedSlot = Item.ItemSlot.Weapon;
-        
+        private ItemType selectedItemType = ItemType.Weapon;
+        private ItemRarity selectedRarity = ItemRarity.Common;
+        private ItemQuality selectedQuality = ItemQuality.Fair;
+        private EquipSlot selectedSlot = EquipSlot.Weapon;
+
         // Properties
         private float itemWeight = 1f;
         private int itemQuantity = 1;

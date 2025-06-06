@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Lineage.Ancestral.Legacies.Database;
 
 namespace Lineage.Ancestral.Legacies.Systems.Inventory
 {

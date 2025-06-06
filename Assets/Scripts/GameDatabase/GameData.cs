@@ -63,13 +63,13 @@ namespace Lineage.Ancestral.Legacies.Database
                 {"Locations", WorldRepository.AllLocations.Count},
                 {"Chunks", WorldRepository.AllChunks.Count},
                 {"States", StateRepository.AllStates.Count}
-            };
-        }
+            };        }
         #endregion
 
         #region Data Retrieval
         public static Entity GetEntityByID(int id) => EntityRepository.GetEntityByID(id);
         public static Item GetItemByID(int id) => ItemRepository.GetItemByID(id);
+        public static Item GetItemByID(Item.ID id) => ItemRepository.GetItemByID(id);
         public static Trait GetTraitByID(Trait.ID id) => SkillRepository.GetTraitByID(id);
         public static Quest GetQuestByID(Quest.ID id) => QuestRepository.GetQuestByID(id);
         public static NPC GetNPCByName(string name) => EntityRepository.GetNPCByName(name);

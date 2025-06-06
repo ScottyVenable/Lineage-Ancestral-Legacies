@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Lineage.Ancestral.Legacies.Database;
-using Lineage.Core.Editor.StudioTools; // base window
+using Lineage.Ancestral.Legacies.Editor.StudioTools.Core; // base window
 
 namespace Lineage.Core.Editor.Studio
 {
@@ -17,12 +17,10 @@ namespace Lineage.Core.Editor.Studio
     {
         #region Window Management
 
-        private static DatabaseInspectorWindow window;
-
-        [MenuItem("Lineage/Studio/Database/Database Inspector")]
+        private static DatabaseInspectorWindow window;        [MenuItem("Lineage/Studio/Database/Database Inspector")]
         public static void ShowWindow()
         {
-            window = GetWindow<DatabaseInspectorWindow>("Database Inspector");
+            window = (DatabaseInspectorWindow)GetWindow(typeof(DatabaseInspectorWindow), false, "Database Inspector");
             window.minSize = new Vector2(900, 600);
             window.Show();
         }
@@ -1241,10 +1239,10 @@ namespace Lineage.Core.Editor.Studio
             foreach (var trait in GameData.traitDatabase)
             {
                 if (trait.requiredItems != null)
-                {
-                    foreach (var itemID in trait.requiredItems)
+                {                    foreach (var itemID in trait.requiredItems)
                     {
-                        if (GameData.GetItemByID(itemID).itemID == 0)
+                        var item = GameData.GetItemByID(itemID);
+                        if (string.IsNullOrEmpty(item.itemName))
                         {
                             integrityIssues.Add(new IntegrityIssue
                             {

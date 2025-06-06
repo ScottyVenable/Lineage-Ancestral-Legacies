@@ -50,9 +50,7 @@ namespace Lineage.Ancestral.Legacies.Database
         Important,
         Critical,
         WorldChanging
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Defines item types in the game.
     /// </summary>
     public enum ItemType
@@ -64,6 +62,7 @@ namespace Lineage.Ancestral.Legacies.Database
         Material,
         Accessory,
         Quest,
+        QuestItem, // Alias for Quest
         Currency,
         Misc
     }
@@ -79,17 +78,17 @@ namespace Lineage.Ancestral.Legacies.Database
         Epic,
         Legendary,
         Artifact
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Defines item quality levels.
     /// </summary>
     public enum ItemQuality
     {
         Poor,
+        Fair, // Added for compatibility
         Normal,
         Good,
         Superior,
+        Excellent, // Added for compatibility
         Exceptional,
         Masterwork
     }
