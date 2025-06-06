@@ -1,9 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Database;
 using UnityEditor.EditorTools;
 
-namespace Lineage.Ancestral.Legacies.Components
+namespace Lineage.Components
 {
     /// <summary>
     /// Component that stores complete GameData Entity information for a Pop.

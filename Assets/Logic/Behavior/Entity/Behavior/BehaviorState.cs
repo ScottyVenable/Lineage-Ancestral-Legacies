@@ -1,4 +1,4 @@
-namespace Lineage.Ancestral.Legacies.Behavior
+namespace Lineage.Behavior
 {
     /// <summary>
     /// Behavior states that correspond to the Pop entity states in the database.

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Systems.TraitSystem
+namespace Lineage.Systems.TraitSystem
 {
     /// <summary>
     /// ScriptableObject representing a genetic or social trait.

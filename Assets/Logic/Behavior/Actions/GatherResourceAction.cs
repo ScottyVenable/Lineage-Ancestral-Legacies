@@ -3,11 +3,11 @@ using Unity.Behavior;
 using UnityEngine;
 using Action = Unity.Behavior.Action;
 using Unity.Properties;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Components;
-using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Debug;
-namespace Lineage.Ancestral.Legacies.Behavior.Actions
+using Lineage.Entities;
+using Lineage.Components;
+using Lineage.Database;
+using Lineage.Debug;
+namespace Lineage.Behavior.Actions
 {
     [Serializable, GeneratePropertyBag]
     [NodeDescription(name: "Gather Resource", story: "[Self] gathers from [TargetResource] for [GatherTime] seconds", category: "Resource", id: "gather_resource_001")]
@@ -19,8 +19,8 @@ namespace Lineage.Ancestral.Legacies.Behavior.Actions
         [SerializeReference] public BlackboardVariable<int> GatherAmount = new(1);
 
         private float gatherStartTime;
-        private bool isGathering;        private Lineage.Ancestral.Legacies.Entities.Pop pop;
-        private Lineage.Ancestral.Legacies.Components.EntityDataComponent entityData;
+        private bool isGathering;        private Lineage.Entities.Pop pop;
+        private Lineage.Components.EntityDataComponent entityData;
 
         protected override Status OnStart()
         {

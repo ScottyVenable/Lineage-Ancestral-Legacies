@@ -1,13 +1,13 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Debug;
-using Lineage.Ancestral.Legacies.Systems;
-using Lineage.Ancestral.Legacies.Components;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Entities;
+using Lineage.Debug;
+using Lineage.Systems;
+using Lineage.Components;
+using Lineage.Database;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Enhanced PopulationManager that uses GameData system for richer Pop generation.
@@ -168,7 +168,7 @@ namespace Lineage.Ancestral.Legacies.Managers
         {
             // Fallback to basic needs system
             // Check if pop has NeedsComponent for hunger/thirst
-            var needsComponent = pop.GetComponent<Lineage.Ancestral.Legacies.Systems.Needs.NeedsComponent>();
+            var needsComponent = pop.GetComponent<Lineage.Systems.Needs.NeedsComponent>();
             
             if (needsComponent != null)
             {

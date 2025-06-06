@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine.UI;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     /// <summary>
     /// On-screen debug stats overlay showing FPS, memory usage, and system information

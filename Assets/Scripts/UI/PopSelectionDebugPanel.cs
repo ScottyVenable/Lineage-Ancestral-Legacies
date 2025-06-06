@@ -3,10 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Managers;
+using Lineage.Entities;
+using Lineage.Managers;
 
-namespace Lineage.Ancestral.Legacies.UI
+namespace Lineage.UI
 {
     /// <summary>
     /// Debug panel that shows information about selected Pops.

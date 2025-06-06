@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Systems.Inventory
+namespace Lineage.Systems.Inventory
 {
     /// <summary>
     /// Manages inventory items for a pop.

@@ -1,8 +1,8 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Entities;
+using Lineage.Database;
 
-namespace Lineage.Ancestral.Legacies.Examples
+namespace Lineage.Examples
 {
     /// <summary>
     /// Demonstration script showing how to use the new generic Entity system.

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Systems.Resource
+namespace Lineage.Systems.Resource
 {
     /// <summary>
     /// Represents a resource node in the world (e.g., berry bush, tree).

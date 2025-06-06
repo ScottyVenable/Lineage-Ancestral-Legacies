@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Entities;
+using Lineage.Database;
+using Lineage.Entities;
 
-namespace Lineage.Ancestral.Legacies.Editor
+namespace Lineage.Editor
 {
     /// <summary>
     /// Editor tool to migrate existing PopData ScriptableObjects to GameData Entity system.

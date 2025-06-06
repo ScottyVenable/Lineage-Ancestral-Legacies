@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Utils
+namespace Lineage.Utils
 {
     /// <summary>
     /// Adjusts the SpriteRenderer's sorting order based on the GameObject's Y position.

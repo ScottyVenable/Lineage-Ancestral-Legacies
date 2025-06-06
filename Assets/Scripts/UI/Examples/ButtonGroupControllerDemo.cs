@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Debug;
 using System.Linq;
 
-namespace Lineage.Ancestral.Legacies.UI
+namespace Lineage.UI
 {
     /// <summary>
     /// Comprehensive demonstration of the ButtonGroupController capabilities.

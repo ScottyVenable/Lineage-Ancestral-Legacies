@@ -1,9 +1,9 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Systems;
+using Lineage.Entities;
+using Lineage.Database;
+using Lineage.Systems;
 
-namespace Lineage.Ancestral.Legacies.Tests
+namespace Lineage.Tests
 {
     /// <summary>
     /// Simple test script to validate the new generic Entity system.
@@ -14,7 +14,7 @@ namespace Lineage.Ancestral.Legacies.Tests
         public PopTypeData popTypeData;
         
         [Header("Test Results")]
-        public Lineage.Ancestral.Legacies.Entities.Entity testEntity;
+        public Lineage.Entities.Entity testEntity;
         public bool testPassed = false;
         
         void Start()

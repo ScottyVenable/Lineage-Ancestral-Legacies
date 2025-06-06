@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
-namespace Lineage.Ancestral.Legacies.Database
+namespace Lineage.Database
 {
 #region Global Enums
 

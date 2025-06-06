@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-namespace Lineage.Ancestral.Legacies.UI.Examples
+namespace Lineage.UI.Examples
 {
     /// <summary>
     /// Comprehensive example showing all available commands for the EnhancedAutoButtonHandler.

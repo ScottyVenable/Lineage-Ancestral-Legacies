@@ -4,7 +4,7 @@ using UnityEngine;
 using System.IO;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     /// <summary>
     /// Log levels for the debug system

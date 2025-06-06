@@ -905,7 +905,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8950243476200936203, guid: a896f0c86999b5d43846408b16270ccb, type: 3}
       propertyPath: 'managedReferences[6784336473562284750]'
-      value: 'Unity.Behavior Unity.Behavior.BlackboardVariable`1[[Lineage.Ancestral.Legacies.Entities.Pop,
+      value: 'Unity.Behavior Unity.Behavior.BlackboardVariable`1[[Lineage.Entities.Pop,
         LineageScripts]]'
       objectReference: {fileID: 0}
     - target: {fileID: 8950243476200936203, guid: a896f0c86999b5d43846408b16270ccb, type: 3}

@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
-using Lineage.Ancestral.Legacies.Managers;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Managers;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies.UI
+namespace Lineage.UI
 {
     /// <summary>
     /// Smart button that automatically determines its functionality based on its text label.

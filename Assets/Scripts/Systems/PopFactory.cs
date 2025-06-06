@@ -1,13 +1,13 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Systems.TraitSystem;
-using Lineage.Ancestral.Legacies.Systems.Inventory;
-using static Lineage.Ancestral.Legacies.Database.Entity;
+using Lineage.Database;
+using Lineage.Entities;
+using Lineage.Systems.TraitSystem;
+using Lineage.Systems.Inventory;
+using static Lineage.Database.Entity;
 
-namespace Lineage.Ancestral.Legacies.Systems
+namespace Lineage.Systems
 {
     /// <summary>
     /// Factory class for creating Pops using the GameData system instead of hardcoded PopData ScriptableObjects.

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Lineage.Ancestral.Legacies.UI
+namespace Lineage.UI
 {
     /// <summary>
     /// Advanced controller that manages multiple ButtonGroupManagers and provides

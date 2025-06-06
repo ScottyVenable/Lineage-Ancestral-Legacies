@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     /// <summary>
     /// Visual debugging system for drawing shapes, lines, and overlays in the scene

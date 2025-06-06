@@ -1,7 +1,7 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Global resource management for food, faith points, and other resources.

@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEditor;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Entities;
+using Lineage.Database;
 using System.Collections.Generic;
 
-namespace Lineage.Ancestral.Legacies.Tools
+namespace Lineage.Tools
 {
     /// <summary>
     /// Migration utility to convert existing Pop GameObjects to use the new generic Entity system.
@@ -88,7 +88,7 @@ namespace Lineage.Ancestral.Legacies.Tools
                 // Add more data as needed
                 hasHealthBar = pop.GetComponentInChildren<UnityEngine.UI.Image>() != null,
                 // Extract component data
-                hasInventory = pop.GetComponent<Lineage.Ancestral.Legacies.Systems.Inventory.InventoryComponent>() != null,
+                hasInventory = pop.GetComponent<Lineage.Systems.Inventory.InventoryComponent>() != null,
                 hasNavMeshAgent = pop.GetComponent<UnityEngine.AI.NavMeshAgent>() != null,
             };
         }

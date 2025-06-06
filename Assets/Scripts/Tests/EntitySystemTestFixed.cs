@@ -1,9 +1,9 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Systems;
+using Lineage.Entities;
+using Lineage.Database;
+using Lineage.Systems;
 
-namespace Lineage.Ancestral.Legacies.Tests
+namespace Lineage.Tests
 {
     /// <summary>
     /// Test script to validate the new generic Entity system.
@@ -136,7 +136,7 @@ namespace Lineage.Ancestral.Legacies.Tests
                 throw new System.Exception("EntityDataComponent not found");
             }
             
-            if (testEntity.Inventory == null && testEntity.GetComponent<Lineage.Ancestral.Legacies.Systems.Inventory.InventoryComponent>() != null)
+            if (testEntity.Inventory == null && testEntity.GetComponent<Lineage.Systems.Inventory.InventoryComponent>() != null)
             {
                 UnityEngine.Debug.LogWarning("InventoryComponent present but not assigned to Entity.Inventory");
             }

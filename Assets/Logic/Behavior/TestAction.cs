@@ -4,7 +4,7 @@ using UnityEngine;
 using Action = Unity.Behavior.Action;
 using Unity.Properties;
 
-namespace Lineage.Ancestral.Legacies.Behavior
+namespace Lineage.Behavior
 {
     [Serializable, GeneratePropertyBag]
     [NodeDescription(name: "Test Action", story: "Test Unity Behavior system", category: "Test", id: "test_action_001")]

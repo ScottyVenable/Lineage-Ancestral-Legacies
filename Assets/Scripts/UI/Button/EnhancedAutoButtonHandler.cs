@@ -3,10 +3,10 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Lineage.Ancestral.Legacies.Debug;
-using Lineage.Ancestral.Legacies.Managers;
+using Lineage.Debug;
+using Lineage.Managers;
 
-namespace Lineage.Ancestral.Legacies.UI
+namespace Lineage.UI
 {
     /// <summary>
     /// Enhanced AutoButtonHandler with parameterized actions, regex support, and visual feedback.

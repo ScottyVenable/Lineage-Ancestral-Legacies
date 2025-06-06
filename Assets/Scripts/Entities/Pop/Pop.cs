@@ -1,13 +1,13 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Systems.Inventory;
-using Lineage.Ancestral.Legacies.Managers;
-using Lineage.Ancestral.Legacies.Debug;
-using Lineage.Ancestral.Legacies.Components;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Systems.Inventory;
+using Lineage.Managers;
+using Lineage.Debug;
+using Lineage.Components;
+using Lineage.Database;
 using UnityEngine.UI;
 using UnityEngine.AI;
 
-namespace Lineage.Ancestral.Legacies.Entities
+namespace Lineage.Entities
 {    /// <summary>
     /// Core Pop entity representing a population unit with needs, inventory, and AI.
     /// 

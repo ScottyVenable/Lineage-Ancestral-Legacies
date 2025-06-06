@@ -1,13 +1,13 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Entities;
+using Lineage.Database;
 using System.Collections.Generic;
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace Lineage.Ancestral.Legacies.Tools
+namespace Lineage.Tools
 {
     /// <summary>
     /// Migration utility to convert existing Pop GameObjects to use the new generic Entity system.
@@ -20,7 +20,7 @@ namespace Lineage.Ancestral.Legacies.Tools
         public static void MigrateAllPopsInScene()
         {
             Pop[] allPops = Object.FindObjectsOfType<Pop>();
-            List<Lineage.Ancestral.Legacies.Entities.Entity> convertedEntities = new List<Lineage.Ancestral.Legacies.Entities.Entity>();
+            List<Lineage.Entities.Entity> convertedEntities = new List<Lineage.Entities.Entity>();
             
             UnityEngine.Debug.Log($"Found {allPops.Length} Pop objects to migrate");
             
@@ -39,7 +39,7 @@ namespace Lineage.Ancestral.Legacies.Tools
         /// <summary>
         /// Convert a single Pop object to use the Entity system
         /// </summary>
-        public static Lineage.Ancestral.Legacies.Entities.Entity MigratePop(Pop pop)
+        public static Lineage.Entities.Entity MigratePop(Pop pop)
         {
             if (pop == null)
             {
@@ -61,7 +61,7 @@ namespace Lineage.Ancestral.Legacies.Tools
                 Object.DestroyImmediate(pop);
                 
                 // Add the new Entity component
-                var entity = popGameObject.AddComponent<Lineage.Ancestral.Legacies.Entities.Entity>();
+                var entity = popGameObject.AddComponent<Lineage.Entities.Entity>();
                 
                 // Apply the preserved data
                 ApplyMigrationData(entity, migrationData);
@@ -88,7 +88,7 @@ namespace Lineage.Ancestral.Legacies.Tools
                 position = pop.transform.position,
                 rotation = pop.transform.rotation,
                 hasHealthBar = pop.GetComponentInChildren<UnityEngine.UI.Image>() != null,
-                hasInventory = pop.GetComponent<Lineage.Ancestral.Legacies.Systems.Inventory.InventoryComponent>() != null,
+                hasInventory = pop.GetComponent<Lineage.Systems.Inventory.InventoryComponent>() != null,
                 hasNavMeshAgent = pop.GetComponent<UnityEngine.AI.NavMeshAgent>() != null,
             };
         }
@@ -96,7 +96,7 @@ namespace Lineage.Ancestral.Legacies.Tools
         /// <summary>
         /// Apply preserved data to the new Entity
         /// </summary>
-        private static void ApplyMigrationData(Lineage.Ancestral.Legacies.Entities.Entity entity, MigrationData data)
+        private static void ApplyMigrationData(Lineage.Entities.Entity entity, MigrationData data)
         {
             // Configure the Entity with Pop-specific settings
             entity.ConfigureAsEntity(Database.Entity.ID.Pop);
@@ -133,7 +133,7 @@ namespace Lineage.Ancestral.Legacies.Tools
         /// <summary>
         /// Validate that migration was successful
         /// </summary>
-        public static bool ValidateMigration(Lineage.Ancestral.Legacies.Entities.Entity entity)
+        public static bool ValidateMigration(Lineage.Entities.Entity entity)
         {
             if (entity == null) return false;
             if (entity.EntityData == null) return false;
@@ -208,7 +208,7 @@ namespace Lineage.Ancestral.Legacies.Tools
             
             if (GUILayout.Button("Validate Entities in Scene"))
             {
-                var entities = FindObjectsOfType<Lineage.Ancestral.Legacies.Entities.Entity>();
+                var entities = FindObjectsOfType<Lineage.Entities.Entity>();
                 int validCount = 0;
                 foreach (var entity in entities)
                 {

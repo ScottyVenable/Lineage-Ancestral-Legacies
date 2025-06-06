@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Systems.Crafting
+namespace Lineage.Systems.Crafting
 {
     /// <summary>
     /// Manages crafting logic and recipe execution.

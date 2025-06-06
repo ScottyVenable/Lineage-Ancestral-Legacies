@@ -6,7 +6,7 @@ using System.Reflection;
 using TMPro;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     /// <summary>
     /// Runtime Object Inspector - Allows inspection and editing of GameObject properties at runtime
