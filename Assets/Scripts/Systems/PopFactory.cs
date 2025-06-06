@@ -2,9 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using Lineage.Database;
-using Lineage.Entities;
 using Lineage.Systems.TraitSystem;
-using Lineage.Systems.Inventory;
 using static Lineage.Database.Entity;
 
 namespace Lineage.Systems
@@ -42,7 +40,7 @@ namespace Lineage.Systems
         }        /// <summary>
         /// Generates a Pop Entity using GameData system with genetic inheritance and random traits.
         /// </summary>
-        private static Entities.Entity GeneratePopEntity(Database.Entity? parentA = null, Database.Entity? parentB = null)
+        private static Database.Entity GeneratePopEntity(Database.Entity? parentA = null, Database.Entity? parentB = null)
         {            // Start with a base human entity from GameData
             Database.Entity baseEntity = GameData.GetEntityByID(Entity.ID.Kaari); // Using Kaari entity type for human-like beings
               // Create a new entity based on the base
@@ -186,7 +184,7 @@ namespace Lineage.Systems
         /// </summary>
         private static void InitializePopStates(ref Database.Entity popEntity)
         {
-            popEntity.entityType = new List<EntityType> { EntityType.PlayerControlled };
+            popEntity.entityType = new List<Database.Entity.EntityType> { Database.Entity.EntityType.PlayerControlled };
             popEntity.InitializeStates();
             
             // Set initial state to Idle
