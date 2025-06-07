@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System;
 using Lineage.Database;
 using Lineage.Systems.Inventory;
+using Lineage.Core;
+using Lineage.Core.Entities;
 
 namespace Lineage.Entities
 {
@@ -230,10 +232,19 @@ namespace Lineage.Entities
                 LoadFromDatabase();
             }
         }
-          private void LoadFromDatabase()
+        private void LoadFromDatabase()
         {
             if (entityID == 0) return;
-            
+
+            // Prefer new ScriptableObject based GameData if available
+            var entityDef = GameDataManager.Instance.GetDefinition<EntityDefinitionSO>(entityID.ToString());
+            if (entityDef != null)
+            {
+                UnityEngine.Debug.Log($"Loaded entity definition {entityDef.displayName} via GameDataManager");
+                // TODO: map fields from EntityDefinitionSO to EntityData struct
+                return;
+            }
+
             var entityFromDB = GameData.GetEntityByID(entityID);
             if (entityFromDB.entityID != 0)
             {

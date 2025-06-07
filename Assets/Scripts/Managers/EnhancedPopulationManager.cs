@@ -6,6 +6,7 @@ using Lineage.Debug;
 using Lineage.Systems;
 using Lineage.Components;
 using Lineage.Database;
+using Lineage.Core;
 
 namespace Lineage.Managers
 {
@@ -54,7 +55,7 @@ namespace Lineage.Managers
                 // Initialize GameData if not already done
                 if (useGameDataSystem)
                 {
-                    GameData.InitializeAllDatabases();
+                    _ = GameDataManager.Instance; // triggers loading on first access
                 }
             }
             else
