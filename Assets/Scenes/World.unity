@@ -1514,11 +1514,11 @@ MonoBehaviour:
   maxZoom: 10
   rotationSpeed: 100
   smoothMovement: 1
-  smoothTime: 0.3
+  smoothTime: 0.15
   invertMousePanX: 1
   invertMousePanY: 1
-  mousePanSensitivity: 1.58
-  mousePanSpeed: 2.37
+  mousePanSensitivity: 2.7
+  mousePanSpeed: 3.2
   immediateStopOnMouseRelease: 1
   mousePanResponsiveness: 10.17
   minBounds: {x: -50, y: -50}
