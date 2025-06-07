@@ -1,8 +1,8 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Database;
 using System.Collections.Generic;
 
-namespace Lineage.Ancestral.Legacies.Entities
+namespace Lineage.Entities
 {
     /// <summary>
     /// Blackboard variable for behavior trees with support for different data types
@@ -317,7 +317,9 @@ namespace Lineage.Ancestral.Legacies.Entities
                     StartCrafting(entity);
                     break;
             }
-        }        #region Type-Specific Initialization
+        }
+
+        #region Type-Specific Initialization
         
         
         // Changed this to be for general entities instead of specific types.

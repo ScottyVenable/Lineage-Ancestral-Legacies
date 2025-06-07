@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
-using Lineage.Ancestral.Legacies.UI;
+using Lineage.UI;
 
-namespace Lineage.Ancestral.Legacies.UI.Examples
+namespace Lineage.UI.Examples
 {
     /// <summary>
     /// Comprehensive demonstration of ButtonGroupManager capabilities.

@@ -5,7 +5,7 @@ using System.Text;
 using System;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     /// <summary>
     /// Profiling integration helper for advanced performance analysis.

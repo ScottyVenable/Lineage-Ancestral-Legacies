@@ -69,7 +69,7 @@ MonoBehaviour:
         m_IsShared: 0
         m_Value: {fileID: 0}
     - rid: 6784336473562284839
-      type: {class: 'TypedVariableModel`1[[Lineage.Ancestral.Legacies.Components.EntityDataComponent, LineageScripts]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      type: {class: 'TypedVariableModel`1[[Lineage.Components.EntityDataComponent, LineageScripts]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
       data:
         ID:
           m_Value0: 13701883033770302344
@@ -151,7 +151,7 @@ MonoBehaviour:
         Name: Pop Animator
         m_Value: {fileID: 0}
     - rid: 6784336473562284840
-      type: {class: 'BlackboardVariable`1[[Lineage.Ancestral.Legacies.Components.EntityDataComponent, LineageScripts]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      type: {class: 'BlackboardVariable`1[[Lineage.Components.EntityDataComponent, LineageScripts]]', ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         GUID:
           m_Value0: 13701883033770302344
@@ -1900,7 +1900,7 @@ MonoBehaviour:
         Name: Pop Animator
         m_Value: {fileID: 0}
     - rid: 6784336473562284993
-      type: {class: 'BlackboardVariable`1[[Lineage.Ancestral.Legacies.Components.EntityDataComponent, LineageScripts]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      type: {class: 'BlackboardVariable`1[[Lineage.Components.EntityDataComponent, LineageScripts]]', ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         GUID:
           m_Value0: 13701883033770302344

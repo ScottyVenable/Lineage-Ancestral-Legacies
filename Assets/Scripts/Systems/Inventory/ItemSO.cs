@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Systems.Inventory
+namespace Lineage.Systems.Inventory
 {
     /// <summary>
     /// ScriptableObject representing an inventory item.

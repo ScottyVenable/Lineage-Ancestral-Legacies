@@ -1,8 +1,8 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Managers;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Managers;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies
+namespace Lineage
 {
     /// <summary>
     /// Initializes core game systems and creates manager instances.

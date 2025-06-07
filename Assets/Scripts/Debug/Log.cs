@@ -3,7 +3,7 @@ using UnityEngine;
 using System;
 using System.IO;
 
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     /// <summary>
     /// Advanced logging system for Lineage Ancestral Legacies with levels, categories, and multiple outputs.
@@ -228,7 +228,7 @@ namespace Lineage.Ancestral.Legacies.Debug
 }
 #else
 // Fallback for release builds - empty static class to prevent compilation errors
-namespace Lineage.Ancestral.Legacies.Debug
+namespace Lineage.Debug
 {
     public static class Log
     {

@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Manages audio sources, sound effects, music, and audio settings.

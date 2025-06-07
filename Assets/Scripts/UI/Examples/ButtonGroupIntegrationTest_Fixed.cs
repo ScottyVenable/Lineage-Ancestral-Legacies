@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Reflection;
-using Lineage.Ancestral.Legacies.UI;
+using Lineage.UI;
 
-namespace Lineage.Ancestral.Legacies.UI.Examples
+namespace Lineage.UI.Examples
 {
     /// <summary>
     /// Integration test for ButtonGroupManager with EnhancedAutoButtonHandler.

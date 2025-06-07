@@ -402,7 +402,7 @@ Custom Blackboard Variables:
 
 ```csharp
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Entities;
+using Lineage.Entities;
 
 public class EntitySpawner : MonoBehaviour
 {

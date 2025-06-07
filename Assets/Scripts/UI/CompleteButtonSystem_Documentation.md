@@ -371,7 +371,7 @@ var config = controller.GetConfigurationForGroup(specificGroup);
 
 ```csharp
 using UnityEngine;
-using Lineage.Ancestral.Legacies.UI;
+using Lineage.UI;
 
 public class GameUIManager : MonoBehaviour
 {

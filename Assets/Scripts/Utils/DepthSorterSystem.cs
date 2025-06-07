@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Lineage.Ancestral.Legacies.Utils
+namespace Lineage.Utils
 {
     /// <summary>
     /// Global depth sorter that updates sortingOrder of all SpriteRenderers in the scene based on their Y position.

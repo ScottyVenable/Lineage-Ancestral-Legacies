@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
-using Lineage.Ancestral.Legacies.Entities;
+using Lineage.Entities;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     public class SelectionManager : MonoBehaviour
     {

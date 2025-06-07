@@ -1,9 +1,9 @@
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Manages game saves, settings persistence, and player preferences.

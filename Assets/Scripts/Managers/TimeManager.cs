@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Manages time progression, day/night cycles, seasons, and game speed.

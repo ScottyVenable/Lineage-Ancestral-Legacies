@@ -1,10 +1,10 @@
 using UnityEngine;
 using UnityEngine.AI; // REQUIRED for NavMeshAgent
-using Lineage.Ancestral.Legacies.Entities; // For Pop
-using Lineage.Ancestral.Legacies.Managers; // For SelectionManager in ForceSelect (optional)
-using Lineage.Ancestral.Legacies.Debug; // For DebugConsoleManager / AdvancedLogger (optional)
+using Lineage.Entities; // For Pop
+using Lineage.Managers; // For SelectionManager in ForceSelect (optional)
+using Lineage.Debug; // For DebugConsoleManager / AdvancedLogger (optional)
 
-namespace Lineage.Ancestral.Legacies.Entities
+namespace Lineage.Entities
 {
     [RequireComponent(typeof(Pop))]
     [RequireComponent(typeof(NavMeshAgent))] // Ensure NavMeshAgent is always present

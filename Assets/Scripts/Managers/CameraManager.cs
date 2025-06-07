@@ -5,9 +5,9 @@ using UnityEngine;
 using Unity.Cinemachine;
 #endif
 using UnityEngine.InputSystem;
-using Lineage.Ancestral.Legacies.Debug;
+using Lineage.Debug;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Manages camera movement, zoom, and panning for the game.

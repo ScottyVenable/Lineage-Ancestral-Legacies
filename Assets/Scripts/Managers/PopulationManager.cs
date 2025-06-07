@@ -1,13 +1,13 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using Lineage.Ancestral.Legacies.Entities;
-using Lineage.Ancestral.Legacies.Debug;
-using Lineage.Ancestral.Legacies.Systems;
-using Lineage.Ancestral.Legacies.Components;
-using Lineage.Ancestral.Legacies.Database;
+using Lineage.Entities;
+using Lineage.Debug;
+using Lineage.Systems;
+using Lineage.Components;
+using Lineage.Database;
 
-namespace Lineage.Ancestral.Legacies.Managers
+namespace Lineage.Managers
 {
     /// <summary>
     /// Manages the population of Kaari, spawning, death, and population cap.

@@ -1,7 +1,7 @@
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Managers;
+using Lineage.Managers;
 
-namespace Lineage.Ancestral.Legacies.Systems.Needs
+namespace Lineage.Systems.Needs
 {
     /// <summary>
     /// Component that manages Pop needs like hunger, thirst, and energy.

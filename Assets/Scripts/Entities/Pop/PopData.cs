@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Lineage.Ancestral.Legacies.Systems.TraitSystem;
-using Lineage.Ancestral.Legacies.Systems.Inventory;
+using Lineage.Systems.TraitSystem;
+using Lineage.Systems.Inventory;
 
-namespace Lineage.Ancestral.Legacies.Entities
+namespace Lineage.Entities
 {
     /// <summary>
     /// Data container for pop stats, traits, and inventory references.

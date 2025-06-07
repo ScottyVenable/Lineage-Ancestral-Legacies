@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 using System;
-using Lineage.Ancestral.Legacies.Database;
-using Lineage.Ancestral.Legacies.Systems.Inventory;
+using Lineage.Database;
+using Lineage.Systems.Inventory;
 
-namespace Lineage.Ancestral.Legacies.Entities
+namespace Lineage.Entities
 {
     /// <summary>
     /// Universal Entity component that handles all entity types and their data management.
