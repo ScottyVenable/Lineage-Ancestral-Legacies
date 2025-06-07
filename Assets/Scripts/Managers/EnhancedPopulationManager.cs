@@ -203,10 +203,6 @@ namespace Lineage.Managers
                 var parentA = breedingCandidates[Random.Range(0, breedingCandidates.Count)];
                 var parentB = breedingCandidates[Random.Range(0, breedingCandidates.Count)];
                 
-                if (parentA != parentB)
-                {
-                    SpawnChildPop(parentA, parentB);
-                }
             }
         }
 
@@ -253,6 +249,7 @@ namespace Lineage.Managers
             }
         }
 
+        //TODO: Transition this to a universal EntityData-based spawner.
         public void SpawnPop()
         {
             if (currentPopulation >= populationCap || popPrefab == null) return;
@@ -261,11 +258,10 @@ namespace Lineage.Managers
             spawnPos.y = spawnPoint.position.y;
 
             GameObject popObj;
-            
+
             if (useGameDataSystem)
             {
-                // Use PopFactory for rich generation
-                popObj = PopFactory.CreatePop(popPrefab: popPrefab, spawnPosition: spawnPos);
+                //TODO: Implement GameData-based pop creation
             }
             else
             {
@@ -273,63 +269,7 @@ namespace Lineage.Managers
                 popObj = Instantiate(popPrefab, spawnPos, Quaternion.identity);
             }
 
-            Pop pop = popObj.GetComponent<Pop>();
-            if (pop != null)
-            {
-                if (!useGameDataSystem)
-                {
-                    pop.name = GenerateRandomName();
-                }
-                
-                pop.transform.localScale = Vector3.one * Random.Range(0.9f, 1.1f);
-                
-                RegisterPop(pop);
-                
-                Log.Info($"New pop spawned: {pop.name}", Log.LogCategory.Population);
-            }
         }
-
-        public void SpawnChildPop(Pop parentA, Pop parentB)
-        {
-            if (currentPopulation >= populationCap || popPrefab == null) return;
-
-            Vector3 spawnPos = spawnPoint.position + Random.insideUnitSphere * spawnRadius;
-            spawnPos.y = spawnPoint.position.y;
-
-            GameObject popObj;
-            
-            if (useGameDataSystem && enableGeneticInheritance)
-            {
-                // Get parent entity data for inheritance
-                var parentAEntity = GetEntityDataForPop(parentA);
-                var parentBEntity = GetEntityDataForPop(parentB);
-                
-                popObj = PopFactory.CreatePop(
-                    parentA: parentAEntity, 
-                    parentB: parentBEntity,
-                    popPrefab: popPrefab, 
-                    spawnPosition: spawnPos
-                );
-            }
-            else
-            {
-                popObj = Instantiate(popPrefab, spawnPos, Quaternion.identity);
-            }
-
-            Pop childPop = popObj.GetComponent<Pop>();
-            if (childPop != null)
-            {
-                // Set child properties
-                childPop.age = 0; // New born
-                childPop.transform.localScale = Vector3.one * 0.5f; // Smaller child
-                
-                RegisterPop(childPop);
-                
-                OnPopBorn?.Invoke(parentA, parentB, childPop);
-                Log.Info($"Child pop born: {childPop.popName} (Parents: {parentA.name} & {parentB.name})", Log.LogCategory.Population);
-            }
-        }
-
         private Database.Entity GetEntityDataForPop(Pop pop)
         {
             var entityComponent = pop.GetComponent<EntityDataComponent>();
