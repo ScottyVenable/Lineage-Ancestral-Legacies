@@ -1,6 +1,6 @@
 ## **Lineage: Ancestral Legacies - Design Document**
-**Version:** v2025.5.26.1
-**Last Updated:** 2025-05-26
+**Version:** v2025.06.07.1
+**Last Updated:** 2025-06-07
 
 ---
 
@@ -472,181 +472,136 @@ The development of "Lineage: Ancestral Legacies" will progress through several k
 
 ---
 
-This expanded GDD provides a much more detailed blueprint. Remember, this is still a high-level strategic document. Each of these sections could be broken down further into many specific design documents for individual features.
-
-Scotty, this is an ambitious and incredibly cool game concept! Focusing on the core loop and USPs first, then iteratively building out the complexity, will be key. I'm excited to see how "Lineage: Ancestral Legacies" evolves! Let me know your thoughts and where you'd like to dive deeper next.
-
----
-
 ### 7. 🌍 World & Lore
-*(This section would detail the broader world, its history, overarching mysteries, and other elements that provide context to the tribe's journey. For now, we are focusing on a specific lore-related system.)*
 
-#### 7.5. Procedural Language Evolution & Player Interaction
-*(This is a highly ambitious feature aiming to create a unique linguistic fingerprint for each tribe, deeply tied to their experiences and environment. It adds a significant layer to the "Legacy" and "Branch" core pillars.)*
+#### I. The Genesis of Lumina: A Cosmic Tapestry
+##### A. The First Light & The Primordial Dance
+In the timeless expanse before existence, there was only the First Light, a boundless ocean of pure potential. From this Light, a conscious resonance, a Primordial Dance of energy and nascent thought, began. This dance was not chaotic but filled with an intricate, evolving harmony – the first stirring of the universe's soul.
 
-**Core Philosophy:**
-The language of a tribe is a living record of its history, environment, and collective understanding. It should evolve organically, reflecting discoveries, significant events, and the unique challenges faced. The goal is for players to witness and subtly influence the birth and growth of a unique dialect for their people.
+##### B. The Weaving of Realities
+The Dance intensified, its vibrations coalescing into the first threads of reality. These threads, woven from light, shadow, and the echoes of possibility, formed the Tapestry of Existence. Each intersection, each pattern, held the potential for worlds, stars, and life itself. Lumina, the world of Lineage, is one such vibrant pattern within this cosmic Tapestry.
 
-**Foundational Elements:**
-*   **Phoneme Inventory (The Building Blocks):**
-    *   The system starts with a predefined set of universal phonemes (basic sounds like /k/, /a/, /m/, /sh/). This list could be stored in an external file (e.g., `phonemes.json`).
-    *   **Environmental Seeding (Initial Flavor):** At the start of a new game, the tribe's initial environment could influence the *probability* of certain phonemes being favored or disfavored in early word generation.
-        *   *Example:* A tribe starting in a dense jungle with many soft rustling sounds might initially favor softer consonants and more vowel sounds, while a tribe in harsh, windy mountains might favor more guttural or sharp consonant sounds. This is a subtle flavor, not a hard restriction.
-    *   This initial phoneme set is the raw material from which all words will be constructed.
+##### C. The Birth of the Star-Souls (The First Gods)
+From the most potent confluences of energy within the Tapestry, the Star-Souls were born. These were not gods in a conventional sense but immense, sentient energies – the first consciousnesses to achieve self-awareness. They became the architects and guardians of nascent realities, their very being resonating with the fundamental forces of creation: life, death, order, chaos, matter, and magic.
 
-*   **Concept Triggers (The Need for a Word):**
-    *   New words are generated when the tribe encounters or conceptualizes something new that requires a label. This can be triggered by:
-        *   Discovering a new resource (e.g., "Red Berry," "Flint Stone," "River Fish").
-        *   Identifying a new animal (e.g., "Deer," "Wolf," "Cave Bear").
-        *   Crafting a new tool (e.g., "Stone Axe," "Wooden Spear").
-        *   Experiencing a significant event (e.g., "Fire," "Storm," "Attack").
-        *   Developing a social concept (e.g., "Friend," "Leader," "Danger," "Family Unit").
-        *   An abstract idea or observation (e.g. "Big", "Small", "Fast", "Hot", "Cold" - often linked to "Thinker" pop insights).
-    *   These concepts can be predefined in categories within an external file (e.g., `concepts.json`) which might also include rules for how words for these concepts could be formed or what they might relate to.
+#### II. The Elder Races: Architects of Ages Past
+Long before the rise of humanity, Lumina was shaped by the Elder Races, each a unique expression of the Star-Souls' creative energies or a natural evolution within the vibrant world.
 
-**Word Generation Mechanics:**
-*   **Proto-Word Formation:**
-    *   When a new concept needs a word, the system combines phonemes from the available inventory according to generative rules (e.g., consonant-vowel-consonant structure, avoiding unpronounceable clusters initially).
-    *   *Example:* For "Red Berry," the system might generate "Kama," "Piko," or "Solu." The first generated word becomes the accepted term.
-    *   These words are initially simple and directly tied to concrete experiences.
+##### A. The Sylvans: Children of the Verdant Heart
+Born from the deep forests and infused with the life-essence of Terra-Gaia, the Sylvans were beings of wood and leaf, their forms shifting with the seasons. They were wise, patient, and deeply connected to the natural cycles of Lumina, acting as its first gardeners and protectors. Their magic was that of growth, healing, and communion with nature.
 
-*   **External Files & Templates for Structure:**
-    *   `phonemes.json`: `{"consonants": ["p", "t", "k", "b", "d", "g", "m", "n", "s", "sh", "h", "l", "r", "w", "y"], "vowels": ["a", "e", "i", "o", "u"]}` (example, could be more nuanced).
-    *   `word_structure_rules.json`: Could define basic syllable structures (CV, CVC, VC) and rules for combining them. E.g., `{"allow_consonant_clusters": false, "max_syllables_early": 2}`.
-    *   `concept_lexicon.csv` (or JSON): This file would map internal game concepts (e.g., `item_berry_red`, `animal_deer`, `action_hunt`) to their current procedurally generated word. It starts empty and gets populated.
-        *   `concept_id,generated_word,player_notes,decipher_status`
-        *   `item_berry_red,kama,"Seems to mean berry or red food",confirmed`
+##### B. The Lithids: Sculptors of Stone and Time
+Forged in the planet's core and the timeless mountains, the Lithids were beings of stone, crystal, and enduring patience. They were master artisans and record-keepers, their cities carved into the very bones of the world. They understood the slow language of geology and the deep currents of magic that flowed through ley lines. Their strength was in shaping earth and stone, and in their profound, slow wisdom.
 
-*   **Uniqueness per Playthrough:**
-    *   The specific phonemes chosen for a new word will have a degree of randomness.
-    *   The order in which concepts are encountered and named will differ.
-    *   Later evolutionary changes (see below) will further diverge languages.
-    *   This ensures that each playthrough develops a distinct vocabulary.
+##### C. The Aeravine: Weavers of Wind and Sky
+Conceived in the highest peaks and the boundless skies, the Aeravine were ethereal beings of air and light, often winged or capable of manipulating currents. They were explorers, philosophers, and artists, their cities floating among the clouds or built into inaccessible aeries. They mastered elemental air magic and possessed a keen understanding of celestial patterns.
 
-**Language Evolution Over Time:**
-*(This is where the language becomes more complex and nuanced, reflecting the tribe's cognitive and cultural growth. These changes would happen gradually over many generations or be tied to specific "Mental" trait advancements or "Thinker" pop Eurekas.)*
+##### D. The Abyssal Kith: Dreamers of the Deep
+Emerging from the lightless oceans and subterranean waters, the Abyssal Kith were enigmatic and fluid, their forms often bioluminescent and adapted to immense pressures. They were keepers of ancient secrets, their consciousnesses touching upon the deeper, more chaotic currents of the Tapestry. Their magic was of illusion, transformation, and the hidden powers of the mind and the deep.
 
-*   **Sound Shifts (Phonetic Drift):**
-    *   Over long periods, common phonemes might subtly change their pronunciation.
-    *   *Example:* An original /p/ sound might evolve into a /b/ sound in many words. "Piko" (berry) might become "Biko."
-    *   This can be implemented as a low probability event affecting a random phoneme across the lexicon.
+#### III. The Shattering: A World Broken and Remade
+The golden age of the Elder Races was not to last. A cosmic event, or perhaps a conflict among the Star-Souls themselves, led to The Shattering.
 
-*   **Word Combination & Compounding:**
-    *   As the tribe's understanding grows, they might combine existing simple words to describe more complex or nuanced concepts.
-    *   *Example:* If "Kama" = "Berry" and "Zul" = "Water," then "Kamazul" might become the word for a juicy fruit found near water.
-    *   This allows for an expanding vocabulary without generating entirely new roots for every single concept.
+##### A. The Celestial Discord & The Godfall
+A great dissonance echoed through the Tapestry, a war or calamity among the Star-Souls. Some Star-Souls were diminished, some fell silent, and others were twisted into darker aspects. This "Godfall" sent shockwaves across Lumina, unravelling parts of its reality.
 
-*   **Semantic Drift & Specialization:**
-    *   The meaning of words can broaden, narrow, or shift over time.
-    *   *Example:* An early word for "Sharp Stone" might later specialize to mean "Cutting Tool" specifically, while a new word is generated for "Blunt Stone" (hammer). Or, a word for "Danger" might later become specifically "Predator Danger."
+##### B. The Sundering of Continents
+The physical world was torn apart. Mountains crumbled, seas boiled, and continents were reshaped. The great civilizations of the Elder Races were largely destroyed, their cities cast into ruin, their knowledge lost or fragmented. Many of the Elder Races themselves were decimated.
 
-*   **Emergence of Basic Grammar (Affixation, Pluralization, Tense):**
-    *   **Affixes:** Common concepts might evolve into prefixes or suffixes.
-        *   *Example:* If "Gor" means "Big," then "Gor-Kama" could mean "Big Berry." "Gor-" becomes a prefix.
-    *   **Pluralization:** A common way to denote multiple items might emerge (e.g., repeating a vowel, adding a specific suffix like "-im" or "-ot").
-    *   **Tense:** Simple markers for past/present/future actions could develop, perhaps from words meaning "before," "now," "after."
-    *   These grammatical elements would be very rudimentary initially and could be linked to specific "Mental" trait thresholds or "Eureka" moments from pops with high linguistic aptitude.
+##### C. The Age of Silence & The Long Slumber
+Following The Shattering, an Age of Silence descended upon Lumina. The vibrant energies of the world dimmed, magic became wild and unpredictable, and the surviving Elder Races retreated into seclusion, mourning their losses and attempting to preserve what little remained of their heritage. Life on Lumina entered a long period of recovery and quiet evolution.
 
-**Player Interaction & Deciphering:**
-*   **Initial Obscurity:**
-    *   When the game starts, the player does not understand the tribe's utterances. Pop-up speech bubbles might show the generated words, perhaps with accompanying icons or animations to give contextual clues.
-    *   *Example:* A pop points to a berry bush, an icon of a berry appears, and the speech bubble says "Kama!"
+#### IV. The Awakening: Whispers of a New Dawn
+Millennia passed. The scars on Lumina began to heal, and new life, hardy and adaptable, started to flourish in the changed world.
 
-*   **Deciphering Process:**
-    *   **Contextual Observation:** The primary way the player (and their "Thinker" pops) learn the language. If pops consistently say "Kama" when interacting with berries, the player can infer the meaning.
-    *   **"Thinker" Pop Role:** Pops with high "Mental" traits, "Curiosity," or a specific "Linguist" or "Pattern Seeker" trait could accelerate the deciphering process. They might have a small chance per day to "figure out" a word they've heard frequently, adding it to the known lexicon.
-    *   **Lexicon UI:** A dedicated UI screen where the player can see a list of encountered words, their suspected meanings, and their confirmation status (e.g., "Suspected: Berry," "Confirmed: Berry").
+##### A. The Stirring of Life
+From the resilient soil, new ecosystems emerged. Creatures adapted to the altered landscapes, and the subtle hum of magic began to stabilize, though it remained a shadow of its former glory.
 
-*   **Confirmation:** After enough contextual observations or a "Thinker" insight, a word's meaning is "confirmed" and will show its translation in tooltips or UI elements.
+##### B. The Emergence of the "Younger Races" (Including Hominids)
+Among the new life forms were the Younger Races – humans, proto-hominids, and other sentient species. Less powerful and knowledgeable than the Elders, they possessed a raw vitality and a capacity for rapid adaptation and learning. Your hominid tribe is one of these emerging lineages.
 
-**Player Influence & Editing (Mid-to-Late Game Mechanic):**
-*(This allows players to feel more connected to their tribe's culture and to smooth out any awkward procedurally generated terms.)*
+##### C. Echoes of the Past: Lost Technologies and Lingering Magic
+The world the Younger Races inherit is littered with the remnants of the Elder civilizations – crumbling ruins, powerful artifacts whose purpose is forgotten, and pockets of potent, wild magic. These echoes of the past offer both great opportunity and grave danger.
 
-*   **The "Lorekeeper's Hut" or "School of Words" (Example Structure):**
-    *   Unlocking a specific building or societal role (e.g., "Elder Council," "Chief Linguist") grants access to the "Language Editing" interface.
+#### V. Deities & Pantheons: The Star-Souls and Their Legacy
+The Star-Souls, though diminished or changed by the Godfall, still exert influence. Their residual energies and fragmented consciousnesses are the basis for the deities and pantheons worshipped by the Younger Races.
 
-*   **Language Editing Interface:**
-    *   Players can view the full list of confirmed words and their generated forms.
-    *   For any given concept (e.g., "Berry," "Hunt," "Friend"), the player can:
-        *   **Suggest a New Word:** Type in their own preferred word (e.g., rename "Kama" to "Redfruit").
-        *   **Suggest a Phonetic Respelling:** If the generated word is hard to pronounce or remember, suggest a new combination of existing phonemes.
-    *   **Adoption Process:** Player suggestions are not instantly adopted.
-        *   The suggestion might need to be "taught" by pops with high social influence or in a "teaching" role.
-        *   There could be a tribe "acceptance" chance influenced by cohesion, the leader's traits, or how radical the change is.
-        *   It might take time for the new word to propagate and replace the old one. Some older pops might even continue to use the old term for a while.
+##### A. Major Deities (Examples)
+    1.  **Solara, the Sun's Heart (Life, Creation, Order):** Often perceived as a benevolent creator, associated with warmth, growth, and the day. Worshipped by those who seek bounty and stability.
+    2.  **Nocturnus, the Shadowed Mind (Secrets, Dreams, Change):** Seen as a mysterious deity of the night, magic, and transformation. Appealed to for insight, guidance through darkness, or the power to alter fate.
+    3.  **Terra-Gaia, the Earth Mother (Nature, Cycles, Resilience):** The enduring spirit of the land itself, embodying fertility, the seasons, and the strength to endure. Revered by hunters, gatherers, and those who live close to nature.
+    4.  **Ferrus, the Iron Hand (Strength, Craft, Conflict):** A god of invention, labor, and warfare. Worshipped by artisans, warriors, and those who seek to impose their will upon the world.
+    5.  **Fluvius, the River of Thought (Knowledge, Magic, Connection):** Represents the flow of ideas, the currents of magic, and the bonds between communities. Invoked by shamans, storytellers, and leaders.
 
-*   **Indirect Influence:**
-    *   **Naming:** When players name pops, locations, or perhaps even significant tools, these names (or parts of them) could subtly influence the lexicon. The system might try to deconstruct these names into phonemes and incorporate them into future word generations if they fit the tribe's phonetic patterns.
-    *   **Repeated Actions:** If the player consistently directs the tribe towards a specific activity (e.g., hunting a particular animal), words related to that activity might become more "developed" with more synonyms or related grammatical forms due to frequent use and conceptual importance.
+##### B. Minor Deities & Nature Spirits
+Beyond the major figures, countless lesser spirits inhabit Lumina – spirits of specific mountains, rivers, forests, animals, or even concepts. These are often more immediate and personal to individual tribes.
 
-This system, while complex to implement, would offer a truly unique and emergent narrative layer, making each tribe's development feel distinct and deeply tied to their world.
+##### C. The Fading Gods & The Rise of Mortal Belief
+Some Star-Souls are fading entirely, their power waning. The beliefs and collective will of mortals are beginning to shape the divine landscape, with the potential for new gods to rise or for mortals to learn to draw upon the Star-Soul resonance directly.
 
----
+#### VI. Factions & Cultures (Emergent Possibilities)
+The world of Lumina is a canvas for diverse cultures and factions, some ancient, some new.
 
-### Appendix A: JSON Data Structures
+##### A. Remnants of the Elders
+    1.  **The Secluded Sylvans (Guardians of Ancient Forests):** Small, hidden communities of Sylvans who protect the last untouched groves. Wary of outsiders but may hold vital knowledge of nature magic.
+    2.  **The Deep Lithids (Keepers of Subterranean Lore):** Isolated Lithid enclaves deep underground, guarding ancient archives and powerful earth magic. Rarely interact with the surface world.
+    3.  **The Sky-Nomad Aeravine (Seekers of Lost Heights):** Scattered bands of Aeravine who roam the high altitudes, searching for remnants of their floating cities and lost sky-lore.
+    4.  **The Abyssal Cults (Worshippers of the Drowned Gods):** Twisted descendants or worshippers of the Abyssal Kith, practicing strange rituals in coastal caves or sunken ruins, seeking power from the deep.
 
-*(This new appendix will detail the format of key JSON files)*
+##### B. Younger Race Societies (Player-Influenced)
+    1.  **Primal Tribes (Focus on Survival, Animism):** Early-stage societies, deeply connected to nature spirits, focused on hunting, gathering, and understanding their immediate environment. (This is where the player's hominids begin).
+    2.  **Developing Chiefdoms (Early Hierarchies, Ancestor Worship):** As tribes grow, they may develop more complex social structures, with leaders, specialized roles, and reverence for ancestral spirits.
+    3.  **Nascent Kingdoms/Federations (Organized Religion, Territorial Expansion):** Later-stage societies might form larger political entities, with codified laws, organized priesthoods worshipping major deities, and ambitions to expand their influence.
 
-#### A.1. `pop_states.json`
+##### C. Antagonistic Forces
+    1.  **The Blighted (Creatures Twisted by Ancient Cataclysms):** Flora and fauna warped by the Godfall or magical pollution, often aggressive and dangerous.
+    2.  **The Void-Touched (Beings from Beyond Reality's Veil):** Entities from outside the Tapestry, drawn to Lumina by the weakening of its fabric during the Shattering. Their motives are alien and often destructive.
+    3.  **Internal Strife (Resource Wars, Ideological Conflicts):** As societies grow, competition for resources, power struggles, and differing beliefs can lead to conflict between and within tribes.
 
-Defines the available behavioral states for pops. Loaded into `global.GameData.pop_states`.
+#### VII. Key Regions & Lost Lands (Examples)
+Lumina is vast and varied, filled with places of wonder, danger, and mystery.
 
-*   **Structure:** A root JSON object where each key is a state name (e.g., "Idle", "Foraging").
-*   **State Profile Fields:**
-    *   `id` (Number): A unique numeric identifier for the state. Used in `obj_pop.current_state_id`.
-    *   `name` (String): The human-readable name of the state. Used in `obj_pop.current_state_name`.
-    *   *(Future fields: `animation_sprite_prefix`, `allowed_transitions`, `interrupt_priority`)*
+##### A. The Sunken City of Aerathos (Aeravine Ruin)
+Once a magnificent floating city of the Aeravine, now mostly submerged off a treacherous coastline. Its highest spires sometimes break the waves, rumored to hold powerful artifacts and sky-lore.
 
-*   **Example:**
-    ```json
-    {
-        "Idle": { "id": 0, "name": "Idle" },
-        "Foraging": { "id": 1, "name": "Foraging" },
-        "Resting": { "id": 2, "name": "Resting" }
-    }
-    ```
+##### B. The Crystal Peaks (Lithid Stronghold)
+A mountain range where the peaks are made of giant, energy-infused crystals. Ancient Lithid cities are carved within, some still inhabited, others dangerously unstable due to lingering effects of the Shattering.
 
-#### A.2. `recipes.json`
+##### C. The Whispering Woods (Sylvan Sanctuary)
+One of the last great primeval forests, protected by the Sylvans. The trees are ancient and sentient, and the woods are imbued with potent life magic. Outsiders are rarely welcome.
 
-Defines crafting recipes. Loaded into `global.GameData.recipes`.
+##### D. The Scar of the World (Site of a Major Godfall Event)
+A vast, desolate wasteland where a Star-Soul is believed to have fallen. The land is barren, magic is chaotic, and strange, Blighted creatures roam. It is a place of great danger but also immense, raw power.
 
-*   **Structure:** A root JSON object where each key is a unique recipe identifier string (e.g., "wooden_pickaxe").
-*   **Recipe Profile Fields:**
-    *   `ingredients` (Object): A sub-object where each key is an `item_id` (string, from `item_data.json`) and the value is the quantity (number) required.
-    *   `result` (Object): A sub-object describing the output.
-        *   `id` (String): The `item_id` of the crafted item.
-        *   `count` (Number): The quantity produced.
-    *   `description` (String, Optional): A brief description of the recipe.
-    *   *(Future fields: `crafting_time_seconds`, `required_skill_id`, `required_station_tag`)*
+#### VIII. Magic & The Arcane
+Magic is an intrinsic part of Lumina, a resonance from the Star-Souls and the Tapestry of Existence.
 
-*   **Example:**
-    ```json
-    {
-        "wooden_pickaxe": {
-            "ingredients": { "wood": 3, "stone": 2 },
-            "result": { "id": "wooden_pickaxe", "count": 1 },
-            "description": "A basic pickaxe for light mining."
-        },
-        "berry_pie": {
-            "ingredients": { "berries": 5, "water": 1 },
-            "result": { "id": "berry_pie", "count": 1 },
-            "description": "A simple, nourishing pie."
-        }
-    }
-    ```
+##### A. The Source of Magic (The Star-Soul Resonance)
+All magic ultimately derives from the energies of the Star-Souls. Living beings and even the land itself can tap into this resonance, consciously or unconsciously. The strength and stability of magic have varied throughout Lumina's history.
 
-#### A.3. `entity_data.json` (Conceptual for Needs)
+##### B. Forms of Magic
+    1.  **Elemental Weaving (Control over Fire, Water, Earth, Air):** The most fundamental form of magic, manipulating the basic building blocks of the world.
+    2.  **Life Shaping (Healing, Growth, Enhancement):** Magic that influences living organisms, from mending wounds to accelerating plant growth or even altering physical forms.
+    3.  **Spirit Communion (Interaction with Nature Spirits, Ancestors):** The ability to perceive and communicate with the myriad spirits that inhabit Lumina, seeking their aid or knowledge.
+    4.  **Shadow Craft (Illusion, Stealth, Mental Influence):** Magic that manipulates perception, light, and shadow, often used for subtlety or influencing thoughts.
+    5.  **Technomancy (Rediscovered Elder Technologies with Arcane Properties):** Some Elder artifacts blend advanced science with arcane principles. Understanding and reactivating them is a unique form of magic.
 
-While not explicitly detailed for needs yet, `entity_data.json` (loaded into `global.GameData.entities`) would be the place to define base need parameters if they vary by entity type.
+##### C. The Cost & Risks of Magic
+Using magic is not without consequence. It can be draining, attract unwanted attention from spirits or other entities, or, if mishandled, lead to unpredictable and dangerous outcomes (e.g., magical pollution, personal corruption).
 
-*   **Conceptual Fields within an entity profile (e.g., `global.GameData.entities.pop_human`):**
-    *   `base_needs`: (Object)
-        *   `hunger_max`: 100
-        *   `hunger_decay_rate`: 0.01 (units per tick)
-        *   `thirst_max`: 100
-        *   `thirst_decay_rate`: 0.02
-    *   `initial_needs_range`: (Object)
-        *   `hunger_min_start`: 40
-        *   `hunger_max_start`: 80
+#### IX. Prophecies & The Unfolding Destiny
+The future of Lumina is not fixed. Ancient prophecies and omens exist, but the actions of its inhabitants, especially the emerging Younger Races, can shape the path ahead.
 
-*(This section would be expanded as the Needs system becomes more deeply integrated with entity definitions.)*
+##### A. The Prophecy of Renewal
+A recurring theme in fragmented Elder lore is a prophecy that speaks of the Younger Races either healing the wounds of the Shattering and ushering in a new golden age, or succumbing to the same flaws that led to the Elder Races' downfall.
+
+##### B. The Shifting Tapestry: Player Agency in a Living World
+The player's tribe is a key thread in this unfolding destiny. Their choices in evolution, culture, and interaction with the world and its mysteries will directly influence the future of their lineage and potentially Lumina itself.
+
+#### X. Timeline of Ages (Abridged)
+*   **The Genesis Era (Cosmic Formation):** The birth of the universe, the Tapestry, and the Star-Souls.
+*   **The Elder Age (Dominance of the First Races):** Flourishing of the Sylvan, Lithid, Aeravine, and Abyssal Kith civilizations.
+*   **The Shattering (Cataclysm and Godfall):** Cosmic war/event, destruction of Elder civilizations, reshaping of Lumina.
+*   **The Age of Silence (Dormancy and Slow Recovery):** Magic dims, survivors retreat, new life slowly evolves.
+*   **The Awakening (Current Era - Rise of Younger Races):** Hominids and other Younger Races emerge, rediscovering a world full of ancient mysteries and dangers. This is the starting point for the game.
+*   **The Age of Divergence (Player-Driven Future):** The long-term trajectory of the game, where player choices lead to unique evolutionary paths and cultural developments for their lineage(s).
