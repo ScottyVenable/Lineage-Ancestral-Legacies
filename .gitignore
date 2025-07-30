@@ -26,6 +26,8 @@ ExportedObj/
 *.csproj
 *.unityproj
 *.sln
+!Tests/**/*.csproj
+!Tests/*.sln
 *.suo
 *.tmp
 *.user
@@ -37,6 +39,8 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+Tests/**/bin/
+Tests/**/obj/
 
 # Unity3D generated meta files
 *.pidb.meta
