@@ -10,21 +10,20 @@ namespace Lineage.Systems.Inventory
     {
         [Header("Inventory Settings")]
         public int capacity = 10;
-        private Dictionary<string, int> items = new Dictionary<string, int>();
+
+        private Inventory _inventory;
+
+        private void Awake()
+        {
+            _inventory = new Inventory(capacity);
+        }
 
         /// <summary>
         /// Adds an item to the inventory. Returns true if successful.
         /// </summary>
         public bool AddItem(string itemId, int count = 1)
         {
-            if (GetTotalItemCount() + count > capacity)
-                return false;
-
-            if (!items.ContainsKey(itemId))
-                items[itemId] = 0;
-
-            items[itemId] += count;
-            return true;
+            return _inventory.AddItem(itemId, count);
         }
 
         /// <summary>
@@ -32,15 +31,7 @@ namespace Lineage.Systems.Inventory
         /// </summary>
         public bool RemoveItem(string itemId, int count = 1)
         {
-            if (!items.ContainsKey(itemId) || items[itemId] < count)
-                return false;
-
-            items[itemId] -= count;
-
-            if (items[itemId] <= 0)
-                items.Remove(itemId);
-
-            return true;
+            return _inventory.RemoveItem(itemId, count);
         }
 
         /// <summary>
@@ -48,10 +39,7 @@ namespace Lineage.Systems.Inventory
         /// </summary>
         public int GetItemCount(string itemId)
         {
-            if (items.ContainsKey(itemId))
-                return items[itemId];
-
-            return 0;
+            return _inventory.GetItemCount(itemId);
         }
 
         /// <summary>
@@ -59,7 +47,7 @@ namespace Lineage.Systems.Inventory
         /// </summary>
         public Dictionary<string, int> GetAllItems()
         {
-            return new Dictionary<string, int>(items);
+            return _inventory.GetAllItems();
         }
 
         /// <summary>
@@ -67,12 +55,7 @@ namespace Lineage.Systems.Inventory
         /// </summary>
         public int GetTotalItemCount()
         {
-            int total = 0;
-            foreach (var item in items)
-            {
-                total += item.Value;
-            }
-            return total;
+            return _inventory.GetTotalItemCount();
         }
 
         /// <summary>
@@ -80,7 +63,7 @@ namespace Lineage.Systems.Inventory
         /// </summary>
         public bool IsInventoryFull()
         {
-            return GetTotalItemCount() >= capacity;
+            return _inventory.IsFull();
         }
 
         /// <summary>
@@ -88,7 +71,9 @@ namespace Lineage.Systems.Inventory
         /// </summary>
         public void ClearInventory()
         {
-            items.Clear();
+            _inventory.Clear();
         }
+
+        public Inventory GetInventory() => _inventory;
     }
 }
